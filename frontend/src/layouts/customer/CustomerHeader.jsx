@@ -1,3 +1,4 @@
+import { Link, NavLink } from "react-router-dom";
 import {
   PawPrint,
   Bell,
@@ -11,7 +12,7 @@ const CustomerHeader = () => {
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
 
         {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
             <PawPrint size={24} />
           </div>
@@ -19,37 +20,46 @@ const CustomerHeader = () => {
           <span className="text-2xl font-bold tracking-tight text-slate-800">
             PetCare <span className="text-emerald-600">Booking</span>
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium text-slate-600">
-          <a
-            href="#"
-            className="text-emerald-600 font-semibold relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-emerald-600 after:rounded-full"
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              isActive
+                ? "text-emerald-600 font-semibold relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-emerald-600 after:rounded-full"
+                : "hover:text-emerald-600 transition-colors py-1"
+            }
           >
             Trang chủ
-          </a>
+          </NavLink>
+
+          <NavLink
+            to="/businesses"
+            className={({ isActive }) =>
+              isActive
+                ? "text-emerald-600 font-semibold relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-emerald-600 after:rounded-full"
+                : "hover:text-emerald-600 transition-colors py-1"
+            }
+          >
+            Cơ sở
+          </NavLink>
 
           <a
-            href="#"
-            className="hover:text-emerald-600 transition-colors"
+            href="#dich-vu"
+            className="hover:text-emerald-600 transition-colors py-1"
           >
             Dịch vụ
           </a>
 
-          <a
-            href="#"
-            className="hover:text-emerald-600 transition-colors"
-          >
-            Cơ sở
-          </a>
-
-          <a
-            href="#"
-            className="hover:text-emerald-600 transition-colors"
+          <Link
+            to="/businesses"
+            className="hover:text-emerald-600 transition-colors py-1"
           >
             Đặt lịch
-          </a>
+          </Link>
         </nav>
 
         {/* User Actions */}
@@ -82,13 +92,13 @@ const CustomerHeader = () => {
           </div>
 
           {/* Booking Button */}
-          <a
-            href="#dat-lich"
+          <Link
+            to="/businesses"
             className="ml-2 hidden sm:inline-flex items-center gap-2 bg-[#f05252] hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 text-sm"
           >
             <CalendarCheck size={18} />
             <span>Đặt lịch ngay</span>
-          </a>
+          </Link>
         </div>
       </div>
     </header>

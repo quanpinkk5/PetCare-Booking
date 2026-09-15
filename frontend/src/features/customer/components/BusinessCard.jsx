@@ -1,94 +1,104 @@
-import {
-  Star,
-  Heart,
-  MapPin,
-} from "lucide-react";
+import { Heart, MapPin } from "lucide-react";
 
 const BusinessCard = ({
-  name,
-  location,
-  price,
-  rating,
-  tags,
-  img,
+    business,
+    name,
+    location,
+    price,
+    rating,
+    tags,
+    img,
 }) => {
-  return (
-    <article className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    const card = business || { name, location, price, rating, tags, img };
 
-      {/* Image */}
-      <div className="relative h-36 w-full">
-        <img
-          src={img}
-          alt={name}
-          className="w-full h-full object-cover"
-        />
+    return (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition flex flex-col justify-between group">
 
-        {/* Rating */}
-        <div className="absolute top-2.5 left-2.5 bg-emerald-600/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-          <Star
-            size={12}
-            className="text-amber-300"
-            fill="currentColor"
-          />
+            <div>
 
-          {rating}
+                {/* Image */}
+                <div className="relative h-28 w-full bg-gray-100 overflow-hidden">
+
+                    <img
+                        alt={card.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        src={card.img || card.image}
+                    />
+
+                    {/* Rating */}
+                    <span className="absolute top-2 left-2 bg-[#0fa958] text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        {card.rating}
+                    </span>
+
+                    {/* Favorite */}
+                    <button
+                        className="absolute top-2 right-2 text-white drop-shadow hover:text-red-500 transition"
+                        aria-label="Yêu thích"
+                    >
+                        <Heart size={16} />
+                    </button>
+
+                </div>
+
+                {/* Content */}
+                <div className="p-2.5">
+
+                    <h3 className="font-bold text-xs text-gray-900 truncate">
+                        {card.name}
+                    </h3>
+
+                    <p className="text-[10px] text-gray-500 mt-0.5 flex items-center truncate">
+                        <MapPin
+                            size={12}
+                            className="mr-0.5 text-gray-400 shrink-0"
+                        />
+
+                        {card.location}
+                    </p>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {(card.tags || []).map((tag, index) => (
+                            <span
+                                key={index}
+                                className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded"
+                            >
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+
+                    {/* Status */}
+                    <div className="flex items-center text-[10px] text-emerald-600 font-medium mt-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                        Đang mở
+                    </div>
+
+                    {/* Price */}
+                    <div className="mt-1">
+                        <span className="text-[11px] font-bold text-gray-900">
+                            Từ {card.price}
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-2.5 pt-0 grid grid-cols-2 gap-1.5 mt-2">
+
+                <button className="w-full text-center border border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-medium py-1 rounded transition-colors">
+                    Đặt lịch
+                </button>
+
+                <button className="w-full text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-medium py-1 rounded transition-colors">
+                    Xem chi tiết
+                </button>
+
+            </div>
+
         </div>
-
-        {/* Favorite */}
-        <button
-          aria-label="Yêu thích"
-          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 backdrop-blur text-slate-600 hover:text-red-500 flex items-center justify-center transition-colors"
-        >
-          <Heart size={14} />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="p-3.5">
-        <h3 className="font-bold text-slate-800 text-sm">
-          {name}
-        </h3>
-
-        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-          <MapPin
-            size={12}
-            className="text-emerald-600"
-          />
-
-          {location}
-        </p>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {tags.map((tag, index) => (
-            <span
-              key={index}
-              className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Bottom */}
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] text-slate-400">
-              Từ
-            </span>
-
-            <span className="text-sm font-bold text-slate-800 ml-1">
-              {price}
-            </span>
-          </div>
-
-          <button className="text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
-            Xem chi tiết
-          </button>
-        </div>
-      </div>
-    </article>
-  );
+    );
 };
 
 export default BusinessCard;
