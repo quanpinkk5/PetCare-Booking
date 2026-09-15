@@ -1,13 +1,36 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+:root {
+  font-family: "Plus Jakarta Sans", sans-serif;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.paw-pattern {
+  background-image:
+    radial-gradient(#10b981 0.75px, transparent 0.75px),
+    radial-gradient(#10b981 0.75px, #f8fdfb 0.75px);
+
+  background-size: 30px 30px;
+  background-position:
+    0 0,
+    15px 15px;
+
+  opacity: 0.05;
+}
+
+.hero-gradient {
+  background: radial-gradient(
+    circle at top right,
+    rgba(209, 250, 229, 0.45) 0%,
+    rgba(240, 253, 244, 0.2) 60%,
+    #ffffff 100%
+  );
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
 }
