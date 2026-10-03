@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   PawPrint,
   Globe,
@@ -19,8 +20,8 @@ const CustomerFooter = () => {
 
           {/* Brand */}
           <div className="md:col-span-4 pr-4">
-            <a
-              href="#"
+            <Link
+              to="/"
               className="flex items-center gap-2 mb-3"
             >
               <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
@@ -30,7 +31,7 @@ const CustomerFooter = () => {
               <span className="text-xl font-bold tracking-tight text-slate-800">
                 PetCare <span className="text-emerald-600">Booking</span>
               </span>
-            </a>
+            </Link>
 
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm mb-4">
               Nền tảng đặt dịch vụ chăm sóc thú cưng uy tín, kết nối bạn với hàng trăm cơ sở chất lượng trên toàn quốc.
@@ -93,12 +94,12 @@ const CustomerFooter = () => {
                 "Lưu trú qua đêm",
               ].map((link, index) => (
                 <li key={index}>
-                  <a
-                    href="#"
+                  <Link
+                    to="/services"
                     className="hover:text-emerald-600 transition-colors"
                   >
                     {link}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

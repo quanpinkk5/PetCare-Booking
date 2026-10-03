@@ -1,4 +1,5 @@
 import { Heart, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const BusinessCard = ({
     business,
@@ -8,8 +9,11 @@ const BusinessCard = ({
     rating,
     tags,
     img,
+    id,
 }) => {
-    const card = business || { name, location, price, rating, tags, img };
+    const card = business || { id, name, location, price, rating, tags, img };
+    const businessId = card.id || 1;
+    const detailUrl = `/businesses/${businessId}`;
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition flex flex-col justify-between group">
@@ -17,7 +21,7 @@ const BusinessCard = ({
             <div>
 
                 {/* Image */}
-                <div className="relative h-28 w-full bg-gray-100 overflow-hidden">
+                <Link to={detailUrl} className="block relative h-28 w-full bg-gray-100 overflow-hidden">
 
                     <img
                         alt={card.name}
@@ -32,20 +36,27 @@ const BusinessCard = ({
 
                     {/* Favorite */}
                     <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                         className="absolute top-2 right-2 text-white drop-shadow hover:text-red-500 transition"
                         aria-label="Yêu thích"
                     >
                         <Heart size={16} />
                     </button>
 
-                </div>
+                </Link>
 
                 {/* Content */}
                 <div className="p-2.5">
 
-                    <h3 className="font-bold text-xs text-gray-900 truncate">
-                        {card.name}
-                    </h3>
+                    <Link to={detailUrl} className="block hover:text-emerald-600 transition-colors">
+                        <h3 className="font-bold text-xs text-gray-900 hover:text-emerald-600 transition-colors truncate">
+                            {card.name}
+                        </h3>
+                    </Link>
 
                     <p className="text-[10px] text-gray-500 mt-0.5 flex items-center truncate">
                         <MapPin
@@ -87,13 +98,19 @@ const BusinessCard = ({
             {/* Actions */}
             <div className="p-2.5 pt-0 grid grid-cols-2 gap-1.5 mt-2">
 
-                <button className="w-full text-center border border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-medium py-1 rounded transition-colors">
+                <Link
+                    to={detailUrl}
+                    className="w-full text-center border border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-medium py-1 rounded transition-colors inline-flex items-center justify-center"
+                >
                     Đặt lịch
-                </button>
+                </Link>
 
-                <button className="w-full text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-medium py-1 rounded transition-colors">
+                <Link
+                    to={detailUrl}
+                    className="w-full text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-medium py-1 rounded transition-colors inline-flex items-center justify-center font-semibold"
+                >
                     Xem chi tiết
-                </button>
+                </Link>
 
             </div>
 

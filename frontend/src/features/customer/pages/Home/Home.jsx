@@ -18,35 +18,11 @@ import ServiceCategoryBar from "../../components/ServiceCategoryBar";
 import HowItWorks from "../../components/HowItWorks";
 import ReviewCard from "../../components/ReviewCard";
 import BusinessCard from "../../components/BusinessCard";
+import { mockBusinesses } from "../../services/mockBusinesses";
 
 const Home = () => {
     const navigate = useNavigate();
-    const businesses = [
-        {
-            name: "Puppy Love Pet Spa",
-            location: "Quận 1, TP. Hồ Chí Minh",
-            price: "150.000đ",
-            rating: "4.9",
-            tags: ["Tắm & vệ sinh", "Grooming", "Spa"],
-            img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAxJAKpJxzroTUY5rGOZQ9Ux9UIVSC9Y8i3d4j4KCJNlBx_nd6jc7SRytqtIRVx8eX3MSqWo_6iu0pB__rO4C4iSDMKKvSgz9tPVzmIA8r5Trmgs4Pr3uuCyabdqxVLqZMX9vP_ZDbnpe70FpndVw58SNXloCJHJFmm23NoJI71JLi-9XTGyxZwgrefCk7714E2gJnAxWVhlexSYlVICwVaWtfJwL1A9u693nnMBMmGcgCW75qcYdow",
-        },
-        {
-            name: "Meow House Quận 3",
-            location: "Quận 3, TP. Hồ Chí Minh",
-            price: "120.000đ",
-            rating: "4.8",
-            tags: ["Spa", "Gửi thú cưng", "Cắt móng"],
-            img: "https://lh3.googleusercontent.com/aida-public/AB6AXuD7xDQ-G2o-KLwfTFtFYv3YTDSFH9oJLkFCSYatlC38-22-lhq8pfrmCa-q5df8dzajnCXUckSiP3wQQlpfuEAhVmGiVwhg2fBjNRvhgJ802owve2OUGP7yYhDWQ9jcMIe0ZTNYLMVPSFgccNfqJ3Jb0p96TKdkQe-jXb1xbZ75JZw3K-w5-c5KsTWJDZqbLnFLJodVYhvDif8vkBQO8EVE9IWsV56Au36HwATA6PJmeNQZjNfhlquG",
-        },
-        {
-            name: "Lucky Pet Hotel",
-            location: "Phú Nhuận, TP. Hồ Chí Minh",
-            price: "200.000đ",
-            rating: "4.8",
-            tags: ["Lưu trú qua đêm", "Spa", "Tắm"],
-            img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAK1aGGM6S0GpQBkjoy3WtYH7S8VEvVLg8psnjCziVQ2KFPUWlzmcz9ZzwKN3Dsif1F__B0zPwRDQU0ZnoqOXjBywZrU8jpEaOvzutsYf4a2pGYP_qjySjODvSDkvlXk_AgX013qvWc_V3ZYCSpRoZyXJEqO5VhKv8c1FJvytBV_tLIh9SipZuZa8OjwtnM5wF8a0sw4d8f5pqQfBcIx24nFHiSmliOe7-Y4wiCtqzDNyGl6ru9IBbR",
-        },
-    ];
+    const businesses = mockBusinesses.slice(1, 4);
 
     const reviews = [
         {
@@ -105,7 +81,10 @@ const Home = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
                                     {/* Service */}
-                                    <div className="p-2.5 rounded-xl border border-slate-200/80 hover:border-emerald-500 transition-colors bg-slate-50/50 flex items-center justify-between group cursor-pointer">
+                                    <div
+                                        onClick={() => navigate("/services")}
+                                        className="p-2.5 rounded-xl border border-slate-200/80 hover:border-emerald-500 transition-colors bg-slate-50/50 flex items-center justify-between group cursor-pointer"
+                                    >
 
                                         <div className="flex items-center gap-3">
 
@@ -311,9 +290,9 @@ const Home = () => {
             </section>
 
             {/* ================= SERVICE CATEGORY ================= */}
-            <div id="dich-vu">
+            {/* <div id="dich-vu">
                 <ServiceCategoryBar />
-            </div>
+            </div> */}
 
             {/* ================= MAIN CONTENT ================= */}
             <main className="max-w-[1240px] mx-auto px-4 sm:px-6 py-14">

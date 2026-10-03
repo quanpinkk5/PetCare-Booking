@@ -47,12 +47,16 @@ const CustomerHeader = () => {
             Cơ sở
           </NavLink>
 
-          <a
-            href="#dich-vu"
-            className="hover:text-emerald-600 transition-colors py-1"
+          <NavLink
+            to="/services"
+            className={({ isActive }) =>
+              isActive
+                ? "text-emerald-600 font-semibold relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-emerald-600 after:rounded-full"
+                : "hover:text-emerald-600 transition-colors py-1"
+            }
           >
             Dịch vụ
-          </a>
+          </NavLink>
 
           <Link
             to="/businesses"
