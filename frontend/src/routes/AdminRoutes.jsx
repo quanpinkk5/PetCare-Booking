@@ -14,6 +14,7 @@ const AdminRoutes = () => {
 
         {/* Users management */}
         <Route path="users" element={<UserList />} />
+        <Route path="users/detail" element={<UserDetail />} />
         <Route path="users/:id" element={<UserDetail />} />
 
         {/* Fallback route within admin */}

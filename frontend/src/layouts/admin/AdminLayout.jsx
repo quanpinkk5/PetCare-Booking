@@ -18,9 +18,16 @@ const titlesMap = {
 
 export default function AdminLayout({ children }) {
   const location = useLocation();
-  const currentTitle =
-    titlesMap[location.pathname] ||
-    (location.pathname.startsWith('/admin/users') ? 'Quản lý người dùng' : 'Tổng quan hệ thống');
+  let currentTitle = titlesMap[location.pathname];
+  if (!currentTitle) {
+    if (location.pathname.startsWith('/admin/users/')) {
+      currentTitle = 'Chi tiết người dùng';
+    } else if (location.pathname.startsWith('/admin/users')) {
+      currentTitle = 'Quản lý người dùng';
+    } else {
+      currentTitle = 'Tổng quan hệ thống';
+    }
+  }
 
   return (
     <div className="bg-[#f8fafc] text-slate-800 font-sans antialiased min-h-screen flex flex-col">
