@@ -58,12 +58,16 @@ const CustomerHeader = () => {
             Dịch vụ
           </NavLink>
 
-          <Link
-            to="/businesses"
-            className="hover:text-emerald-600 transition-colors py-1"
+          <NavLink
+            to="/booking"
+            className={({ isActive }) =>
+              isActive
+                ? "text-emerald-600 font-semibold relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-emerald-600 after:rounded-full"
+                : "hover:text-emerald-600 transition-colors py-1"
+            }
           >
             Đặt lịch
-          </Link>
+          </NavLink>
         </nav>
 
         {/* User Actions */}
@@ -97,7 +101,7 @@ const CustomerHeader = () => {
 
           {/* Booking Button */}
           <Link
-            to="/businesses"
+            to="/booking"
             className="ml-2 hidden sm:inline-flex items-center gap-2 bg-[#f05252] hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 text-sm"
           >
             <CalendarCheck size={18} />

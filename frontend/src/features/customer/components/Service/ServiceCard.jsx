@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { MapPin } from "lucide-react";
 
 const ServiceCard = ({ service }) => {
@@ -76,12 +77,12 @@ const ServiceCard = ({ service }) => {
           </span>
         </div>
 
-        <a
-          href="#"
+        <Link
+          to="/booking"
           className="text-emerald-600 font-semibold hover:underline text-[11px] border border-emerald-200 px-2 py-0.5 rounded-lg"
         >
-          Xem chi tiết
-        </a>
+          Đặt lịch
+        </Link>
 
       </div>
     </div>
