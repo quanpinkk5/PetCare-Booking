@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Bath,
   Scissors,
@@ -12,9 +12,9 @@ import {
   PawPrint,
 } from "lucide-react";
 
-import FacilityHero from "../../components/FacilityHero";
-import InPageTabs from "../../components/InPageTabs";
-import BookingSidebar from "../../components/BookingSidebar";
+import FacilityHero from "../../components/BusinessDetail/FacilityHero";
+import InPageTabs from "../../components/BusinessDetail/InPageTabs";
+import BookingSidebar from "../../components/BusinessDetail/BookingSidebar";
 import { getBusinessById } from "../../services/mockBusinesses";
 
 const BusinessDetail = () => {
@@ -161,6 +161,7 @@ const IntroductionSection = ({ business }) => {
 ========================= */
 
 const FeaturedServices = () => {
+  const navigate = useNavigate();
   const services = [
     {
       icon: Bath,
@@ -260,7 +261,11 @@ const FeaturedServices = () => {
                 </div>
               </div>
 
-              <button className="mt-2.5 w-full py-1.5 rounded-lg border border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-[11px] font-semibold transition">
+              <button
+                type="button"
+                onClick={() => navigate("/booking")}
+                className="mt-2.5 w-full py-1.5 rounded-lg border border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-[11px] font-semibold transition"
+              >
                 Chọn dịch vụ
               </button>
             </div>
@@ -276,6 +281,7 @@ const FeaturedServices = () => {
 ========================= */
 
 const AvailableSlots = () => {
+  const navigate = useNavigate();
   const slots = [
     { time: "09:00", status: "Còn trống", available: true },
     { time: "10:30", status: "Còn trống", available: true },
@@ -295,7 +301,11 @@ const AvailableSlots = () => {
           Lịch trống hôm nay
         </h2>
 
-        <button className="text-xs text-slate-600 hover:text-emerald-600 font-medium flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1 transition">
+        <button
+          type="button"
+          onClick={() => navigate("/booking")}
+          className="text-xs text-slate-600 hover:text-emerald-600 font-medium flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1 transition"
+        >
           <Calendar className="w-3 h-3" />
           <span>Xem lịch đầy đủ</span>
         </button>
@@ -305,23 +315,23 @@ const AvailableSlots = () => {
         {slots.map((slot) => (
           <button
             key={slot.time}
+            type="button"
             disabled={!slot.available}
-            className={`rounded-xl p-2 text-center transition ${
-              slot.available
-                ? "border border-emerald-400 bg-emerald-50/40 hover:bg-emerald-100 text-slate-800"
+            onClick={() => slot.available && navigate("/booking")}
+            className={`rounded-xl p-2 text-center transition ${slot.available
+                ? "border border-emerald-400 bg-emerald-50/40 hover:bg-emerald-100 text-slate-800 cursor-pointer"
                 : "border border-slate-200 bg-slate-50/80 cursor-not-allowed opacity-60 text-slate-400"
-            }`}
+              }`}
           >
             <span className="block text-xs font-bold">
               {slot.time}
             </span>
 
             <span
-              className={`block text-[10px] mt-0.5 ${
-                slot.available
+              className={`block text-[10px] mt-0.5 ${slot.available
                   ? "text-emerald-700 font-medium"
                   : ""
-              }`}
+                }`}
             >
               {slot.status}
             </span>
