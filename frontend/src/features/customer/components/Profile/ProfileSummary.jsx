@@ -119,7 +119,7 @@ const ProfileSummary = ({
           </Link>
 
           <Link
-            to="/booking"
+            to="/my-bookings"
             className="px-1 border-r border-slate-100 hover:bg-slate-50 rounded-lg transition-colors py-1 group"
           >
             <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 mb-0.5 group-hover:text-emerald-600">

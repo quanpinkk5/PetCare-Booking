@@ -7,6 +7,7 @@ import Services from "../features/customer/pages/Services/Services";
 import Booking from "../features/customer/pages/Booking/Booking";
 import MyPets from "../features/customer/pages/MyPets/MyPets";
 import Profile from "../features/customer/pages/Profile/Profile";
+import MyBookings from "../features/customer/pages/MyBookings/MyBookings";
 
 const CustomerRoutes = () => {
   return (
@@ -20,6 +21,7 @@ const CustomerRoutes = () => {
         <Route path="booking/:id" element={<Booking />} />
         <Route path="my-pets" element={<MyPets />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="my-bookings" element={<MyBookings />} />
       </Route>
     </Routes>
   );
