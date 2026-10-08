@@ -319,8 +319,8 @@ const AvailableSlots = () => {
             disabled={!slot.available}
             onClick={() => slot.available && navigate("/booking")}
             className={`rounded-xl p-2 text-center transition ${slot.available
-                ? "border border-emerald-400 bg-emerald-50/40 hover:bg-emerald-100 text-slate-800 cursor-pointer"
-                : "border border-slate-200 bg-slate-50/80 cursor-not-allowed opacity-60 text-slate-400"
+              ? "border border-emerald-400 bg-emerald-50/40 hover:bg-emerald-100 text-slate-800 cursor-pointer"
+              : "border border-slate-200 bg-slate-50/80 cursor-not-allowed opacity-60 text-slate-400"
               }`}
           >
             <span className="block text-xs font-bold">
@@ -329,8 +329,8 @@ const AvailableSlots = () => {
 
             <span
               className={`block text-[10px] mt-0.5 ${slot.available
-                  ? "text-emerald-700 font-medium"
-                  : ""
+                ? "text-emerald-700 font-medium"
+                : ""
                 }`}
             >
               {slot.status}

@@ -4,18 +4,121 @@ import {
     MapPin,
     Banknote,
     Eye,
+    XCircle,
+    CreditCard,
+    MessageSquare,
+    Star,
+    RotateCcw,
 } from "lucide-react";
 
 const BookingCard = ({ booking }) => {
     const ServiceIcon = booking.serviceIcon;
-    const isDetailAction =
-        booking.primaryAction === "Chi tiết" ||
-        booking.primaryAction === "Xem chi tiết" ||
-        booking.primaryAction === "xem thi tiết";
-
-    const displayPrimaryAction = isDetailAction ? "Xem chi tiết" : booking.primaryAction;
-    const PrimaryIcon = isDetailAction ? Eye : booking.primaryIcon;
     const TimeIcon = booking.timeIcon;
+
+    const renderActionButtons = () => {
+        const statusType =
+            booking.statusType ||
+            (booking.status === "Chờ xác nhận"
+                ? "pending"
+                : booking.status === "Đã xác nhận"
+                ? "confirmed"
+                : booking.status === "Đang thực hiện"
+                ? "in-progress"
+                : booking.status === "Hoàn thành"
+                ? "completed"
+                : booking.status === "Đã hủy"
+                ? "cancelled"
+                : "other");
+
+        const viewDetailButton = (
+            <button
+                type="button"
+                className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-teal-700 hover:border-teal-300 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+            >
+                <Eye size={14} className="text-teal-600 shrink-0" />
+                <span>Xem chi tiết</span>
+            </button>
+        );
+
+        switch (statusType) {
+            case "pending": // Chờ xác nhận: [ Xem chi tiết ] & [ Hủy yêu cầu ] (Viền đỏ hoặc xám đậm)
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                        <button
+                            type="button"
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-300 text-rose-600 bg-white hover:bg-rose-50 hover:border-rose-400 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                            <XCircle size={14} className="text-rose-500 shrink-0" />
+                            <span>Hủy yêu cầu</span>
+                        </button>
+                    </div>
+                );
+
+            case "confirmed": // Đã xác nhận: [ Xem chi tiết ] & [ Thanh toán ngay ]
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                        <button
+                            type="button"
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        >
+                            <CreditCard size={14} className="shrink-0" />
+                            <span>Thanh toán ngay</span>
+                        </button>
+                    </div>
+                );
+
+            case "in-progress": // Đang thực hiện: [ Xem chi tiết ] & [ Chat ]
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                        <button
+                            type="button"
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                            <MessageSquare size={14} className="text-teal-600 shrink-0" />
+                            <span>Chat</span>
+                        </button>
+                    </div>
+                );
+
+            case "completed": // Hoàn thành: [ Xem chi tiết ] & [ Đánh giá ]
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                        <button
+                            type="button"
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                            <Star size={14} className="text-amber-500 fill-amber-500 shrink-0" />
+                            <span>Đánh giá</span>
+                        </button>
+                    </div>
+                );
+
+            case "cancelled": // Đã hủy: [ Xem chi tiết ] & [ Đặt lại ]
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                        <button
+                            type="button"
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        >
+                            <RotateCcw size={14} className="shrink-0" />
+                            <span>Đặt lại</span>
+                        </button>
+                    </div>
+                );
+
+            default:
+                return (
+                    <div className="flex items-center gap-2 w-full">
+                        {viewDetailButton}
+                    </div>
+                );
+        }
+    };
 
     return (
         <article
@@ -24,7 +127,7 @@ const BookingCard = ({ booking }) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 
                 {/* Pet */}
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3.5 shrink-0">
                     <img
                         alt={booking.petName}
                         src={booking.img}
@@ -53,36 +156,36 @@ const BookingCard = ({ booking }) => {
                 </div>
 
                 {/* Service */}
-                <div className="flex-1 sm:px-4 space-y-1 text-xs">
+                <div className="flex-1 min-w-0 sm:px-2 space-y-1 text-xs">
                     <div className="flex items-center gap-2 font-semibold text-slate-800">
                         <ServiceIcon
                             size={14}
-                            className="text-teal-600"
+                            className="text-teal-600 shrink-0"
                         />
 
-                        <span>{booking.service}</span>
+                        <span className="truncate">{booking.service}</span>
                     </div>
 
-                    <p className="text-slate-400 pl-6 text-[11px]">
+                    <p className="text-slate-400 pl-6 text-[11px] line-clamp-2">
                         {booking.serviceDesc}
                     </p>
 
                     <div className="flex items-center gap-2 text-slate-600 pt-1">
                         <MapPin
                             size={14}
-                            className="text-teal-600"
+                            className="text-teal-600 shrink-0"
                         />
 
-                        <span>{booking.location}</span>
+                        <span className="truncate">{booking.location}</span>
                     </div>
                 </div>
 
                 {/* Date */}
-                <div className="space-y-1 text-xs min-w-[140px]">
+                <div className="space-y-1 text-xs shrink-0 sm:min-w-[130px]">
                     <div className="flex items-center gap-2 text-slate-700 font-medium">
                         <Calendar
                             size={14}
-                            className="text-slate-400"
+                            className="text-slate-400 shrink-0"
                         />
 
                         <span>{booking.date}</span>
@@ -92,12 +195,12 @@ const BookingCard = ({ booking }) => {
                         {TimeIcon ? (
                             <TimeIcon
                                 size={12}
-                                className="text-teal-600 ml-0.5"
+                                className="text-teal-600 ml-0.5 shrink-0"
                             />
                         ) : (
                             <Clock
                                 size={14}
-                                className="text-slate-400"
+                                className="text-slate-400 shrink-0"
                             />
                         )}
 
@@ -109,7 +212,7 @@ const BookingCard = ({ booking }) => {
                     <div className="flex items-center gap-2 font-bold text-slate-900 pt-1 text-sm">
                         <Banknote
                             size={14}
-                            className="text-teal-600"
+                            className="text-teal-600 shrink-0"
                         />
 
                         <span>{booking.price}</span>
@@ -117,45 +220,16 @@ const BookingCard = ({ booking }) => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col items-end gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+                <div className="flex flex-col items-center justify-center gap-2.5 w-full sm:w-64 md:w-72 sm:shrink-0 sm:border-l sm:border-slate-100 sm:pl-4 border-t sm:border-t-0 pt-3 sm:pt-0">
 
                     <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${booking.statusBadge}`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border inline-flex items-center justify-center gap-1.5 text-center shadow-2xs tracking-wide ${booking.statusBadge}`}
                     >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
                         {booking.status}
                     </span>
 
-                    <div className="flex items-center gap-2">
-
-                        {booking.secondaryAction && (
-                            <button className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 bg-slate-50 hover:bg-teal-50 rounded-lg transition-colors border border-slate-200 cursor-pointer">
-                                {booking.secondaryAction}
-                            </button>
-                        )}
-
-                        {displayPrimaryAction && (
-                            <button
-                                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${PrimaryIcon
-                                        ? "text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200"
-                                        : "text-white bg-teal-600 hover:bg-teal-700 shadow-sm"
-                                    }`}
-                            >
-                                {PrimaryIcon && (
-                                    <PrimaryIcon
-                                        size={14}
-                                        className={
-                                            displayPrimaryAction === "Đặt lại"
-                                                ? ""
-                                                : "text-teal-600"
-                                        }
-                                    />
-                                )}
-
-                                <span>{displayPrimaryAction}</span>
-                            </button>
-                        )}
-
-                    </div>
+                    {renderActionButtons()}
                 </div>
 
             </div>
