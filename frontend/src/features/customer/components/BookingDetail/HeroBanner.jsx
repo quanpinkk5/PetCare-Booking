@@ -1,7 +1,35 @@
 import React from "react";
-import { PawPrint } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { PawPrint, ArrowLeft } from "lucide-react";
 
-const HeroBanner = () => {
+const HeroBanner = ({ booking }) => {
+    const navigate = useNavigate();
+
+    const statusType =
+        booking?.statusType ||
+        (booking?.status?.toLowerCase().includes("chờ")
+            ? "pending"
+            : booking?.status?.toLowerCase().includes("đã xác nhận")
+            ? "confirmed"
+            : booking?.status?.toLowerCase().includes("đang thực hiện")
+            ? "in-progress"
+            : booking?.status?.toLowerCase().includes("hoàn thành")
+            ? "completed"
+            : booking?.status?.toLowerCase().includes("hủy")
+            ? "cancelled"
+            : "pending");
+
+    const statusBadgeClass =
+        statusType === "pending"
+            ? "bg-amber-50 text-amber-700 border-amber-200"
+            : statusType === "confirmed"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : statusType === "in-progress"
+            ? "bg-blue-50 text-blue-700 border-blue-200"
+            : statusType === "completed"
+            ? "bg-teal-50 text-teal-700 border-teal-200"
+            : "bg-slate-100 text-slate-600 border-slate-200";
+
     return (
         <section className="relative bg-gradient-to-r from-[#EBF9F3] via-[#EFFBF6] to-[#E5F7EE] rounded-2xl p-6 md:p-8 mb-6 overflow-hidden border border-emerald-100/60 shadow-sm">
             {/* Background decoration */}
@@ -16,38 +44,62 @@ const HeroBanner = () => {
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {/* Title */}
                 <div>
-                    <nav className="flex items-center gap-2 text-[12px] text-slate-500 mb-2 font-medium">
-                        <a
-                            href="#"
-                            className="hover:text-emerald-600 transition"
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/my-bookings")}
+                            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-emerald-700 font-semibold bg-white/80 hover:bg-white px-2.5 py-1 rounded-lg border border-emerald-100 transition cursor-pointer shadow-2xs"
                         >
-                            Trang chủ
-                        </a>
+                            <ArrowLeft size={13} />
+                            <span>Quay lại</span>
+                        </button>
 
-                        <span>/</span>
+                        <span className="text-slate-300">|</span>
 
-                        <a
-                            href="#"
-                            className="hover:text-emerald-600 transition"
-                        >
-                            Lịch đặt của tôi
-                        </a>
+                        <nav className="flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+                            <Link
+                                to="/"
+                                className="hover:text-emerald-600 transition"
+                            >
+                                Trang chủ
+                            </Link>
 
-                        <span>/</span>
+                            <span>/</span>
 
-                        <span className="text-slate-700">
-                            Chi tiết lịch đặt
-                        </span>
-                    </nav>
+                            <Link
+                                to="/my-bookings"
+                                className="hover:text-emerald-600 transition"
+                            >
+                                Lịch đặt của tôi
+                            </Link>
 
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
-                        Chi tiết{" "}
-                        <span className="text-emerald-600">
-                            lịch đặt
-                        </span>
-                    </h1>
+                            <span>/</span>
 
-                    <p className="text-slate-600 text-sm mt-1 max-w-xl">
+                            <span className="text-slate-700 font-semibold">
+                                Chi tiết lịch đặt
+                            </span>
+                        </nav>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap mt-1">
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+                            Chi tiết lịch đặt{" "}
+                            {booking?.id && (
+                                <span className="text-emerald-700 font-mono text-xl md:text-2xl font-bold bg-white/70 px-2.5 py-0.5 rounded-xl border border-emerald-200/80 shadow-2xs">
+                                    #{booking.id}
+                                </span>
+                            )}
+                        </h1>
+
+                        {booking?.status && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5 shadow-2xs ${statusBadgeClass}`}>
+                                <span className="w-2 h-2 rounded-full bg-current opacity-80" />
+                                {booking.status}
+                            </span>
+                        )}
+                    </div>
+
+                    <p className="text-slate-600 text-sm mt-1.5 max-w-xl">
                         Theo dõi thông tin đặt lịch, tiến trình dịch vụ,
                         trạng thái thanh toán và nhật ký chăm sóc của
                         thú cưng.

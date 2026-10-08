@@ -45,32 +45,62 @@ const TIMELINE_STEPS = [
     },
 ];
 
-const BookingTimeline = () => {
+const BookingTimeline = ({ statusStep = 2, statusType = "pending" }) => {
+    const progressWidthClass =
+        statusType === "cancelled"
+            ? "w-0"
+            : statusStep <= 1
+            ? "w-0"
+            : statusStep === 2
+            ? "w-1/4"
+            : statusStep === 3
+            ? "w-2/4"
+            : statusStep === 4
+            ? "w-3/4"
+            : "w-full";
+
+    const currentStepObj = TIMELINE_STEPS.find((s) => s.id === statusStep) || TIMELINE_STEPS[1];
+
     return (
-        <section className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-            <h2 className="font-bold text-slate-800 text-base mb-6">
-                Tiến trình xử lý
-            </h2>
+        <section className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-100 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h2 className="font-bold text-slate-800 text-sm sm:text-base">
+                        Tiến trình xử lý
+                    </h2>
+                </div>
+                <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    Bước {statusStep}/5: <span className="font-bold">{currentStepObj.title}</span>
+                </div>
+            </div>
 
             <div className="relative flex items-center justify-between">
                 {/* Background line */}
                 <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
 
                 {/* Completed line */}
-                <div className="absolute top-4 left-6 w-1/4 h-0.5 bg-emerald-500 -z-0" />
+                <div className={`absolute top-4 left-6 ${progressWidthClass} h-0.5 bg-emerald-500 transition-all duration-500 -z-0`} />
 
                 {TIMELINE_STEPS.map((step) => {
                     const Icon = step.icon;
 
-                    let circleClass = "";
+                    let stepState = "pending";
+                    if (step.id < statusStep) {
+                        stepState = "completed";
+                    } else if (step.id === statusStep) {
+                        stepState = statusType === "cancelled" ? "cancelled" : "active";
+                    }
 
-                    if (step.state === "completed") {
+                    let circleClass = "";
+                    if (stepState === "completed") {
                         circleClass = "bg-emerald-600";
-                    } else if (step.state === "active") {
+                    } else if (stepState === "active") {
                         circleClass = "bg-amber-500 animate-pulse";
+                    } else if (stepState === "cancelled") {
+                        circleClass = "bg-rose-500";
                     } else {
-                        circleClass =
-                            "bg-slate-100 border border-slate-200";
+                        circleClass = "bg-slate-100 border border-slate-200";
                     }
 
                     return (
@@ -84,7 +114,7 @@ const BookingTimeline = () => {
                                 <Icon
                                     size={14}
                                     className={
-                                        step.state === "pending"
+                                        stepState === "pending"
                                             ? "text-slate-400"
                                             : "text-white"
                                     }
@@ -92,21 +122,25 @@ const BookingTimeline = () => {
                             </div>
 
                             <span
-                                className={`mt-2 text-xs font-bold ${step.state === "active"
+                                className={`mt-2 text-xs font-bold ${
+                                    stepState === "active"
                                         ? "text-amber-600"
-                                        : step.state === "completed"
-                                            ? "text-slate-800"
-                                            : "text-slate-500 font-medium"
-                                    }`}
+                                        : stepState === "completed"
+                                        ? "text-slate-800"
+                                        : stepState === "cancelled"
+                                        ? "text-rose-600"
+                                        : "text-slate-500 font-medium"
+                                }`}
                             >
                                 {step.title}
                             </span>
 
                             <span
-                                className={`text-[10px] ${step.time === "-"
+                                className={`text-[10px] ${
+                                    step.time === "-"
                                         ? "text-transparent select-none"
                                         : "text-slate-400"
-                                    }`}
+                                }`}
                             >
                                 {step.time}
                             </span>

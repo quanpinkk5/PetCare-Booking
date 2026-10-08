@@ -1,68 +1,46 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 import HeroBanner from "../../components/BookingDetail/HeroBanner";
-import BookingOverview from "../../components/BookingDetail/BookingOverview";
 import BookingTimeline from "../../components/BookingDetail/BookingTimeline";
 import BookingDetails from "../../components/BookingDetail/BookingDetails";
 import CareJournal from "../../components/BookingDetail/CareJournal";
+import BookingOverview from "../../components/BookingDetail/BookingOverview";
 import BookingSidebar from "../../components/BookingDetail/BookingSidebar";
-
-const BOOKING_DATA = {
-  id: "BK20260825001",
-
-  status: "Đang chờ xác nhận",
-
-  statusStep: 2,
-
-  date: "25/08/2026 (T3)",
-
-  time: "14:00 - 16:00",
-
-  totalPrice: "300.000đ",
-
-  pet: {
-    name: "Milo",
-    gender: "♂",
-    breed: "Golden Retriever",
-    weight: "28kg",
-    personality: "Thân thiện",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAsM5tveS1PshRqyTmh4FGwNs79bGmbM5Sg4bjj0HRbRjRj6BEYL157-uy9pap8V6Pwuhwfli9rHUOPPZ3TxX2Y8FslKlWLDJr6n66NARGcg7XbcwijCXbBBjj0peLELthjK7n_cX61YGcly-cyfITGYWtHKb4roU20DnIoN1N-LXFX5_36U5Dhj9uPoDnpnfK1mnsucnwlb2VdNVjcZP0fP7Vdq0VcCUwrTsoOANU",
-  },
-
-  service: {
-    name: "Grooming cắt tỉa",
-    desc: "Cắt tỉa lông, tắm, vệ sinh tai",
-    duration: "120 phút",
-  },
-
-  facility: {
-    name: "Happy Pet - Cầu Giấy",
-    address: "123 Trần Thái Tông, Cầu Giấy, Hà Nội",
-    phone: "0988 123 456",
-  },
-
-  note: "Milo hơi sợ máy sấy. Không sử dụng nước hoa quá mạnh.",
-};
+import { getBookingById } from "../../services/mockBookings";
 
 const BookingDetail = () => {
+  const { id } = useParams();
+  const booking = getBookingById(id);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [id]);
+
   return (
-    <main className="max-w-[1380px] w-full mx-auto px-6 py-5">
-      <HeroBanner />
+    <main className="max-w-[1380px] w-full mx-auto px-4 sm:px-6 py-6">
+      {/* 1. Header Banner */}
+      <HeroBanner booking={booking} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main content */}
+      {/* 2. Timeline tiến trình xử lý toàn màn hình - Trực quan & nổi bật */}
+      <BookingTimeline
+        statusStep={booking.statusStep}
+        statusType={booking.statusType}
+      />
+
+      {/* 3. Lưới nội dung 2 cột cân xứng hoàn hảo (8 cột Trái / 4 cột Phải) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Cột Trái (8 cột) - Thông tin thú cưng, dịch vụ, cơ sở & nhật ký chăm sóc */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <BookingOverview booking={BOOKING_DATA} />
-
-          <BookingTimeline />
-
-          <BookingDetails booking={BOOKING_DATA} />
-
-          <CareJournal />
+          <BookingDetails booking={booking} />
+          <CareJournal booking={booking} />
         </div>
 
-        {/* Sidebar */}
-        <BookingSidebar />
+        {/* Cột Phải (4 cột) - Thanh toán, Cụm nút hành động 4 giai đoạn, Chính sách & Hỗ trợ (Sticky) */}
+        <div className="lg:col-span-4 sticky top-6 self-start flex flex-col gap-5">
+          <BookingOverview booking={booking} />
+          <BookingSidebar />
+        </div>
       </div>
     </main>
   );

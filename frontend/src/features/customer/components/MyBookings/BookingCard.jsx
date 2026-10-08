@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
     Calendar,
     Clock,
@@ -12,8 +13,13 @@ import {
 } from "lucide-react";
 
 const BookingCard = ({ booking }) => {
+    const navigate = useNavigate();
     const ServiceIcon = booking.serviceIcon;
     const TimeIcon = booking.timeIcon;
+
+    const handleViewDetail = () => {
+        navigate(`/my-bookings/${booking.id}`);
+    };
 
     const renderActionButtons = () => {
         const statusType =
@@ -33,6 +39,7 @@ const BookingCard = ({ booking }) => {
         const viewDetailButton = (
             <button
                 type="button"
+                onClick={handleViewDetail}
                 className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-teal-700 hover:border-teal-300 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
             >
                 <Eye size={14} className="text-teal-600 shrink-0" />
@@ -103,6 +110,7 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
+                            onClick={() => navigate("/booking")}
                             className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                             <RotateCcw size={14} className="shrink-0" />
@@ -131,15 +139,22 @@ const BookingCard = ({ booking }) => {
                     <img
                         alt={booking.petName}
                         src={booking.img}
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-slate-100 flex-shrink-0"
+                        onClick={handleViewDetail}
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-slate-100 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                     />
 
                     <div className="space-y-1">
-                        <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
+                        <span
+                            onClick={handleViewDetail}
+                            className="text-xs font-bold text-teal-600 uppercase tracking-wider cursor-pointer hover:underline"
+                        >
                             {booking.id}
                         </span>
 
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                        <h3
+                            onClick={handleViewDetail}
+                            className="text-base font-bold text-slate-900 flex items-center gap-1.5 cursor-pointer hover:text-teal-700 transition-colors"
+                        >
                             {booking.petName}
 
                             <span

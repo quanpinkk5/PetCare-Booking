@@ -8,6 +8,7 @@ import Booking from "../features/customer/pages/Booking/Booking";
 import MyPets from "../features/customer/pages/MyPets/MyPets";
 import Profile from "../features/customer/pages/Profile/Profile";
 import MyBookings from "../features/customer/pages/MyBookings/MyBookings";
+import BookingDetail from "../features/customer/pages/BookingDetail/BookingDetail";
 
 const CustomerRoutes = () => {
   return (
@@ -18,10 +19,13 @@ const CustomerRoutes = () => {
         <Route path="businesses/:id" element={<BusinessDetail />} />
         <Route path="services" element={<Services />} />
         <Route path="booking" element={<Booking />} />
-        <Route path="booking/:id" element={<Booking />} />
+        <Route path="booking/:id" element={<BookingDetail />} />
+        <Route path="booking-detail" element={<BookingDetail />} />
+        <Route path="booking-detail/:id" element={<BookingDetail />} />
         <Route path="my-pets" element={<MyPets />} />
         <Route path="profile" element={<Profile />} />
         <Route path="my-bookings" element={<MyBookings />} />
+        <Route path="my-bookings/:id" element={<BookingDetail />} />
       </Route>
     </Routes>
   );
