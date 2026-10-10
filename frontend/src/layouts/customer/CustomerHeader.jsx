@@ -10,7 +10,8 @@ import {
   Clock,
   CreditCard,
   Star,
-  Dog
+  Dog,
+  MessageSquare
 } from "lucide-react";
 
 const CustomerHeader = () => {
@@ -66,10 +67,22 @@ const CustomerHeader = () => {
         {/* User Actions */}
         <div className="flex items-center gap-4">
 
+          {/* Messages
+          <Link
+            to="/messages"
+            aria-label="Tin nhắn"
+            className="relative w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-emerald-600 transition-colors"
+          >
+            <MessageSquare size={19} />
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+              2
+            </span>
+          </Link> */}
+
           {/* Notification */}
           <button
             aria-label="Thông báo"
-            className="relative w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+            className="relative w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
           >
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
@@ -79,7 +92,7 @@ const CustomerHeader = () => {
 
           {/* User Dropdown */}
           <div className="relative flex items-center" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-2 pl-1 cursor-pointer focus:outline-none hover:bg-slate-50 p-1 rounded-lg transition-colors"
             >
@@ -103,6 +116,13 @@ const CustomerHeader = () => {
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                 >
                   <User size={16} /> Thông tin cá nhân
+                </Link>
+                <Link
+                  to="/messages"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                >
+                  <MessageSquare size={16} /> Tin nhắn của tôi
                 </Link>
                 <Link
                   to="/my-pets"
@@ -132,9 +152,9 @@ const CustomerHeader = () => {
                 >
                   <Star size={16} /> Đánh giá của tôi
                 </Link>
-                
+
                 <div className="h-px bg-slate-100 my-1 mx-4"></div>
-                
+
                 <button
                   onClick={() => setIsDropdownOpen(false)}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"

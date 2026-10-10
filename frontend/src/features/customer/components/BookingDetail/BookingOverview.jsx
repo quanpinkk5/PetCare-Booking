@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     CalendarDays,
@@ -51,7 +51,7 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => alert(`Đang kết nối chat với cơ sở ${booking.facility?.name || "PetCare"}...`)}
+                            onClick={() => navigate("/messages")}
                             className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
                         >
                             <MessageCircle size={15} />
@@ -83,7 +83,7 @@ const BookingOverview = ({ booking }) => {
 
                         <button
                             type="button"
-                            onClick={() => alert(`Đang kết nối chat với cơ sở ${booking.facility?.name || "PetCare"}...`)}
+                            onClick={() => navigate("/messages")}
                             className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
                         >
                             <MessageCircle size={15} />
@@ -106,7 +106,7 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => alert(`Đang kết nối chat với cơ sở ${booking.facility?.name || "PetCare"} để hỏi thăm tình hình của bé ${booking.pet?.name || "thú cưng"}...`)}
+                            onClick={() => navigate("/messages")}
                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <MessageCircle size={15} />
@@ -155,7 +155,7 @@ const BookingOverview = ({ booking }) => {
 
                         <button
                             type="button"
-                            onClick={() => alert(`Đang kết nối chat với cơ sở ${booking.facility?.name || "PetCare"}...`)}
+                            onClick={() => navigate("/messages")}
                             className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
                         >
                             <MessageCircle size={14} />
@@ -169,7 +169,7 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => alert(`Đang kết nối chat với cơ sở...`)}
+                            onClick={() => navigate("/messages")}
                             className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
                         >
                             <MessageCircle size={15} />

@@ -82,6 +82,7 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
+                            onClick={() => navigate("/messages")}
                             className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
                         >
                             <MessageSquare size={14} className="text-teal-600 shrink-0" />

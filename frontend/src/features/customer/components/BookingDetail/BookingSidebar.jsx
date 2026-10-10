@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 const BookingSidebar = () => {
+  const navigate = useNavigate();
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
 
   const policyItems = [
@@ -120,11 +122,7 @@ const BookingSidebar = () => {
           <div className="flex flex-col gap-2 pt-1">
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "Đang kết nối chat trực tiếp với bộ phận chăm sóc khách hàng PetCare..."
-                )
-              }
+              onClick={() => navigate("/messages")}
               className="w-full bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs shadow-2xs cursor-pointer"
             >
               <MessageCircle size={14} />

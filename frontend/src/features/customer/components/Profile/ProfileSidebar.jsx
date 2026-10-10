@@ -163,9 +163,16 @@ const ProfileSidebar = ({ pets = [], activities = [] }) => {
               <span>Hotline: 1900 6868</span>
             </div>
             <p className="text-[11px] text-slate-500">Email: support@petcare.vn</p>
+            <Link
+              to="/messages"
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold text-[11px] hover:bg-emerald-700 transition-colors"
+            >
+              <MessageSquare size={13} />
+              <span>Chat trực tiếp với CSKH</span>
+            </Link>
             <button
               onClick={() => setShowSupport(false)}
-              className="w-full text-center text-[11px] text-slate-400 hover:text-slate-600 pt-1"
+              className="w-full text-center text-[11px] text-slate-400 hover:text-slate-600 pt-1 cursor-pointer"
             >
               Thu gọn
             </button>

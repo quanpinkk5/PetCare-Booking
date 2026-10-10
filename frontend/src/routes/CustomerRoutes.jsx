@@ -9,6 +9,7 @@ import MyPets from "../features/customer/pages/MyPets/MyPets";
 import Profile from "../features/customer/pages/Profile/Profile";
 import MyBookings from "../features/customer/pages/MyBookings/MyBookings";
 import BookingDetail from "../features/customer/pages/BookingDetail/BookingDetail";
+import Messages from "../features/customer/pages/Messages/Messages";
 
 const CustomerRoutes = () => {
   return (
@@ -26,6 +27,8 @@ const CustomerRoutes = () => {
         <Route path="profile" element={<Profile />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="my-bookings/:id" element={<BookingDetail />} />
+        <Route path="messages" element={<Messages />} />
+        <Route path="messages/:id" element={<Messages />} />
       </Route>
     </Routes>
   );

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
     Scissors,
     MapPin,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 const BookingSidebar = () => {
+    const navigate = useNavigate();
     return (
         <aside className="lg:col-span-4 space-y-6">
 
@@ -225,7 +227,11 @@ const BookingSidebar = () => {
                 </div>
 
                 <div className="mt-4">
-                    <button className="w-full py-2.5 bg-white hover:bg-teal-50/50 text-teal-700 border border-teal-200 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => navigate("/messages")}
+                        className="w-full py-2.5 bg-white hover:bg-teal-50/50 text-teal-700 border border-teal-200 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
+                    >
                         <MessageSquare size={16} />
                         <span>Chat với PetCare</span>
                     </button>
