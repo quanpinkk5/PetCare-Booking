@@ -1,4 +1,8 @@
-import { PawPrint, Weight } from 'lucide-react';
+import {
+  PawPrint,
+  Weight,
+  CalendarDays,
+} from 'lucide-react';
 
 const pets = [
   {
@@ -6,7 +10,7 @@ const pets = [
     name: 'Milo',
     breed: 'Golden Retriever',
     age: '3 tuổi',
-    weight: '28kg',
+    weight: '28 kg',
     image:
       'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=200&q=80',
   },
@@ -15,7 +19,7 @@ const pets = [
     name: 'Mimi',
     breed: 'British Shorthair',
     age: '2 tuổi',
-    weight: '4.5kg',
+    weight: '4.5 kg',
     image:
       'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=200&q=80',
   },
@@ -24,7 +28,7 @@ const pets = [
     name: 'Lucky',
     breed: 'Poodle',
     age: '1 tuổi',
-    weight: '3.2kg',
+    weight: '3.2 kg',
     image:
       'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80',
   },
@@ -32,84 +36,128 @@ const pets = [
 
 export default function PetsCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
-      <div className="px-6 py-5 border-b border-slate-100">
+      {/* =========================
+          HEADER
+      ========================= */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
 
-        <div className="flex items-center justify-between">
+        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center">
+          <PawPrint
+            size={15}
+            className="text-emerald-600"
+          />
+        </div>
 
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">
-              Thú cưng
-            </h3>
+        <h3 className="text-sm font-bold text-slate-800">
+          Thú cưng sở hữu
+        </h3>
 
-            <p className="text-sm text-slate-500 mt-1">
-              Danh sách thú cưng của người dùng
-            </p>
-          </div>
+      </div>
 
-          <span className="text-sm font-semibold text-slate-500">
-            {pets.length} thú cưng
-          </span>
+
+      {/* =========================
+          PET LIST
+      ========================= */}
+      <div className="p-3">
+
+        <div className="grid grid-cols-3 gap-3">
+
+          {pets.map((pet) => (
+            <div
+              key={pet.id}
+              className="
+                rounded-lg
+                border border-slate-200
+                bg-white
+                p-2.5
+                hover:border-slate-300
+                hover:shadow-sm
+                transition-all
+              "
+            >
+
+              {/* ==================================
+                  IMAGE + NAME + BREED
+              ================================== */}
+              <div className="flex items-center gap-2.5">
+
+                {/* Pet image */}
+                <img
+                  src={pet.image}
+                  alt={pet.name}
+                  className="
+                    w-14
+                    h-14
+                    rounded-lg
+                    object-cover
+                    flex-shrink-0
+                  "
+                />
+
+
+                {/* Pet information */}
+                <div className="min-w-0 flex-1">
+
+                  {/* Name */}
+                  <p className="text-xs font-bold text-slate-800 truncate">
+                    {pet.name}
+                  </p>
+
+                  {/* Breed */}
+                  <p className="text-[10px] text-slate-500 leading-4 mt-0.5">
+                    {pet.breed}
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {/* ==================================
+                  AGE + WEIGHT
+              ================================== */}
+              <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
+
+                {/* Age */}
+                <div className="flex items-center gap-1.5">
+
+                  <CalendarDays
+                    size={11}
+                    className="text-slate-400"
+                  />
+
+                  <span className="text-[10px] text-slate-500">
+                    {pet.age}
+                  </span>
+
+                </div>
+
+
+                {/* Weight */}
+                <div className="flex items-center gap-1.5">
+
+                  <Weight
+                    size={11}
+                    className="text-slate-400"
+                  />
+
+                  <span className="text-[10px] text-slate-500">
+                    {pet.weight}
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+          ))}
 
         </div>
 
       </div>
 
-      <div className="p-6 space-y-4">
-
-        {pets.map((pet) => (
-          <div
-            key={pet.id}
-            className="flex items-center gap-4 p-4 rounded-xl
-                       border border-slate-100 hover:bg-slate-50"
-          >
-
-            <img
-              src={pet.image}
-              alt={pet.name}
-              className="w-16 h-16 rounded-xl object-cover"
-            />
-
-            <div className="flex-1">
-
-              <div className="flex items-center gap-2">
-
-                <h4 className="font-bold text-slate-900">
-                  {pet.name}
-                </h4>
-
-                <PawPrint
-                  size={15}
-                  className="text-slate-400"
-                />
-
-              </div>
-
-              <p className="text-sm text-slate-500 mt-1">
-                {pet.breed}
-              </p>
-
-              <div className="flex items-center gap-4 mt-2">
-
-                <span className="text-xs text-slate-500">
-                  {pet.age}
-                </span>
-
-                <span className="flex items-center gap-1 text-xs text-slate-500">
-                  <Weight size={13} />
-                  {pet.weight}
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-        ))}
-
-      </div>
-
-    </div>
+    </section>
   );
 }

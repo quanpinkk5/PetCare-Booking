@@ -7,16 +7,16 @@ import {
 
 const metrics = [
   {
-    label: 'Tổng booking',
+    title: 'Tổng booking',
     value: '18',
-    growth: '28.4%',
+    growth: '28.6%',
     description: 'so với tháng trước',
     icon: CalendarCheck,
     iconBg: 'bg-blue-50',
     iconColor: 'text-blue-500',
   },
   {
-    label: 'Booking hoàn thành',
+    title: 'Booking hoàn thành',
     value: '15',
     growth: '30.0%',
     description: 'so với tháng trước',
@@ -25,16 +25,16 @@ const metrics = [
     iconColor: 'text-emerald-500',
   },
   {
-    label: 'Tổng chi tiêu',
+    title: 'Tổng chi tiêu',
     value: '6.750.000 đ',
-    growth: '22.4%',
+    growth: '22.5%',
     description: 'so với tháng trước',
     icon: Coins,
     iconBg: 'bg-orange-50',
     iconColor: 'text-orange-500',
   },
   {
-    label: 'Số đánh giá',
+    title: 'Số đánh giá',
     value: '12',
     growth: '20.0%',
     description: 'so với tháng trước',
@@ -46,56 +46,80 @@ const metrics = [
 
 export default function KPIMetricsRow() {
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-3">
 
       {metrics.map((metric) => {
         const Icon = metric.icon;
 
         return (
           <div
-            key={metric.label}
-            className="bg-white rounded-xl border border-slate-200
-                       p-4 shadow-sm min-w-0"
+            key={metric.title}
+            className="
+              bg-white
+              rounded-xl
+              border
+              border-slate-200
+              shadow-sm
+              px-4
+              py-4
+              min-h-[100px]
+            "
           >
 
-            {/* Top */}
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3.5 h-full">
 
+              {/* =========================
+                  ICON
+              ========================= */}
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center
-                  ${metric.iconBg}`}
+                className={`
+                  w-11
+                  h-11
+                  rounded-full
+                  ${metric.iconBg}
+                  flex
+                  items-center
+                  justify-center
+                  flex-shrink-0
+                `}
               >
                 <Icon
-                  size={16}
+                  size={20}
+                  strokeWidth={2}
                   className={metric.iconColor}
                 />
               </div>
 
-            </div>
 
+              {/* =========================
+                  INFORMATION
+              ========================= */}
+              <div className="min-w-0 flex-1">
 
-            {/* Label */}
-            <p className="text-[11px] text-slate-500 mt-3">
-              {metric.label}
-            </p>
+                {/* Title */}
+                <p className="text-[11px] text-slate-500 font-medium leading-4 whitespace-nowrap">
+                  {metric.title}
+                </p>
 
+                {/* Value */}
+                <p className="text-[18px] font-bold text-slate-800 leading-6 mt-0.5 whitespace-nowrap">
+                  {metric.value}
+                </p>
 
-            {/* Value */}
-            <p className="text-lg font-bold text-slate-900 mt-1 whitespace-nowrap">
-              {metric.value}
-            </p>
+                {/* Growth */}
+                <div className="flex items-center gap-1.5 mt-1">
 
+                  <span className="text-[9px] font-semibold text-emerald-500">
+                    ↑ {metric.growth}
+                  </span>
 
-            {/* Growth */}
-            <div className="flex items-center gap-1 mt-2">
+                  <span className="text-[8px] text-slate-400 whitespace-nowrap">
+                    {metric.description}
+                  </span>
 
-              <span className="text-[10px] font-semibold text-emerald-600">
-                ↑ {metric.growth}
-              </span>
+                </div>
 
-              <span className="text-[9px] text-slate-400">
-                {metric.description}
-              </span>
+              </div>
 
             </div>
 

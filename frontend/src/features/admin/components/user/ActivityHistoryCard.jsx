@@ -1,110 +1,111 @@
 import {
-  User,
+  History,
+  UserPlus,
   CalendarCheck,
-  Coins,
+  CreditCard,
   Star,
 } from 'lucide-react';
 
 const activities = [
   {
-    icon: User,
-    title: 'Tạo tài khoản',
-    description: 'Người dùng đăng ký tài khoản',
-    time: '12/02/2025',
+    id: 1,
+    date: '12/02/2025',
+    time: '14:30',
+    title: 'Đăng ký tài khoản',
+    source: 'Hệ thống',
+    icon: UserPlus,
   },
   {
+    id: 2,
+    date: '12/02/2025',
+    time: '16:20',
+    title: 'Tạo booking #BK250212-0087',
+    source: 'Happy Paws Spa',
     icon: CalendarCheck,
-    title: 'Đặt lịch #BK250212-0087',
-    description: 'Người dùng tạo một booking mới',
-    time: '20/02/2025',
   },
   {
-    icon: Coins,
+    id: 3,
+    date: '12/02/2025',
+    time: '16:45',
     title: 'Thanh toán thành công',
-    description: 'Thanh toán booking #BK250212-0087',
-    time: '20/02/2025',
+    source: 'VNPAY',
+    icon: CreditCard,
   },
   {
+    id: 4,
+    date: '12/02/2025',
+    time: '17:10',
+    title: 'Gửi đánh giá 5 sao',
+    source: 'Happy Paws Spa',
     icon: Star,
-    title: 'Đánh giá dịch vụ',
-    description: 'Người dùng đánh giá 5 sao',
-    time: '22/02/2025',
   },
 ];
 
 export default function ActivityHistoryCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center">
+          <History size={15} className="text-emerald-500" />
+        </div>
 
-      <div className="px-6 py-5 border-b border-slate-100">
-        <h3 className="text-lg font-bold text-slate-900">
+        <h3 className="text-sm font-semibold text-slate-800">
           Lịch sử hoạt động
         </h3>
-
-        <p className="text-sm text-slate-500 mt-1">
-          Các hoạt động gần đây của tài khoản
-        </p>
       </div>
 
-      <div className="p-6">
+      {/* Activity timeline */}
+      <div className="px-4 py-2">
+        <div className="relative">
+          {/* Vertical timeline line */}
+          <div className="absolute left-[5px] top-3 bottom-3 w-px bg-emerald-100" />
 
-        <div className="space-y-6">
-
-          {activities.map((activity, index) => {
-
+          {activities.map((activity) => {
             const Icon = activity.icon;
 
             return (
               <div
-                key={index}
-                className="flex gap-4"
+                key={activity.id}
+                className="relative flex items-center min-h-[32px] py-1"
               >
+                {/* Timeline dot */}
+                <div className="relative z-10 w-[11px] h-[11px] rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-100 flex-shrink-0" />
 
-                <div className="relative">
+                {/* Date + time */}
+                <div className="ml-3 w-[82px] flex-shrink-0">
+                  <p className="text-[9px] text-slate-400 leading-tight">
+                    {activity.date}
+                  </p>
 
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                    <Icon
-                      size={18}
-                      className="text-slate-500"
-                    />
-                  </div>
-
-                  {index !== activities.length - 1 && (
-                    <div className="absolute top-10 left-1/2 -translate-x-1/2 w-px h-10 bg-slate-200" />
-                  )}
-
+                  <p className="text-[9px] text-slate-400 leading-tight mt-0.5">
+                    {activity.time}
+                  </p>
                 </div>
 
-                <div className="flex-1">
+                {/* Activity */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Icon
+                    size={11}
+                    className="text-slate-400 flex-shrink-0"
+                  />
 
-                  <div className="flex items-start justify-between gap-4">
-
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {activity.title}
-                      </p>
-
-                      <p className="text-sm text-slate-500 mt-1">
-                        {activity.description}
-                      </p>
-                    </div>
-
-                    <span className="text-xs text-slate-400 whitespace-nowrap">
-                      {activity.time}
-                    </span>
-
-                  </div>
-
+                  <span className="text-[10px] font-medium text-slate-700 truncate">
+                    {activity.title}
+                  </span>
                 </div>
 
+                {/* Source */}
+                <div className="w-[90px] text-right flex-shrink-0">
+                  <span className="text-[9px] text-slate-400 truncate block">
+                    {activity.source}
+                  </span>
+                </div>
               </div>
             );
           })}
-
         </div>
-
       </div>
-
-    </div>
+    </section>
   );
 }

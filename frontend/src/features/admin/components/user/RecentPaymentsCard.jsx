@@ -1,113 +1,122 @@
+
 import {
   CreditCard,
   ArrowRight,
-  CheckCircle2,
 } from 'lucide-react';
 
 const payments = [
   {
-    code: '#PAY250220-0087',
-    booking: '#BK250212-0087',
-    method: 'Chuyển khoản',
-    date: '20/02/2025',
-    amount: '200.000đ',
+    code: 'TXN250522-0011',
+    service: 'Spa thư giãn',
+    amount: '800.000 đ',
+    method: 'VNPAY',
+    time: '22/05/2025 14:40',
+    status: 'Thành công',
   },
   {
-    code: '#PAY250218-0064',
-    booking: '#BK250210-0064',
-    method: 'VNPay',
-    date: '18/02/2025',
-    amount: '150.000đ',
-  },
-  {
-    code: '#PAY250210-0041',
-    booking: '#BK250205-0041',
+    code: 'TXN250515-0008',
+    service: 'Tắm & Sấy',
+    amount: '450.000 đ',
     method: 'MoMo',
-    date: '10/02/2025',
-    amount: '300.000đ',
+    time: '15/05/2025 16:30',
+    status: 'Thành công',
+  },
+  {
+    code: 'TXN250508-0006',
+    service: 'Grooming cơ bản',
+    amount: '650.000 đ',
+    method: 'VNPAY',
+    time: '08/05/2025 11:15',
+    status: 'Thành công',
   },
 ];
 
 export default function RecentPaymentsCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-
-        <div>
-          <h3 className="text-lg font-bold text-slate-900">
-            Thanh toán gần đây
-          </h3>
-
-          <p className="text-sm text-slate-500 mt-1">
-            Các giao dịch gần nhất
-          </p>
-        </div>
-
-        <CreditCard
-          size={20}
-          className="text-slate-400"
-        />
-
-      </div>
-
-      <div className="divide-y divide-slate-100">
-
-        {payments.map((payment) => (
-
-          <div
-            key={payment.code}
-            className="p-5 hover:bg-slate-50"
-          >
-
-            <div className="flex items-start justify-between gap-4">
-
-              <div>
-
-                <p className="font-semibold text-slate-900">
-                  {payment.code}
-                </p>
-
-                <p className="text-sm text-slate-700 mt-1">
-                  {payment.booking}
-                </p>
-
-                <p className="text-xs text-slate-500 mt-1">
-                  {payment.method} · {payment.date}
-                </p>
-
-              </div>
-
-              <div className="text-right">
-
-                <p className="font-semibold text-slate-900">
-                  {payment.amount}
-                </p>
-
-                <div className="flex items-center justify-end gap-1 mt-2 text-xs font-medium text-emerald-600">
-                  <CheckCircle2 size={14} />
-                  Thành công
-                </div>
-
-              </div>
-
-            </div>
-
+    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-emerald-50 flex items-center justify-center">
+            <CreditCard size={14} className="text-emerald-600" />
           </div>
 
-        ))}
+          <h3 className="text-sm font-bold text-slate-800">
+            Thanh toán gần đây
+          </h3>
+        </div>
 
+        <button
+          type="button"
+          className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+        >
+          Xem tất cả
+          <ArrowRight size={13} />
+        </button>
       </div>
 
-      <button
-        className="w-full px-5 py-4 flex items-center justify-center gap-2
-                   text-sm font-semibold text-slate-700
-                   hover:bg-slate-50 border-t border-slate-100"
-      >
-        Xem tất cả
-        <ArrowRight size={16} />
-      </button>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-100">
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Mã giao dịch
+              </th>
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Dịch vụ
+              </th>
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Số tiền
+              </th>
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Phương thức
+              </th>
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Thời gian
+              </th>
+              <th className="px-3 py-2 text-[10px] font-semibold text-slate-500 whitespace-nowrap">
+                Trạng thái
+              </th>
+            </tr>
+          </thead>
 
-    </div>
+          <tbody className="divide-y divide-slate-100">
+            {payments.map((payment) => (
+              <tr
+                key={payment.code}
+                className="hover:bg-slate-50 transition-colors"
+              >
+                <td className="px-3 py-2 text-[10px] font-medium text-slate-600 whitespace-nowrap">
+                  {payment.code}
+                </td>
+
+                <td className="px-3 py-2 text-[10px] text-slate-700 whitespace-nowrap">
+                  {payment.service}
+                </td>
+
+                <td className="px-3 py-2 text-[10px] font-semibold text-slate-700 whitespace-nowrap">
+                  {payment.amount}
+                </td>
+
+                <td className="px-3 py-2 text-[10px] text-slate-600 whitespace-nowrap">
+                  {payment.method}
+                </td>
+
+                <td className="px-3 py-2 text-[10px] text-slate-500 whitespace-nowrap">
+                  {payment.time}
+                </td>
+
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <span className="inline-flex px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[9px] font-semibold">
+                    {payment.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

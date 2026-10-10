@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   MoreVertical,
   Eye,
@@ -99,8 +99,27 @@ const initialUsers = [
   },
 ];
 
-export default function UserTable() {
+export default function UserTable({ filters }) {
   const [users, setUsers] = useState(initialUsers);
+
+  const filteredUsers = useMemo(() => {
+    if (!filters) return users;
+    return users.filter((user) => {
+      const matchSearch =
+        !filters.search ||
+        user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        user.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+        user.phone.includes(filters.search);
+
+      const matchRole =
+        !filters.role || filters.role === 'all' || user.role === filters.role;
+
+      const matchStatus =
+        !filters.status || filters.status === 'all' || user.status === filters.status;
+
+      return matchSearch && matchRole && matchStatus;
+    });
+  }, [users, filters]);
 
   const toggleStatus = (id) => {
     setUsers((prev) =>
@@ -123,7 +142,7 @@ export default function UserTable() {
             <h3 className="font-bold text-slate-800 text-sm">
               Danh sách tài khoản{' '}
               <span className="text-xs font-normal text-slate-400">
-                ({users.length} người dùng hiển thị)
+                ({filteredUsers.length} người dùng hiển thị)
               </span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -146,7 +165,8 @@ export default function UserTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {users.map((user) => (
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="hover:bg-slate-50/70 transition-colors"
@@ -224,7 +244,7 @@ export default function UserTable() {
 
                       <button
                         onClick={() => toggleStatus(user.id)}
-                        className={`p-1.5 rounded-lg border transition-colors ${
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                           user.status === 'Hoạt động'
                             ? 'border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50/50'
                             : 'border-emerald-200 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100/50'
@@ -239,7 +259,7 @@ export default function UserTable() {
                       </button>
 
                       <button
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                         title="Thao tác khác"
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
@@ -247,7 +267,17 @@ export default function UserTable() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="py-12 text-center text-slate-400 text-sm"
+                >
+                  Không tìm thấy người dùng nào phù hợp.
+                </td>
+              </tr>
+            )}
             </tbody>
           </table>
         </div>
@@ -255,7 +285,9 @@ export default function UserTable() {
 
       {/* Pagination Footer */}
       <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-        <span>Hiển thị 1 - {users.length} trên 12.458 người dùng</span>
+        <span>
+          Hiển thị {filteredUsers.length > 0 ? `1 - ${filteredUsers.length}` : '0'} trên 12.458 người dùng
+        </span>
 
         <div className="flex items-center gap-1.5">
           <button

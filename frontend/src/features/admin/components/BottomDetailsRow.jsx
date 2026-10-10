@@ -1,4 +1,5 @@
 
+import { Link } from 'react-router-dom';
 import {
   Building2,
   Check,
@@ -170,9 +171,12 @@ export default function BottomDetailsRow() {
                     </td>
 
                     <td className="py-3 text-right whitespace-nowrap space-x-1">
-                      <button className="px-2 py-1 text-[11px] rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 transition">
+                      <Link
+                        to="/admin/facilities/2"
+                        className="px-2 py-1 text-[11px] rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 transition inline-block"
+                      >
                         Xem
-                      </button>
+                      </Link>
 
                       <button className="px-2 py-1 text-[11px] rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition">
                         Duyệt
@@ -186,14 +190,14 @@ export default function BottomDetailsRow() {
         </div>
 
         <div className="pt-4 border-t border-slate-100 text-center">
-          <a
-            href="#"
+          <Link
+            to="/admin/facilities"
             className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
           >
             Xem tất cả cơ sở chờ duyệt
 
             <ArrowRight className="w-3.5 h-3.5" />
-          </a>
+          </Link>
         </div>
       </div>
 

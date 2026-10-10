@@ -1,94 +1,154 @@
 import {
-  User,
+  UserRound,
   Mail,
   Phone,
-  Calendar,
+  CalendarDays,
+  VenusAndMars,
 } from 'lucide-react';
 
 export default function PersonalInfoCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
-      <div className="px-6 py-5 border-b border-slate-100">
-        <h3 className="text-lg font-bold text-slate-900">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+
+        <div className="w-6 h-6 rounded-md bg-emerald-50 flex items-center justify-center">
+          <UserRound
+            size={14}
+            className="text-emerald-600"
+          />
+        </div>
+        <div>
+        <h3 className="text-sm font-bold text-slate-800">
           Thông tin cá nhân
         </h3>
-
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 mt-0.5">
           Thông tin cơ bản của người dùng
         </p>
+        </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
 
-        <div>
-          <label className="text-sm text-slate-500">
-            Họ và tên
-          </label>
+      {/* Content */}
+      <div className="px-4 py-3 space-y-2.5">
 
-          <div className="flex items-center gap-3 mt-2">
-            <User size={18} className="text-slate-400" />
+        {/* Họ tên */}
+        <div className="grid grid-cols-[42%_58%] items-center">
 
-            <span className="font-medium text-slate-900">
+          <span className="text-[10px] text-slate-500">
+            Họ tên
+          </span>
+
+          <div className="flex items-center gap-1.5">
+
+            <UserRound
+              size={12}
+              className="text-slate-400"
+            />
+
+            <span className="text-[10px] font-semibold text-slate-700">
               Nguyễn Minh Anh
             </span>
+
           </div>
+
         </div>
 
-        <div>
-          <label className="text-sm text-slate-500">
+
+        {/* Email */}
+        <div className="grid grid-cols-[42%_58%] items-center">
+
+          <span className="text-[10px] text-slate-500">
             Email
-          </label>
+          </span>
 
-          <div className="flex items-center gap-3 mt-2">
-            <Mail size={18} className="text-slate-400" />
+          <div className="flex items-center gap-1.5">
 
-            <span className="font-medium text-slate-900">
-              minhanh@gmail.com
+            <Mail
+              size={12}
+              className="text-slate-400"
+            />
+
+            <span className="text-[10px] font-semibold text-slate-700">
+              minhanh98@gmail.com
             </span>
+
           </div>
+
         </div>
 
-        <div>
-          <label className="text-sm text-slate-500">
+
+        {/* Số điện thoại */}
+        <div className="grid grid-cols-[42%_58%] items-center">
+
+          <span className="text-[10px] text-slate-500">
             Số điện thoại
-          </label>
+          </span>
 
-          <div className="flex items-center gap-3 mt-2">
-            <Phone size={18} className="text-slate-400" />
+          <div className="flex items-center gap-1.5">
 
-            <span className="font-medium text-slate-900">
-              0987654321
+            <Phone
+              size={12}
+              className="text-slate-400"
+            />
+
+            <span className="text-[10px] font-semibold text-slate-700">
+              0987 654 321
             </span>
+
           </div>
+
         </div>
 
-        <div>
-          <label className="text-sm text-slate-500">
+
+        {/* Ngày sinh */}
+        <div className="grid grid-cols-[42%_58%] items-center">
+
+          <span className="text-[10px] text-slate-500">
             Ngày sinh
-          </label>
+          </span>
 
-          <div className="flex items-center gap-3 mt-2">
-            <Calendar size={18} className="text-slate-400" />
+          <div className="flex items-center gap-1.5">
 
-            <span className="font-medium text-slate-900">
-              15/08/1998
+            <CalendarDays
+              size={12}
+              className="text-slate-400"
+            />
+
+            <span className="text-[10px] font-semibold text-slate-700">
+              15/04/1998
             </span>
+
           </div>
+
         </div>
 
-        <div>
-          <label className="text-sm text-slate-500">
-            Giới tính
-          </label>
 
-          <div className="mt-2 font-medium text-slate-900">
-            Nữ
+        {/* Giới tính */}
+        <div className="grid grid-cols-[42%_58%] items-center">
+
+          <span className="text-[10px] text-slate-500">
+            Giới tính
+          </span>
+
+          <div className="flex items-center gap-1.5">
+
+            <VenusAndMars
+              size={12}
+              className="text-slate-400"
+            />
+
+            <span className="text-[10px] font-semibold text-slate-700">
+              Nữ
+            </span>
+
           </div>
+
         </div>
 
       </div>
 
-    </div>
+    </section>
   );
 }

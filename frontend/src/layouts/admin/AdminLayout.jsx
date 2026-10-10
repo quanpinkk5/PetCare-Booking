@@ -24,6 +24,20 @@ export default function AdminLayout({ children }) {
       currentTitle = 'Chi tiết người dùng';
     } else if (location.pathname.startsWith('/admin/users')) {
       currentTitle = 'Quản lý người dùng';
+    } else if (
+      location.pathname.startsWith('/admin/facilities/') ||
+      location.pathname.startsWith('/admin/businesses/')
+    ) {
+      currentTitle = 'Chi tiết cơ sở';
+    } else if (
+      location.pathname.startsWith('/admin/facilities') ||
+      location.pathname.startsWith('/admin/businesses')
+    ) {
+      currentTitle = 'Quản lý cơ sở';
+    } else if (location.pathname.startsWith('/admin/bookings/')) {
+      currentTitle = 'Chi tiết booking';
+    } else if (location.pathname.startsWith('/admin/bookings')) {
+      currentTitle = 'Quản lý lịch hẹn';
     } else {
       currentTitle = 'Tổng quan hệ thống';
     }

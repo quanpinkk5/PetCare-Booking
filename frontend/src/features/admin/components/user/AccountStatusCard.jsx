@@ -1,100 +1,147 @@
 import {
-  ShieldHalf,
-  CheckCircle2,
-  Clock,
+  ShieldCheck,
+  UserRound,
+  CircleCheck,
+  Clock3,
+  Monitor,
 } from 'lucide-react';
 
 export default function AccountStatusCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
-      <div className="px-6 py-5 border-b border-slate-100">
+      {/* =========================================
+          HEADER
+      ========================================= */}
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
 
-        <h3 className="text-lg font-bold text-slate-900">
+        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center">
+          <ShieldCheck
+            size={15}
+            className="text-emerald-600"
+          />
+        </div>
+
+        <h3 className="text-sm font-bold text-slate-800">
           Trạng thái tài khoản
         </h3>
 
       </div>
 
-      <div className="p-6 space-y-5">
 
-        <div className="flex items-center justify-between">
+      {/* =========================================
+          CONTENT
+      ========================================= */}
+      <div className="px-5 py-4">
 
-          <div className="flex items-center gap-3">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-4">
 
-            <ShieldHalf
-              size={18}
-              className="text-slate-400"
-            />
+          {/* =====================================
+              VAI TRÒ
+          ===================================== */}
+          <div>
 
-            <span className="text-sm text-slate-500">
+            <p className="text-[10px] text-slate-400 mb-1.5">
               Vai trò
-            </span>
+            </p>
+
+            <div className="flex items-center gap-2">
+
+              <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center">
+                <UserRound
+                  size={12}
+                  className="text-blue-500"
+                />
+              </div>
+
+              <span className="text-xs font-semibold text-slate-700">
+                Khách hàng
+              </span>
+
+            </div>
 
           </div>
 
-          <span className="font-semibold text-slate-900">
-            Customer
-          </span>
 
-        </div>
+          {/* =====================================
+              TRẠNG THÁI
+          ===================================== */}
+          <div>
 
-        <div className="flex items-center justify-between">
-
-          <div className="flex items-center gap-3">
-
-            <CheckCircle2
-              size={18}
-              className="text-emerald-500"
-            />
-
-            <span className="text-sm text-slate-500">
+            <p className="text-[10px] text-slate-400 mb-1.5">
               Trạng thái
-            </span>
+            </p>
+
+            <div className="flex items-center gap-2">
+
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+
+              <span className="text-xs font-semibold text-emerald-600">
+                Hoạt động
+              </span>
+
+            </div>
 
           </div>
 
-          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-            Hoạt động
-          </span>
 
-        </div>
+          {/* =====================================
+              PHIÊN ĐĂNG NHẬP GẦN NHẤT
+          ===================================== */}
+          <div>
 
-        <div className="flex items-center justify-between">
+            <p className="text-[10px] text-slate-400 mb-1.5">
+              Phiên đăng nhập gần nhất
+            </p>
 
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
 
-            <Clock
-              size={18}
-              className="text-slate-400"
-            />
+              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                <Clock3
+                  size={12}
+                  className="text-slate-500"
+                />
+              </div>
 
-            <span className="text-sm text-slate-500">
-              Đăng nhập cuối
-            </span>
+              <span className="text-xs font-semibold text-slate-700">
+                22/05/2025 · 14:25
+              </span>
+
+            </div>
 
           </div>
 
-          <span className="font-medium text-slate-900">
-            Hôm nay, 14:32
-          </span>
 
-        </div>
+          {/* =====================================
+              SỐ PHIÊN HOẠT ĐỘNG
+          ===================================== */}
+          <div>
 
-        <div className="flex items-center justify-between">
+            <p className="text-[10px] text-slate-400 mb-1.5">
+              Số phiên hoạt động
+            </p>
 
-          <span className="text-sm text-slate-500">
-            Số phiên đăng nhập
-          </span>
+            <div className="flex items-center gap-2">
 
-          <span className="font-semibold text-slate-900">
-            32
-          </span>
+              <div className="w-6 h-6 rounded-full bg-purple-50 flex items-center justify-center">
+                <Monitor
+                  size={12}
+                  className="text-purple-500"
+                />
+              </div>
+
+              <span className="text-xs font-semibold text-slate-700">
+                32 phiên
+              </span>
+
+            </div>
+
+          </div>
 
         </div>
 
       </div>
 
-    </div>
+    </section>
   );
 }
