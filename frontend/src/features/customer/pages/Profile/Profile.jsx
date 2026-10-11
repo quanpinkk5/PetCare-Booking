@@ -11,21 +11,8 @@ import ProfileBanner from '../../components/Profile/ProfileBanner';
 import ProfileSummary from '../../components/Profile/ProfileSummary';
 import ProfileForms from '../../components/Profile/ProfileForms';
 import ProfileSidebar from '../../components/Profile/ProfileSidebar';
-
-const DEFAULT_USER = {
-  name: 'Nguyễn Văn An',
-  email: 'nguyenvanan@gmail.com',
-  phone: '0912 345 678',
-  avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDy41SEghjD-Su0C0GIDKStQMA6XwhIz7_0OYuczV-ao5uFnR1gsVRb3EXzhrO95-UaVPo7bZv1SXgIrincJFkxhtbLAaFJOF64Abnq7U6WSP1fm6W20bYukp4qPUonnwxDJPbLdNzuXZCA52IxbGWfQlrgLu_vk9glp5yioJe4V_F9urI-KR1Uc2bmb27r8AODOGs99EaD5FJ5fLMReu4N7bIfg_Zq-1LLG_pnP_homvuDvPdy1dk_',
-  gender: 'Nam',
-  birthday: '1998-05-15',
-  address: 'Số 123 Đường Cầu Giấy, Quận Cầu Giấy, Hà Nội',
-  bio: 'Yêu thích thú cưng, nuôi 1 bé Golden Retriever và 1 bé mèo Anh lông ngắn.',
-  tier: 'Thành viên Bạc',
-  petCount: 2,
-  bookingCount: 12,
-  reviewCount: 5
-};
+import { useAuth } from '../../../../context/AuthContext';
+import { DEFAULT_USER } from '../../../auth/data/mockUsers';
 
 const PETS = [
   {
@@ -75,8 +62,9 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'info';
 
+  const { user: authUser, updateUser } = useAuth();
   const [activeTab, setActiveTabState] = useState(currentTab);
-  const [user, setUser] = useState(DEFAULT_USER);
+  const user = authUser || DEFAULT_USER;
 
   const handleTabChange = (tabId) => {
     setActiveTabState(tabId);
@@ -84,17 +72,11 @@ const Profile = () => {
   };
 
   const handleSaveUser = (updatedData) => {
-    setUser((prev) => ({
-      ...prev,
-      ...updatedData
-    }));
+    updateUser(updatedData);
   };
 
   const handleAvatarChange = (newAvatarUrl) => {
-    setUser((prev) => ({
-      ...prev,
-      avatar: newAvatarUrl
-    }));
+    updateUser({ avatar: newAvatarUrl });
   };
 
   return (

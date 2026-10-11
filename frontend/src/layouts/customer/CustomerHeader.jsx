@@ -14,9 +14,11 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
+import { useAuth } from "../../context/AuthContext";
 import NotificationDropdown from "../../features/customer/components/Notifications/NotificationDropdown";
 
 const CustomerHeader = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -97,126 +99,153 @@ const CustomerHeader = () => {
             </span>
           </Link> */}
 
-          {/* Notification Bell & Dropdown */}
-          <div className="relative flex items-center" ref={notifRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsNotifDropdownOpen(!isNotifDropdownOpen);
-                setIsDropdownOpen(false);
-              }}
-              aria-label="Thông báo"
-              className={`relative w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
-                isNotifDropdownOpen
-                  ? "bg-emerald-50 border-emerald-300 text-emerald-600"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-rose-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Notification Dropdown Preview */}
-            {isNotifDropdownOpen && (
-              <NotificationDropdown onClose={() => setIsNotifDropdownOpen(false)} />
-            )}
-          </div>
-
-          {/* User Dropdown */}
-          <div className="relative flex items-center" ref={dropdownRef}>
-            <button
-              onClick={() => {
-                setIsDropdownOpen(!isDropdownOpen);
-                setIsNotifDropdownOpen(false);
-              }}
-              className="flex items-center gap-2 pl-1 cursor-pointer focus:outline-none hover:bg-slate-50 p-1 rounded-lg transition-colors"
-            >
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy41SEghjD-Su0C0GIDKStQMA6XwhIz7_0OYuczV-ao5uFnR1gsVRb3EXzhrO95-UaVPo7bZv1SXgIrincJFkxhtbLAaFJOF64Abnq7U6WSP1fm6W20bYukp4qPUonnwxDJPbLdNzuXZCA52IxbGWfQlrgLu_vk9glp5yioJe4V_F9urI-KR1Uc2bmb27r8AODOGs99EaD5FJ5fLMReu4N7bIfg_Zq-1LLG_pnP_homvuDvPdy1dk_"
-                alt="User Avatar"
-                className="w-10 h-10 rounded-full object-cover border-2 border-emerald-100 shadow-sm"
-              />
-              <ChevronDown
-                size={14}
-                className={`text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {/* Dropdown Menu Items */}
-            {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-in fade-in slide-in-from-top-2">
-                <Link
-                  to="/profile"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+          {isAuthenticated && user ? (
+            <>
+              {/* Notification Bell & Dropdown */}
+              <div className="relative flex items-center" ref={notifRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNotifDropdownOpen(!isNotifDropdownOpen);
+                    setIsDropdownOpen(false);
+                  }}
+                  aria-label="Thông báo"
+                  className={`relative w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+                    isNotifDropdownOpen
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-600"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
                 >
-                  <User size={16} /> Thông tin cá nhân
-                </Link>
-                <Link
-                  to="/notifications"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Bell size={16} /> Thông báo
-                  </div>
+                  <Bell size={20} />
                   {unreadCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-rose-500 text-white">
-                      {unreadCount}
+                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-rose-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
+                      {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
-                </Link>
-                <Link
-                  to="/messages"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <MessageSquare size={16} /> Tin nhắn của tôi
-                </Link>
-                <Link
-                  to="/my-pets"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <Dog size={16} /> Thú cưng của tôi
-                </Link>
-                <Link
-                  to="/my-bookings"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <Clock size={16} /> Lịch đặt của tôi
-                </Link>
-                <Link
-                  to="/billing"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <CreditCard size={16} /> Lịch sử thanh toán
-                </Link>
-                <Link
-                  to="/reviews"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <Star size={16} /> Đánh giá của tôi
-                </Link>
-
-                <div className="h-px bg-slate-100 my-1 mx-4"></div>
-
-                <button
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"
-                >
-                  <LogOut size={16} /> Đăng xuất
                 </button>
+
+                {/* Notification Dropdown Preview */}
+                {isNotifDropdownOpen && (
+                  <NotificationDropdown onClose={() => setIsNotifDropdownOpen(false)} />
+                )}
               </div>
-            )}
-          </div>
+
+              {/* User Dropdown */}
+              <div className="relative flex items-center" ref={dropdownRef}>
+                <button
+                  onClick={() => {
+                    setIsDropdownOpen(!isDropdownOpen);
+                    setIsNotifDropdownOpen(false);
+                  }}
+                  className="flex items-center gap-2 pl-1 cursor-pointer focus:outline-none hover:bg-slate-50 p-1 rounded-lg transition-colors"
+                >
+                  <img
+                    src={user.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuDy41SEghjD-Su0C0GIDKStQMA6XwhIz7_0OYuczV-ao5uFnR1gsVRb3EXzhrO95-UaVPo7bZv1SXgIrincJFkxhtbLAaFJOF64Abnq7U6WSP1fm6W20bYukp4qPUonnwxDJPbLdNzuXZCA52IxbGWfQlrgLu_vk9glp5yioJe4V_F9urI-KR1Uc2bmb27r8AODOGs99EaD5FJ5fLMReu4N7bIfg_Zq-1LLG_pnP_homvuDvPdy1dk_"}
+                    alt={user.name || "User Avatar"}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-emerald-100 shadow-sm"
+                  />
+                  <ChevronDown
+                    size={14}
+                    className={`text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Dropdown Menu Items */}
+                {isDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                    </div>
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <User size={16} /> Thông tin cá nhân
+                    </Link>
+                    <Link
+                      to="/notifications"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Bell size={16} /> Thông báo
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-rose-500 text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      to="/messages"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <MessageSquare size={16} /> Tin nhắn của tôi
+                    </Link>
+                    <Link
+                      to="/my-pets"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <Dog size={16} /> Thú cưng của tôi
+                    </Link>
+                    <Link
+                      to="/my-bookings"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <Clock size={16} /> Lịch đặt của tôi
+                    </Link>
+                    <Link
+                      to="/billing"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <CreditCard size={16} /> Lịch sử thanh toán
+                    </Link>
+                    <Link
+                      to="/reviews"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <Star size={16} /> Đánh giá của tôi
+                    </Link>
+
+                    <div className="h-px bg-slate-100 my-1 mx-4"></div>
+
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut size={16} /> Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="text-sm font-semibold text-slate-700 hover:text-emerald-600 px-3.5 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to="/register"
+                className="text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-4 py-2 rounded-xl transition-colors hidden sm:inline-block"
+              >
+                Đăng ký
+              </Link>
+            </div>
+          )}
 
           {/* Booking Button */}
           <Link
