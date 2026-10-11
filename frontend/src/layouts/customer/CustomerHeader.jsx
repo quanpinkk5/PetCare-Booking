@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   PawPrint,
   Bell,
@@ -13,16 +13,34 @@ import {
   Dog,
   MessageSquare
 } from "lucide-react";
+import { useNotifications } from "../../context/NotificationContext";
+import NotificationDropdown from "../../features/customer/components/Notifications/NotificationDropdown";
 
 const CustomerHeader = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notifRef = useRef(null);
+  const location = useLocation();
+
+  const { unreadCount } = useNotifications();
+
+  // Reset dropdowns when route changes
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
+    setIsDropdownOpen(false);
+    setIsNotifDropdownOpen(false);
+  }
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -79,21 +97,42 @@ const CustomerHeader = () => {
             </span>
           </Link> */}
 
-          {/* Notification */}
-          <button
-            aria-label="Thông báo"
-            className="relative w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-              3
-            </span>
-          </button>
+          {/* Notification Bell & Dropdown */}
+          <div className="relative flex items-center" ref={notifRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsNotifDropdownOpen(!isNotifDropdownOpen);
+                setIsDropdownOpen(false);
+              }}
+              aria-label="Thông báo"
+              className={`relative w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+                isNotifDropdownOpen
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-600"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-rose-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown Preview */}
+            {isNotifDropdownOpen && (
+              <NotificationDropdown onClose={() => setIsNotifDropdownOpen(false)} />
+            )}
+          </div>
 
           {/* User Dropdown */}
           <div className="relative flex items-center" ref={dropdownRef}>
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => {
+                setIsDropdownOpen(!isDropdownOpen);
+                setIsNotifDropdownOpen(false);
+              }}
               className="flex items-center gap-2 pl-1 cursor-pointer focus:outline-none hover:bg-slate-50 p-1 rounded-lg transition-colors"
             >
               <img
@@ -116,6 +155,20 @@ const CustomerHeader = () => {
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                 >
                   <User size={16} /> Thông tin cá nhân
+                </Link>
+                <Link
+                  to="/notifications"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Bell size={16} /> Thông báo
+                  </div>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-rose-500 text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   to="/messages"

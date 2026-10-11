@@ -13,6 +13,7 @@ import Messages from "../features/customer/pages/Messages/Messages";
 import Payment from "../features/customer/pages/Payment/Payment";
 import PaymentHistory from "../features/customer/pages/PaymentHistory/PaymentHistory";
 import MyReviews from "../features/customer/pages/MyReviews/MyReviews";
+import Notifications from "../features/customer/pages/Notifications/Notifications";
 
 const CustomerRoutes = () => {
   return (
@@ -41,6 +42,8 @@ const CustomerRoutes = () => {
         <Route path="my-reviews" element={<MyReviews />} />
         <Route path="messages" element={<Messages />} />
         <Route path="messages/:id" element={<Messages />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="thong-bao" element={<Notifications />} />
       </Route>
     </Routes>
   );
