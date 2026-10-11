@@ -46,9 +46,18 @@ const BookingOverview = ({ booking }) => {
 
     const renderActionButtons = () => {
         switch (statusType) {
-            case "pending": // 1. Chờ xác nhận: Chỉ hiện "Chat với cơ sở" & "Hủy lịch", tuyệt đối giấu "Thanh toán"
+            case "pending": // 1. Chờ xác nhận: "Thanh toán ngay", "Chat với cơ sở", "Hủy lịch"
                 return (
-                    <div className="flex flex-col gap-2 w-full">
+                    <div className="flex flex-col gap-2.5 w-full">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
+                        >
+                            <CreditCard size={15} />
+                            <span>Thanh toán ngay</span>
+                        </button>
+
                         <button
                             type="button"
                             onClick={() => navigate("/messages")}
@@ -74,7 +83,7 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2.5 w-full">
                         <button
                             type="button"
-                            onClick={() => alert(`Chuyển đến thanh toán cho đơn hàng ${booking.id} (${booking.totalPrice})`)}
+                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <CreditCard size={15} />
@@ -118,16 +127,25 @@ const BookingOverview = ({ booking }) => {
                     </div>
                 );
 
-            case "completed": // 4. Hoàn thành: Cụm cũ biến mất, thay bằng "Đánh giá dịch vụ" (nổi bật) & "Đặt lại lịch này"
+            case "completed": // 4. Hoàn thành: "Đánh giá dịch vụ", "Hóa đơn điện tử" & "Đặt lại lịch này"
                 return (
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => alert(`Mở giao diện đánh giá dịch vụ cho đơn hàng ${booking.id}`)}
+                            onClick={() => navigate(`/reviews?bookingId=${booking.id}&action=write`)}
                             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <Star size={15} className="fill-white" />
                             <span>Đánh giá dịch vụ</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/billing?bookingId=${booking.id}`)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                        >
+                            <Receipt size={14} />
+                            <span>Xem hóa đơn điện tử</span>
                         </button>
 
                         <button

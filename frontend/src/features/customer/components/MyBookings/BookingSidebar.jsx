@@ -185,7 +185,11 @@ const BookingSidebar = () => {
                         </span>
                     </div>
 
-                    <button className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-teal-200 transition-all hover:shadow">
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                        className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-teal-200 transition-all hover:shadow cursor-pointer"
+                    >
                         <CreditCard size={16} />
                         <span>Thanh toán ngay</span>
                     </button>

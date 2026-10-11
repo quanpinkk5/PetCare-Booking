@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   MapPin,
   Bell,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from 'lucide-react';
 
 const ProfileSummary = ({
@@ -135,8 +136,11 @@ const ProfileSummary = ({
             </span>
           </Link>
 
-          <div className="px-1 py-1">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 mb-0.5">
+          <Link
+            to="/reviews"
+            className="px-1 py-1 hover:bg-slate-50 rounded-lg transition-colors group cursor-pointer"
+          >
+            <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 mb-0.5 group-hover:text-emerald-600">
               <Star
                 size={12}
                 className="text-emerald-500"
@@ -147,7 +151,7 @@ const ProfileSummary = ({
             <span className="text-base font-bold text-emerald-600">
               {user?.reviewCount ?? 5}
             </span>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -204,6 +208,28 @@ const ProfileSummary = ({
               <div className="flex items-center gap-2.5">
                 <Calendar size={15} className="text-slate-400" />
                 <span>Đặt lịch hẹn mới</span>
+              </div>
+              <ChevronRight size={14} className="text-slate-300" />
+            </Link>
+
+            <Link
+              to="/billing"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-emerald-600 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <CreditCard size={15} className="text-slate-400" />
+                <span>Lịch sử thanh toán</span>
+              </div>
+              <ChevronRight size={14} className="text-slate-300" />
+            </Link>
+
+            <Link
+              to="/reviews"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-emerald-600 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Star size={15} className="text-slate-400" />
+                <span>Đánh giá của tôi</span>
               </div>
               <ChevronRight size={14} className="text-slate-300" />
             </Link>

@@ -10,6 +10,9 @@ import Profile from "../features/customer/pages/Profile/Profile";
 import MyBookings from "../features/customer/pages/MyBookings/MyBookings";
 import BookingDetail from "../features/customer/pages/BookingDetail/BookingDetail";
 import Messages from "../features/customer/pages/Messages/Messages";
+import Payment from "../features/customer/pages/Payment/Payment";
+import PaymentHistory from "../features/customer/pages/PaymentHistory/PaymentHistory";
+import MyReviews from "../features/customer/pages/MyReviews/MyReviews";
 
 const CustomerRoutes = () => {
   return (
@@ -23,10 +26,19 @@ const CustomerRoutes = () => {
         <Route path="booking/:id" element={<BookingDetail />} />
         <Route path="booking-detail" element={<BookingDetail />} />
         <Route path="booking-detail/:id" element={<BookingDetail />} />
+        <Route path="payment" element={<Payment />} />
+        <Route path="payment/:id" element={<Payment />} />
+        <Route path="checkout" element={<Payment />} />
+        <Route path="checkout/:id" element={<Payment />} />
+        <Route path="billing" element={<PaymentHistory />} />
+        <Route path="payment-history" element={<PaymentHistory />} />
+        <Route path="invoices" element={<PaymentHistory />} />
         <Route path="my-pets" element={<MyPets />} />
         <Route path="profile" element={<Profile />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="my-bookings/:id" element={<BookingDetail />} />
+        <Route path="reviews" element={<MyReviews />} />
+        <Route path="my-reviews" element={<MyReviews />} />
         <Route path="messages" element={<Messages />} />
         <Route path="messages/:id" element={<Messages />} />
       </Route>

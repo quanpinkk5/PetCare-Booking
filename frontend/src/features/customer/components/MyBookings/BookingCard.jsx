@@ -5,11 +5,11 @@ import {
     MapPin,
     Banknote,
     Eye,
-    XCircle,
     CreditCard,
     MessageSquare,
     Star,
     RotateCcw,
+    Receipt,
 } from "lucide-react";
 
 const BookingCard = ({ booking }) => {
@@ -48,16 +48,17 @@ const BookingCard = ({ booking }) => {
         );
 
         switch (statusType) {
-            case "pending": // Chờ xác nhận: [ Xem chi tiết ] & [ Hủy yêu cầu ] (Viền đỏ hoặc xám đậm)
+            case "pending": // Chờ xác nhận: [ Xem chi tiết ] & [ Thanh toán ngay ]
                 return (
                     <div className="flex items-center gap-2 w-full">
                         {viewDetailButton}
                         <button
                             type="button"
-                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-300 text-rose-600 bg-white hover:bg-rose-50 hover:border-rose-400 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
-                            <XCircle size={14} className="text-rose-500 shrink-0" />
-                            <span>Hủy yêu cầu</span>
+                            <CreditCard size={14} className="shrink-0" />
+                            <span>Thanh toán ngay</span>
                         </button>
                     </div>
                 );
@@ -68,6 +69,8 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
+                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            
                             className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                             <CreditCard size={14} className="shrink-0" />
@@ -91,15 +94,25 @@ const BookingCard = ({ booking }) => {
                     </div>
                 );
 
-            case "completed": // Hoàn thành: [ Xem chi tiết ] & [ Đánh giá ]
+            case "completed": // Hoàn thành: [ Xem chi tiết ] & [ Hóa đơn ] & [ Đánh giá ]
                 return (
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-1.5 w-full">
                         {viewDetailButton}
                         <button
                             type="button"
-                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                            onClick={() => navigate(`/billing?bookingId=${booking.id}`)}
+                            className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap"
+                            title="Xem hóa đơn điện tử"
                         >
-                            <Star size={14} className="text-amber-500 fill-amber-500 shrink-0" />
+                            <Receipt size={13} className="shrink-0" />
+                            <span>Hóa đơn</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/reviews?bookingId=${booking.id}&action=write`)}
+                            className="flex-1 px-2 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                            <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
                             <span>Đánh giá</span>
                         </button>
                     </div>

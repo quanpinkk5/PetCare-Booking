@@ -112,7 +112,29 @@ const Booking = () => {
   const [note, setNote] = useState("");
 
   const handleConfirm = () => {
-    navigate("/payment");
+    const rawPrice = selectedService?.price
+      ? parseInt(selectedService.price.replace(/\D/g, ""), 10)
+      : 250000;
+
+    navigate("/payment", {
+      state: {
+        booking: {
+          bookingCode: "BK" + Date.now().toString().slice(-8),
+          petName: selectedPet?.name || "Milo",
+          petBreed: selectedPet?.breed || "Poodle",
+          serviceName: selectedService?.name || "Grooming cắt tỉa",
+          facilityName: selectedBranch?.name || "Happy Pet Cầu Giấy",
+          bookingDate: selectedDate,
+          bookingTime: selectedTime || "09:00",
+          customerName: "Nguyễn Văn A",
+          customerPhone: "0987 654 321",
+          customerEmail: "nguyenvana@gmail.com",
+          basePrice: rawPrice,
+          platformFee: 15000,
+          note: note,
+        },
+      },
+    });
   };
 
   const currentStep = !selectedPet

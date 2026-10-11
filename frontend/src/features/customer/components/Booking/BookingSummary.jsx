@@ -84,14 +84,15 @@ const BookingSummary = ({
                 <button
                     type="button"
                     onClick={onConfirm}
-                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white hover:bg-emerald-600"
+                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white hover:bg-emerald-600 transition cursor-pointer"
                 >
                     Xác nhận đặt lịch
                 </button>
 
                 <button
                     type="button"
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 font-medium text-gray-700"
+                    onClick={onConfirm}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
                 >
                     Thanh toán ngay
                 </button>
