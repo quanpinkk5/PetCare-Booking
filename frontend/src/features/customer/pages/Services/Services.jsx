@@ -23,8 +23,8 @@ import {
   HeartPulse,
 } from "lucide-react";
 
-import ServiceCategoryBar from "../../components/ServiceCategoryBar";
-import ServiceCard from "../../components/ServiceCard";
+import ServiceCategoryBar from "../../components/Service/ServiceCategoryBar";
+import ServiceCard from "../../components/Service/ServiceCard";
 
 const SERVICES = [
   {
@@ -361,12 +361,12 @@ const ServiceList = () => {
                   {promo.price}
                 </span>
 
-                <a
-                  href="#"
+                <Link
+                  to="/booking"
                   className="text-[11px] font-semibold text-emerald-600 hover:underline border border-emerald-200 px-2 py-0.5 rounded-lg"
                 >
-                  Xem ngay
-                </a>
+                  Đặt ngay
+                </Link>
 
               </div>
 
