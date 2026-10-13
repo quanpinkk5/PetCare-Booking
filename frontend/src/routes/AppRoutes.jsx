@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import CustomerRoutes from "./CustomerRoutes";
-import BusinessOwnerRoutes from "./businessOwnerRoutes";
+import BusinessOwnerRoutes from "./BusinessOwnerRoutes";
 import Login from "../features/auth/pages/Login/Login";
 
 const AppRoutes = () => {
