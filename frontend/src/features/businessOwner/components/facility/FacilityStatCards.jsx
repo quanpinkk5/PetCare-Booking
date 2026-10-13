@@ -1,16 +1,23 @@
 import { Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { STATS } from "../../data/facilityData";
 
 export default function FacilityStatCards() {
+    const navigate = useNavigate();
+
     return (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STATS.map((stat) => {
                 const Icon = stat.icon;
+                const isBranchCard = stat.id === "branches";
 
                 return (
                     <div
                         key={stat.id}
-                        className={`flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition ${stat.hover}`}
+                        onClick={() => {
+                            if (isBranchCard) navigate("/business/branches");
+                        }}
+                        className={`flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition ${stat.hover} ${isBranchCard ? "cursor-pointer hover:border-emerald-300" : ""}`}
                     >
                         <div className="flex items-center gap-3">
                             <div

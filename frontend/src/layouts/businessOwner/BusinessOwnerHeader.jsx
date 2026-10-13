@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, Menu, ExternalLink, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Search, Menu, ExternalLink, User, LogOut, ChevronDown, GitFork } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -56,7 +56,7 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
         <h2 className="text-lg sm:text-xl font-bold text-slate-800">{title}</h2>
       </div>
 
-      <div className="relative hidden w-80 max-w-md md:block">
+      {/* <div className="relative hidden w-80 max-w-md md:block">
         <Search
           size={16}
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -67,18 +67,11 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
           placeholder="Tìm kiếm booking, thú cưng, khách hàng..."
           className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs text-slate-700 transition focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-      </div>
+      </div> */}
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         {/* Link back to Customer storefront */}
-        {/* <Link
-          to="/"
-          className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-emerald-700 transition"
-          title="Xem giao diện người dùng"
-        >
-          <ExternalLink size={14} />
-          <span>Trang khách hàng</span>
-        </Link> */}
+        
 
         {/* Notifications */}
         <button
@@ -158,6 +151,15 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
                 >
                   <User size={15} />
                   <span>Hồ sơ cơ sở</span>
+                </Link>
+
+                <Link
+                  to="/business/branches"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+                >
+                  <GitFork size={15} />
+                  <span>Chi nhánh</span>
                 </Link>
 
                 <button
