@@ -52,19 +52,9 @@ export default function AdminSidebar() {
       path: '/admin/reviews',
     },
     {
-      label: 'Báo cáo',
-      icon: BarChart3,
-      path: '/admin/reports',
-    },
-    {
       label: 'Thông báo',
       icon: Bell,
       path: '/admin/notifications',
-    },
-    {
-      label: 'Cài đặt',
-      icon: Settings,
-      path: '/admin/settings',
     },
   ];
 

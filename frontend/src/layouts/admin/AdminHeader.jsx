@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   Search,
   Bell,
@@ -27,13 +28,17 @@ export default function AdminHeader({ title = 'Tổng quan hệ thống' }) {
 
       {/* User Actions */}
       <div className="flex items-center gap-5">
-        <div className="relative cursor-pointer p-2 text-slate-500 hover:text-slate-700">
+        <Link
+          to="/admin/notifications"
+          className="relative cursor-pointer p-2 text-slate-500 hover:text-slate-700"
+          title="Thông báo"
+        >
           <Bell className="w-6 h-6" />
 
           <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
             8
           </span>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-3 cursor-pointer pl-2">
           <img

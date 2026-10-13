@@ -244,7 +244,7 @@ export default function ReviewList() {
   }, [reviews, selectedReviewId, filteredReviews]);
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-6 flex-1">
       <div className="w-full">
         <ReviewTable
           reviews={filteredReviews}

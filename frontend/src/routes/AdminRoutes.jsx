@@ -8,7 +8,9 @@ import BusinessDetail from "../features/admin/pages/Businesses/BusinessDetail";
 import ServiceCategoryList from "../features/admin/pages/ServiceCategories/ServiceCategoryList";
 import BookingList from "../features/admin/pages/Bookings/BookingList";
 import BookingDetail from "../features/admin/pages/Bookings/BookingDetail";
+import PaymentList from "../features/admin/pages/Payments/PaymentList";
 import ReviewList from "../features/admin/pages/Reviews/ReviewList";
+import NotificationList from "../features/admin/pages/Notifications/NotificationList";
 
 const AdminRoutes = () => {
   return (
@@ -41,8 +43,14 @@ const AdminRoutes = () => {
         <Route path="bookings/detail" element={<BookingDetail />} />
         <Route path="bookings/:id" element={<BookingDetail />} />
 
+        {/* Payments management */}
+        <Route path="payments" element={<PaymentList />} />
+
         {/* Reviews management */}
         <Route path="reviews" element={<ReviewList />} />
+
+        {/* Notifications management */}
+        <Route path="notifications" element={<NotificationList />} />
 
         {/* Fallback route within admin */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
