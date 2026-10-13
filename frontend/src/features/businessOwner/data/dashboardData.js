@@ -19,7 +19,7 @@ import {
 export const MENU_ITEMS = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: "Tổng quan",
     path: "/business/dashboard",
     icon: LayoutDashboard,
   },
@@ -55,19 +55,19 @@ export const MENU_ITEMS = [
   },
   {
     id: "bookings",
-    label: "Bookings",
+    label: "Đặt lịch",
     path: "/business/bookings",
     icon: CalendarCheck,
   },
   {
     id: "boarding",
-    label: "Boarding",
+    label: "Lưu trú",
     path: "/business/boarding",
     icon: Home,
   },
   {
     id: "pet-diary",
-    label: "Pet Diary",
+    label: "Nhật ký thú cưng",
     path: "/business/pet-diary",
     icon: BookHeart,
   },

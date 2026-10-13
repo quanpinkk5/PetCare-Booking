@@ -9,7 +9,7 @@ export default function RecentBookings() {
     <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-xs font-bold text-slate-800">
-          Booking gần đây
+          Đặt lịch gần đây
         </h4>
 
         <button
