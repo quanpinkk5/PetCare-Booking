@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, ChevronRight, GitFork } from "lucide-react";
+import { Building2, ChevronRight, GitFork, Sparkles } from "lucide-react";
 
 export default function WelcomeBanner() {
     return (
@@ -30,24 +30,6 @@ export default function WelcomeBanner() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 self-stretch sm:self-auto justify-end">
-                    <Link
-                        to="/business/profile"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300/80 bg-white/90 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-xs backdrop-blur-xs transition hover:bg-white hover:text-emerald-900 hover:shadow-sm"
-                    >
-                        <Building2 size={15} className="text-emerald-600" />
-                        <span>Hồ sơ cơ sở</span>
-                        <ChevronRight size={14} className="text-slate-400" />
-                    </Link>
-
-                    <Link
-                        to="/business/branches"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300/80 bg-white/90 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-xs backdrop-blur-xs transition hover:bg-white hover:text-emerald-900 hover:shadow-sm"
-                    >
-                        <GitFork size={15} className="text-emerald-600" />
-                        <span>Chi nhánh</span>
-                        <ChevronRight size={14} className="text-slate-400" />
-                    </Link>
-
                     <div className="hidden items-center gap-2 lg:flex">
                         <span className="text-4xl drop-shadow-sm">🦮</span>
                         <span className="text-3xl drop-shadow-sm">🐈</span>

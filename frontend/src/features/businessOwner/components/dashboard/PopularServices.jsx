@@ -14,8 +14,8 @@ export default function PopularServices() {
 
                 <button
                     type="button"
-                    onClick={() => navigate("/business/branch-services")}
-                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    onClick={() => navigate("/business/services")}
+                    className="flex cursor-pointer items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
                 >
                     Xem tất cả <ArrowRight size={12} />
                 </button>
@@ -25,7 +25,8 @@ export default function PopularServices() {
                 {POPULAR_SERVICES.map((service) => (
                     <div
                         key={service.title}
-                        className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-2.5"
+                        onClick={() => navigate("/business/services")}
+                        className="flex cursor-pointer flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 transition-all hover:border-emerald-200 hover:bg-emerald-50/20"
                     >
                         <div className="flex items-center justify-between">
                             <span className={`rounded-lg p-2 text-sm ${service.bgIcon}`}>

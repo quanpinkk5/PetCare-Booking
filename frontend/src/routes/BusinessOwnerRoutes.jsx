@@ -3,6 +3,7 @@ import BusinessOwnerLayout from "../layouts/businessOwner/BusinessOwnerLayout";
 import BusinessDashboard from "../features/businessOwner/page/Dashboard/BusinessDashboard";
 import FacilityProfile from "../features/businessOwner/page/FacilityProfile/FacilityProfile";
 import BranchesPage from "../features/businessOwner/page/Branches/BranchesPage";
+import ServicesPage from "../features/businessOwner/page/Services/ServicesPage";
 import BusinessPlaceholderPage from "../features/businessOwner/components/common/BusinessPlaceholderPage";
 
 const BusinessOwnerRoutes = () => {
@@ -13,7 +14,7 @@ const BusinessOwnerRoutes = () => {
         <Route path="dashboard" element={<BusinessDashboard />} />
         <Route path="profile" element={<FacilityProfile />} />
         <Route path="branches" element={<BranchesPage />} />
-        <Route path="services" element={<BusinessPlaceholderPage title="Dịch vụ" />} />
+        <Route path="services" element={<ServicesPage />} />
         <Route path="branch-services" element={<BusinessPlaceholderPage title="Dịch vụ chi nhánh" />} />
         <Route path="schedule" element={<BusinessPlaceholderPage title="Lịch làm việc" />} />
         <Route path="bookings" element={<BusinessPlaceholderPage title="Bookings" />} />

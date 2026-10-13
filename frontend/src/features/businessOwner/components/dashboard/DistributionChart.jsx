@@ -107,8 +107,8 @@ export default function DistributionChart() {
             <div className="border-t border-slate-100 pt-2 text-right">
                 <button
                     type="button"
-                    onClick={() => navigate("/business/branch-services")}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    onClick={() => navigate("/business/services")}
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
                 >
                     Xem chi tiết <ArrowRight size={12} />
                 </button>
