@@ -103,9 +103,20 @@ const Login = ({ defaultTab }) => {
     setSuccessMsg("Mã OTP thử nghiệm là: 123456 (Nhập mã này để đăng nhập)");
   };
 
-  const redirectAfterAuth = () => {
-    const redirectUrl = location.state?.from?.pathname || "/";
-    navigate(redirectUrl, { replace: true });
+  const redirectAfterAuth = (targetUser) => {
+    if (location.state?.from?.pathname) {
+      navigate(location.state.from.pathname, { replace: true });
+      return;
+    }
+    const effectiveUser = targetUser || user;
+    if (
+      effectiveUser?.role === "businessOwner" ||
+      effectiveUser?.role === "partner"
+    ) {
+      navigate("/business/dashboard", { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
   };
 
   // Handle Login Submit
@@ -132,7 +143,7 @@ const Login = ({ defaultTab }) => {
       if (res.success) {
         setSuccessMsg("Đăng nhập thành công! Đang chuyển hướng...");
         setTimeout(() => {
-          redirectAfterAuth();
+          redirectAfterAuth(res.user);
         }, 600);
       } else {
         setErrorMsg(res.error || "Đăng nhập thất bại. Vui lòng thử lại.");
@@ -156,7 +167,7 @@ const Login = ({ defaultTab }) => {
       if (res.success) {
         setSuccessMsg(`Đã đăng nhập với tài khoản: ${res.user.name}`);
         setTimeout(() => {
-          redirectAfterAuth();
+          redirectAfterAuth(res.user);
         }, 500);
       }
     }, 400);
@@ -191,7 +202,7 @@ const Login = ({ defaultTab }) => {
       if (res.success) {
         setSuccessMsg("Đăng ký thành công! Đang tự động đăng nhập...");
         setTimeout(() => {
-          redirectAfterAuth();
+          redirectAfterAuth(res.user);
         }, 700);
       } else {
         setErrorMsg(res.error || "Đăng ký không thành công.");
@@ -417,17 +428,32 @@ const Login = ({ defaultTab }) => {
                 </div>
 
                 <div className="flex items-center gap-2 pt-2 border-t border-emerald-200/60">
+                  {user.role === "businessOwner" || user.role === "partner" ? (
+                    <button
+                      onClick={() => navigate("/business/dashboard")}
+                      className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors text-center cursor-pointer"
+                    >
+                      Vào Dashboard Quản lý
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate("/")}
+                      className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors text-center cursor-pointer"
+                    >
+                      Tiếp tục vào Trang chủ
+                    </button>
+                  )}
                   <button
-                    onClick={() => navigate("/")}
-                    className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors text-center cursor-pointer"
-                  >
-                    Tiếp tục vào Trang chủ
-                  </button>
-                  <button
-                    onClick={() => navigate("/profile")}
+                    onClick={() =>
+                      navigate(
+                        user.role === "businessOwner" || user.role === "partner"
+                          ? "/business/profile"
+                          : "/profile"
+                      )
+                    }
                     className="flex-1 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors text-center cursor-pointer"
                   >
-                    Hồ sơ cá nhân
+                    Hồ sơ
                   </button>
                   <button
                     onClick={() => logout()}
@@ -780,13 +806,13 @@ const Login = ({ defaultTab }) => {
 
                     <button
                       type="button"
-                      onClick={() => handleDemoClick("partner")}
+                      onClick={() => handleDemoClick("businessOwner")}
                       className="p-2 rounded-xl bg-white hover:bg-amber-100/50 border border-amber-200 text-left transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-1.5 mb-1">
                         <Building2 size={13} className="text-blue-600" />
                         <span className="text-[11px] font-bold text-slate-800 truncate">
-                          Cơ sở Spa
+                          Chủ cơ sở
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-500 truncate">
