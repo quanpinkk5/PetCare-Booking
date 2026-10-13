@@ -10,6 +10,8 @@ export default function BranchesPage() {
 
     return (
         <div className="mx-auto w-full max-w-[1600px] space-y-6">
+            <BranchMetricCards onAddBranch={() => setShowAddForm(true)} />
+
             <BranchList />
 
             {showAddForm && (
