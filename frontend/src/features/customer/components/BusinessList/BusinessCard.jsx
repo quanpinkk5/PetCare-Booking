@@ -99,7 +99,7 @@ const BusinessCard = ({
             <div className="p-2.5 pt-0 grid grid-cols-2 gap-1.5 mt-2">
 
                 <Link
-                    to={detailUrl}
+                    to="/booking"
                     className="w-full text-center border border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-medium py-1 rounded transition-colors inline-flex items-center justify-center"
                 >
                     Đặt lịch

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import BusinessCard from "../../components/BusinessCard";
+import BusinessCard from "../../components/BusinessList/BusinessCard";
 import { mockBusinesses } from "../../services/mockBusinesses";
 
 /* =========================
@@ -310,7 +310,7 @@ const Sidebar = () => {
             </div>
 
             {/* App */}
-            
+
         </aside>
     );
 };
@@ -323,110 +323,110 @@ const BusinessList = () => {
     return (
         <div className="antialiased">
 
-                <HeroBanner />
+            <HeroBanner />
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                        {/* Business list */}
-                        <section className="lg:col-span-9">
+                    {/* Business list */}
+                    <section className="lg:col-span-9">
 
-                            {/* Toolbar */}
-                            <div className="flex flex-wrap items-center justify-between pb-4 border-b border-gray-200 mb-5 gap-3">
+                        {/* Toolbar */}
+                        <div className="flex flex-wrap items-center justify-between pb-4 border-b border-gray-200 mb-5 gap-3">
 
-                                <div className="text-sm font-bold text-gray-900">
-                                    Hiển thị{" "}
-                                    <span className="text-gray-900 font-extrabold">
-                                        {mockBusinesses.length} cơ sở
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center space-x-3">
-
-                                    <div className="flex items-center space-x-1.5 text-xs text-gray-600">
-                                        <span>Sắp xếp theo:</span>
-
-                                        <select className="py-1 pl-2.5 pr-7 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#0fa958]">
-                                            <option>Phổ biến nhất</option>
-                                            <option>Đánh giá cao nhất</option>
-                                            <option>Giá thấp đến cao</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="flex items-center space-x-1 bg-gray-100 p-0.5 rounded-md border border-gray-200">
-
-                                        <button
-                                            className="p-1 rounded bg-[#0fa958] text-white shadow-xs"
-                                            title="Grid view"
-                                        >
-                                            <Grid size={14} />
-                                        </button>
-
-                                        <button
-                                            className="p-1 rounded text-gray-500 hover:text-gray-800"
-                                            title="List view"
-                                        >
-                                            <List size={14} />
-                                        </button>
-
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
-
-                                {mockBusinesses.map((business) => (
-                                    <BusinessCard
-                                        key={business.id}
-                                        business={business}
-                                    />
-                                ))}
-
-                            </div>
-
-                            {/* Pagination */}
-                            <div className="flex items-center justify-center space-x-1.5 mt-8 text-xs font-semibold">
-
-                                <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
-                                    <ChevronLeft size={14} />
-                                </button>
-
-                                <button className="w-7 h-7 bg-[#0fa958] text-white rounded shadow-xs flex items-center justify-center">
-                                    1
-                                </button>
-
-                                <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                    2
-                                </button>
-
-                                <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                    3
-                                </button>
-
-                                <span className="px-1 text-gray-400">
-                                    ...
+                            <div className="text-sm font-bold text-gray-900">
+                                Hiển thị{" "}
+                                <span className="text-gray-900 font-extrabold">
+                                    {mockBusinesses.length} cơ sở
                                 </span>
-
-                                <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                    6
-                                </button>
-
-                                <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
-                                    <ChevronRight size={14} />
-                                </button>
-
                             </div>
 
-                        </section>
+                            <div className="flex items-center space-x-3">
 
-                        <Sidebar />
+                                <div className="flex items-center space-x-1.5 text-xs text-gray-600">
+                                    <span>Sắp xếp theo:</span>
 
-                    </div>
-                </main>
+                                    <select className="py-1 pl-2.5 pr-7 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#0fa958]">
+                                        <option>Phổ biến nhất</option>
+                                        <option>Đánh giá cao nhất</option>
+                                        <option>Giá thấp đến cao</option>
+                                    </select>
+                                </div>
 
-            </div>
+                                <div className="flex items-center space-x-1 bg-gray-100 p-0.5 rounded-md border border-gray-200">
+
+                                    <button
+                                        className="p-1 rounded bg-[#0fa958] text-white shadow-xs"
+                                        title="Grid view"
+                                    >
+                                        <Grid size={14} />
+                                    </button>
+
+                                    <button
+                                        className="p-1 rounded text-gray-500 hover:text-gray-800"
+                                        title="List view"
+                                    >
+                                        <List size={14} />
+                                    </button>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+
+                            {mockBusinesses.map((business) => (
+                                <BusinessCard
+                                    key={business.id}
+                                    business={business}
+                                />
+                            ))}
+
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="flex items-center justify-center space-x-1.5 mt-8 text-xs font-semibold">
+
+                            <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
+                                <ChevronLeft size={14} />
+                            </button>
+
+                            <button className="w-7 h-7 bg-[#0fa958] text-white rounded shadow-xs flex items-center justify-center">
+                                1
+                            </button>
+
+                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
+                                2
+                            </button>
+
+                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
+                                3
+                            </button>
+
+                            <span className="px-1 text-gray-400">
+                                ...
+                            </span>
+
+                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
+                                6
+                            </button>
+
+                            <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
+                                <ChevronRight size={14} />
+                            </button>
+
+                        </div>
+
+                    </section>
+
+                    <Sidebar />
+
+                </div>
+            </main>
+
+        </div>
     );
 };
 

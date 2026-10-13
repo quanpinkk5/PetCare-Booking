@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   PawPrint,
   MapPin,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 const BookingSidebar = ({ business }) => {
+  const navigate = useNavigate();
   const currentName = business?.name || "Happy Pet Cầu Giấy";
 
   return (
@@ -173,6 +175,7 @@ const BookingSidebar = ({ business }) => {
           {/* Tiếp tục */}
           <button
             type="button"
+            onClick={() => navigate("/booking")}
             className="w-full bg-[#179768] hover:bg-[#128359] text-white py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition"
           >
             <span>Tiếp tục đặt lịch</span>

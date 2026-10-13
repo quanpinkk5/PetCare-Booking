@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 
 import { Link, useNavigate } from "react-router-dom";
-import ServiceCategoryBar from "../../components/ServiceCategoryBar";
-import HowItWorks from "../../components/HowItWorks";
-import ReviewCard from "../../components/ReviewCard";
-import BusinessCard from "../../components/BusinessCard";
+import ServiceCategoryBar from "../../components/Service/ServiceCategoryBar";
+import HowItWorks from "../../components/Home/HowItWorks";
+import ReviewCard from "../../components/BusinessDetail/ReviewCard";
+import BusinessCard from "../../components/BusinessList/BusinessCard";
 import { mockBusinesses } from "../../services/mockBusinesses";
 
 const Home = () => {
