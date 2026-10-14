@@ -13,7 +13,7 @@ export default function RecentReviews() {
                 <button
                     type="button"
                     onClick={() => navigate("/business/reviews")}
-                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    className="flex cursor-pointer items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
                 >
                     Xem tất cả <ArrowRight size={12} />
                 </button>

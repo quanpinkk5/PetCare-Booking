@@ -108,6 +108,7 @@ export const METRICS = [
     bg: "bg-emerald-50",
     text: "text-emerald-600",
     icon: DollarSign,
+    path: "/business/payments",
   },
   {
     id: "bookings",
@@ -119,6 +120,7 @@ export const METRICS = [
     bg: "bg-blue-50",
     text: "text-blue-600",
     icon: CalendarCheck,
+    path: "/business/bookings",
   },
   {
     id: "customers",
@@ -130,6 +132,7 @@ export const METRICS = [
     bg: "bg-amber-50",
     text: "text-amber-600",
     icon: Users,
+    path: "/business/bookings",
   },
   {
     id: "rating",
@@ -141,6 +144,7 @@ export const METRICS = [
     bg: "bg-purple-50",
     text: "text-purple-600",
     icon: Star,
+    path: "/business/reviews",
   },
 ];
 
