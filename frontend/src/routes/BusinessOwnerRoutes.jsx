@@ -8,6 +8,7 @@ import BranchServicesPage from "../features/businessOwner/page/BranchServices/Br
 import SchedulePage from "../features/businessOwner/page/Schedule/SchedulePage";
 import BookingsPage from "../features/businessOwner/page/Bookings/BookingsPage";
 import BoardingPage from "../features/businessOwner/page/Boarding/BoardingPage";
+import PetDiaryPage from "../features/businessOwner/page/PetDiary/PetDiaryPage";
 import BusinessPlaceholderPage from "../features/businessOwner/components/common/BusinessPlaceholderPage";
 
 const BusinessOwnerRoutes = () => {
@@ -23,7 +24,7 @@ const BusinessOwnerRoutes = () => {
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="boarding" element={<BoardingPage />} />
-        <Route path="pet-diary" element={<BusinessPlaceholderPage title="Nhật ký thú cưng" />} />
+        <Route path="pet-diary" element={<PetDiaryPage />} />
         <Route path="payments" element={<BusinessPlaceholderPage title="Thanh toán" />} />
         <Route path="messages" element={<BusinessPlaceholderPage title="Tin nhắn" />} />
         <Route path="reviews" element={<BusinessPlaceholderPage title="Đánh giá" />} />
