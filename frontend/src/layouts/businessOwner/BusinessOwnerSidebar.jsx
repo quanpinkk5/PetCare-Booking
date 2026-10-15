@@ -1,8 +1,10 @@
 import { PawPrint, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { MENU_ITEMS } from "../../features/businessOwner/data/dashboardData";
+import { useBusinessNotifications } from "../../context/BusinessNotificationContext";
 
 export default function BusinessOwnerSidebar({ isOpen, onClose }) {
+  const { unreadCount } = useBusinessNotifications();
   const sidebarContent = (
     <div className="flex h-full flex-col justify-between">
       <div>
@@ -61,7 +63,12 @@ export default function BusinessOwnerSidebar({ isOpen, onClose }) {
                         isActive ? "text-emerald-600" : "text-slate-400"
                       }
                     />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.id === "notifications" && unreadCount > 0 && (
+                      <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-2xs">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>

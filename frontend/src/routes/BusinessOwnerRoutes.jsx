@@ -12,7 +12,7 @@ import PetDiaryPage from "../features/businessOwner/page/PetDiary/PetDiaryPage";
 import PaymentsPage from "../features/businessOwner/page/Payments/PaymentsPage";
 import MessagesPage from "../features/businessOwner/page/Messages/MessagesPage";
 import ReviewManagement from "../features/businessOwner/page/Reviews/ReviewManagement";
-import BusinessPlaceholderPage from "../features/businessOwner/components/common/BusinessPlaceholderPage";
+import NotificationsPage from "../features/businessOwner/page/Notifications/NotificationsPage";
 
 const BusinessOwnerRoutes = () => {
   return (
@@ -31,7 +31,7 @@ const BusinessOwnerRoutes = () => {
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="messages" element={<MessagesPage />} />
         <Route path="reviews" element={<ReviewManagement />} />
-        <Route path="notifications" element={<BusinessPlaceholderPage title="Thông báo" />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>

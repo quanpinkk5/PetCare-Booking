@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, Menu, ExternalLink, User, LogOut, ChevronDown, GitFork } from "lucide-react";
+import { Bell, Menu, ExternalLink, User, LogOut, ChevronDown, GitFork } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useBusinessNotifications } from "../../context/BusinessNotificationContext";
 
 const PAGE_TITLES = {
   "/business": "Dashboard",
@@ -24,6 +25,7 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { unreadCount } = useBusinessNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -81,9 +83,11 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
           className="relative rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
         >
           <Bell size={20} />
-          <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-xs">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* User Dropdown */}
