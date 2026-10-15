@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../../context/AuthContext";
 import ForgotPasswordModal from "../../components/ForgotPasswordModal";
+// import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 const Login = ({ defaultTab }) => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const Login = ({ defaultTab }) => {
     login,
     loginWithPhone,
     loginWithDemo,
-    loginWithSocial,
+    // loginWithSocial,
     register,
     logout
   } = useAuth();
@@ -514,7 +515,7 @@ const Login = ({ defaultTab }) => {
                   >
                     Email & Mật khẩu
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setLoginMethod("otp");
@@ -527,7 +528,7 @@ const Login = ({ defaultTab }) => {
                     }`}
                   >
                     Số điện thoại & OTP
-                  </button>
+                  </button> */}
                 </div>
 
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -709,7 +710,10 @@ const Login = ({ defaultTab }) => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => handleDemoClick("customer")}
+                    onClick={() => {
+                      setSuccessMsg("");
+                      setErrorMsg("Đăng nhập Google đang được phát triển.");
+                      }}
                     className="flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-xs transition-colors cursor-pointer"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -732,14 +736,30 @@ const Login = ({ defaultTab }) => {
                     </svg>
                     <span>Google</span>
                   </button>
+                  {/* <div className="flex items-center justify-center min-w-0">
+                    <GoogleLoginButton
+                      onSuccessLogin={() => {
+                        setErrorMsg("");
+                        setSuccessMsg("Đăng nhập Google thành công! Đang chuyển hướng...");
+
+                        setTimeout(() => {
+                          redirectAfterAuth();
+                        }, 600);
+                      }}
+                    />
+                  </div> */}
 
                   <button
                     type="button"
+                    // onClick={() => {
+                    //   loginWithSocial("Facebook");
+                    //   setSuccessMsg("Đã đăng nhập bằng tài khoản Facebook!");
+                    //   setTimeout(redirectAfterAuth, 500);
+                    // }}
                     onClick={() => {
-                      loginWithSocial("Facebook");
-                      setSuccessMsg("Đã đăng nhập bằng tài khoản Facebook!");
-                      setTimeout(redirectAfterAuth, 500);
-                    }}
+                      setSuccessMsg("");
+                      setErrorMsg("Đăng nhập Facebook đang được phát triển.");
+                      }}
                     className="flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-xs transition-colors cursor-pointer"
                   >
                     <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
@@ -750,7 +770,7 @@ const Login = ({ defaultTab }) => {
                 </div>
 
                 {/* 1-Click Quick Demo Accounts Bar */}
-                <div className="mt-6 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                {/* <div className="mt-6 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
                       <Sparkles size={14} className="text-amber-600" />
@@ -810,7 +830,7 @@ const Login = ({ defaultTab }) => {
                       </p>
                     </button>
                   </div>
-                </div>
+                </div> */}
               </div>
             ) : (
               /* ================= SECTION: REGISTER FORM ================= */

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Mail, ArrowRight, CheckCircle2, KeyRound } from "lucide-react";
-
+import { authApi } from "../services/authApi";
 const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -9,20 +9,36 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setError("Vui lòng nhập địa chỉ email hoặc số điện thoại");
-      return;
-    }
-    setError("");
-    setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true);
-    }, 800);
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanEmail) {
+    setError("Vui lòng nhập địa chỉ email");
+    return;
+  }
+
+  setError("");
+  setIsLoading(true);
+
+  try {
+    // Gọi API gửi email khôi phục thật
+    await authApi.forgotPassword(cleanEmail);
+
+    // Chỉ hiển thị thành công khi API trả thành công
+    setIsSubmitted(true);
+  } catch (err) {
+    setError(
+      err.message ||
+        "Không thể gửi yêu cầu khôi phục. Vui lòng thử lại."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleReset = () => {
     setIsSubmitted(false);
@@ -95,7 +111,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>Gửi mã khôi phục</span>
+                      <span>Gửi liên kết khôi phục</span>
                       <ArrowRight size={16} />
                     </>
                   )}
@@ -111,7 +127,8 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 Kiểm tra hòm thư của bạn!
               </h3>
               <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến địa chỉ email:
+                Nếu email này đã được đăng ký, chúng tôi sẽ gửi
+                hướng dẫn đặt lại mật khẩu đến địa chỉ:
                 <br />
                 <span className="font-semibold text-emerald-700">{email}</span>
               </p>
