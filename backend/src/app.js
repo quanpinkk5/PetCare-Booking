@@ -2,32 +2,31 @@
 const express = require("express");
 const cors = require("cors");
 
+const authRoutes = require("./routes/authRoutes");
+
 const app = express();
 
-// Cho phép Frontend gửi request đến Backend
+// Cho phép frontend React gọi API và gửi cookie
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
   })
 );
 
-// Đọc dữ liệu JSON trong request body
+// Đọc request body dạng JSON
 app.use(express.json());
 
-// API kiểm tra trạng thái Backend
+// API kiểm tra backend
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "PetCare Booking Backend is running!",
+    message: "PetCare Booking API is running",
   });
 });
 
-// Xử lý route không tồn tại
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "API không tồn tại",
-  });
-});
+// Authentication API
+app.use("/api/auth", authRoutes);
 
 module.exports = app;
+
