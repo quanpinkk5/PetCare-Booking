@@ -37,8 +37,8 @@ export const DEMO_ACCOUNTS = [
   },
   {
     id: 'usr_02',
-    role: 'partner',
-    roleLabel: 'Cơ sở PetCare',
+    role: 'businessOwner',
+    roleLabel: 'Chủ cơ sở (Business Owner)',
     name: 'PetCare Spa & Clinic Cầu Giấy',
     email: 'petspa.caugiay@gmail.com',
     password: 'password123',

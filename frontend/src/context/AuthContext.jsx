@@ -171,7 +171,13 @@ export const AuthProvider = ({ children }) => {
 
   // Login with Demo Role (1-click)
   const loginWithDemo = (role = "customer") => {
-    const target = DEMO_ACCOUNTS.find((acc) => acc.role === role) || DEMO_ACCOUNTS[0];
+    const target =
+      DEMO_ACCOUNTS.find(
+        (acc) =>
+          acc.role === role ||
+          ((role === "businessOwner" || role === "partner") &&
+            (acc.role === "businessOwner" || acc.role === "partner"))
+      ) || DEMO_ACCOUNTS[0];
     setUser(target);
     setIsAuthenticated(true);
     return { success: true, user: target };

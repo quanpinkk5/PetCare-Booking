@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import CustomerRoutes from "./CustomerRoutes";
+import BusinessOwnerRoutes from "./BusinessOwnerRoutes";
 import Login from "../features/auth/pages/Login/Login";
 import AdminRoutes from "./AdminRoutes";
 
@@ -13,6 +14,8 @@ const AppRoutes = () => {
       <Route path="/register" element={<Login defaultTab="register" />} />
       <Route path="/dang-ky" element={<Navigate to="/register" replace />} />
 
+      {/* Business Owner Routes */}
+      <Route path="/business/*" element={<BusinessOwnerRoutes />} />
       {/* Admin Routes */}
       <Route path="/admin/*" element={<AdminRoutes />} />
 
