@@ -1,0 +1,188 @@
+import {
+  CalendarDays,
+  CalendarCheck,
+  CalendarX,
+  Clock,
+  AlertTriangle,
+  Wrench,
+  Sparkles,
+} from "lucide-react";
+
+export const METRICS = [
+  {
+    id: "total_slots",
+    title: "Tổng khung giờ / tuần",
+    value: "84",
+    sub: "12 khung giờ / ngày",
+    icon: CalendarDays,
+    bg: "bg-blue-50",
+    color: "text-blue-600",
+  },
+  {
+    id: "booked_slots",
+    title: "Khung giờ đã đặt",
+    value: "58",
+    sub: "69% tỷ lệ lấp đầy",
+    icon: CalendarCheck,
+    bg: "bg-emerald-50",
+    color: "text-emerald-600",
+  },
+  {
+    id: "available_slots",
+    title: "Khung giờ còn trống",
+    value: "22",
+    sub: "Sẵn sàng đón khách",
+    icon: Clock,
+    bg: "bg-indigo-50",
+    color: "text-indigo-600",
+  },
+  {
+    id: "exceptions_count",
+    title: "Ngoại lệ tuần này",
+    value: "4",
+    sub: "2 bảo trì, 2 ngày nghỉ lễ",
+    icon: CalendarX,
+    bg: "bg-amber-50",
+    color: "text-amber-600",
+  },
+];
+
+export const EXCEPTIONS = [
+  {
+    id: 1,
+    title: "Bảo trì máy sấy lông Spa",
+    date: "20/05/2025",
+    reason: "Bảo dưỡng thiết bị định kỳ",
+    time: "08:00 - 11:00",
+    icon: Wrench,
+    bg: "bg-amber-50",
+    color: "text-amber-600",
+  },
+  {
+    id: 2,
+    title: "Nghỉ lễ Giỗ Tổ",
+    date: "22/05/2025",
+    reason: "Toàn bộ cơ sở nghỉ lễ",
+    time: "Cả ngày",
+    icon: CalendarX,
+    bg: "bg-rose-50",
+    color: "text-rose-600",
+  },
+  {
+    id: 3,
+    title: "Khử khuẩn khu lưu trú",
+    date: "23/05/2025",
+    reason: "Khử khuẩn định kỳ phòng lưu trú",
+    time: "12:00 - 14:00",
+    icon: AlertTriangle,
+    bg: "bg-purple-50",
+    color: "text-purple-600",
+  },
+  {
+    id: 4,
+    title: "Tăng ca dịch vụ Grooming",
+    date: "24/05/2025",
+    reason: "Mở thêm slot cuối tuần",
+    time: "18:00 - 20:00",
+    icon: Sparkles,
+    bg: "bg-emerald-50",
+    color: "text-emerald-600",
+  },
+];
+
+export const DAYS_OF_WEEK = [
+  { key: "mon", label: "T2", fullLabel: "Thứ 2", date: "19/05" },
+  { key: "tue", label: "T3", fullLabel: "Thứ 3", date: "20/05" },
+  { key: "wed", label: "T4", fullLabel: "Thứ 4", date: "21/05" },
+  { key: "thu", label: "T5", fullLabel: "Thứ 5", date: "22/05" },
+  { key: "fri", label: "T6", fullLabel: "Thứ 6", date: "23/05" },
+  { key: "sat", label: "T7", fullLabel: "Thứ 7", date: "24/05" },
+  { key: "sun", label: "CN", fullLabel: "Chủ nhật", date: "25/05" },
+];
+
+export const TIME_SLOTS_DATA = [
+  {
+    time: "08:00 - 09:30",
+    slots: {
+      mon: { status: "booked", booked: 4, max: 4, title: "Đã đầy" },
+      tue: { status: "maintenance", booked: 0, max: 0, title: "Bảo trì" },
+      wed: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      sat: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+      sun: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+    },
+  },
+  {
+    time: "09:30 - 11:00",
+    slots: {
+      mon: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      tue: { status: "available", booked: 1, max: 4, title: "1/4 đã đặt" },
+      wed: { status: "booked", booked: 4, max: 4, title: "Đã đầy" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      sat: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+      sun: { status: "available", booked: 4, max: 5, title: "4/5 đã đặt" },
+    },
+  },
+  {
+    time: "11:00 - 12:30",
+    slots: {
+      mon: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      tue: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      wed: { status: "available", booked: 1, max: 4, title: "1/4 đã đặt" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      sat: { status: "available", booked: 3, max: 5, title: "3/5 đã đặt" },
+      sun: { status: "available", booked: 3, max: 5, title: "3/5 đã đặt" },
+    },
+  },
+  {
+    time: "13:30 - 15:00",
+    slots: {
+      mon: { status: "available", booked: 1, max: 4, title: "1/4 đã đặt" },
+      tue: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      wed: { status: "booked", booked: 4, max: 4, title: "Đã đầy" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "maintenance", booked: 0, max: 0, title: "Khử khuẩn" },
+      sat: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+      sun: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+    },
+  },
+  {
+    time: "15:00 - 16:30",
+    slots: {
+      mon: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      tue: { status: "booked", booked: 4, max: 4, title: "Đã đầy" },
+      wed: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "available", booked: 3, max: 4, title: "3/4 đã đặt" },
+      sat: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+      sun: { status: "available", booked: 4, max: 5, title: "4/5 đã đặt" },
+    },
+  },
+  {
+    time: "16:30 - 18:00",
+    slots: {
+      mon: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      tue: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      wed: { status: "available", booked: 2, max: 4, title: "2/4 đã đặt" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "booked", booked: 4, max: 4, title: "Đã đầy" },
+      sat: { status: "booked", booked: 5, max: 5, title: "Đã đầy" },
+      sun: { status: "available", booked: 3, max: 5, title: "3/5 đã đặt" },
+    },
+  },
+  {
+    time: "18:00 - 19:30",
+    slots: {
+      mon: { status: "off", booked: 0, max: 0, title: "Đóng ca" },
+      tue: { status: "off", booked: 0, max: 0, title: "Đóng ca" },
+      wed: { status: "off", booked: 0, max: 0, title: "Đóng ca" },
+      thu: { status: "off", booked: 0, max: 0, title: "Nghỉ lễ" },
+      fri: { status: "off", booked: 0, max: 0, title: "Đóng ca" },
+      sat: { status: "available", booked: 2, max: 4, title: "Tăng ca (2/4)" },
+      sun: { status: "off", booked: 0, max: 0, title: "Đóng ca" },
+    },
+  },
+];

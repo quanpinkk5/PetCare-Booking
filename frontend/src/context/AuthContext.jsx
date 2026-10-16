@@ -79,7 +79,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Đăng ký tài khoản CUSTOMER
+
+
+  // Register new account
   const register = async ({ name, email, phone, password }) => {
     try {
       const response = await authApi.register({
