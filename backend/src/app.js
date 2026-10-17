@@ -1,8 +1,15 @@
-
 const express = require("express");
 const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
+const profileRoutes = require("./routes/customer/profileRoutes");
+
+// pet
+const petRoutes = require("./routes/customer/petRoutes");
+
+
+// businessOwner
+const businessesRoutes = require("./routes/businessOwner/businessesRoutes");
 
 const app = express();
 
@@ -11,7 +18,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 // Đọc request body dạng JSON
@@ -28,5 +35,13 @@ app.get("/api/health", (req, res) => {
 // Authentication API
 app.use("/api/auth", authRoutes);
 
+// Customer Profile API
+app.use("/api/customer", profileRoutes);
+
+// Customer Pet API
+app.use("/api/customer", petRoutes);
 module.exports = app;
 
+
+// BusinessOwner API
+app.use("/api/businessOwner", businessesRoutes);
