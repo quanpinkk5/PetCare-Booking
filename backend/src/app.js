@@ -7,12 +7,14 @@ const profileRoutes = require("./routes/customer/profileRoutes");
 // pet
 const petRoutes = require("./routes/customer/petRoutes");
 
-
 // businessOwner
 const businessesRoutes = require("./routes/businessOwner/businessesRoutes");
 
 // Branches
 const branchesRoutes = require("./routes/businessOwner/branchesRoutes");
+
+// Services
+const servicesRoutes = require("./routes/businessOwner/servicesRoutes");
 
 const app = express();
 
@@ -46,10 +48,11 @@ app.use("/api/customer", profileRoutes);
 app.use("/api/customer", petRoutes);
 module.exports = app;
 
-
 // BusinessOwner API
 app.use("/api/businessOwner", businessesRoutes);
 
-
 // Branches API
 app.use("/api/businessOwner", branchesRoutes);
+
+//Services API
+app.use("/api/businessOwner", servicesRoutes);
