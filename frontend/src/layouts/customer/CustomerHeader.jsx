@@ -11,7 +11,8 @@ import {
   CreditCard,
   Star,
   Dog,
-  MessageSquare
+  MessageSquare,
+  LayoutDashboard
 } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
 import { useAuth } from "../../context/AuthContext";
@@ -157,6 +158,7 @@ const CustomerHeader = () => {
                       <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
                       <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
                     </div>
+
 
                     <Link
                       to="/profile"

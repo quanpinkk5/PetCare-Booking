@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import ResetPassword from "../features/auth/pages/ResetPassword/ResetPassword";
 import CustomerRoutes from "./CustomerRoutes";
+import BusinessOwnerRoutes from "./BusinessOwnerRoutes";
 import Login from "../features/auth/pages/Login/Login";
 import AdminRoutes from "./AdminRoutes";
 import { useAuth } from "../context/AuthContext";
@@ -29,6 +30,8 @@ const AppRoutes = () => {
       {/* Quên mật khẩu */}
       <Route path="/reset-password" element={<ResetPassword />} />
 
+      {/* Business Owner Routes */}
+      <Route path="/business/*" element={<BusinessOwnerRoutes />} />
       {/* Admin Routes */}
       <Route path="/admin/*" element={<AdminRoutes />} />
 
