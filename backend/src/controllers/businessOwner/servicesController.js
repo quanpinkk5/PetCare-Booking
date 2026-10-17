@@ -357,9 +357,72 @@ const updateService = async (req, res, next) => {
     next(error);
   }
 };
+// ==============================
+// GET - Xem chi tiết dịch vụ
+// ==============================
+const getServiceById = async (req, res, next) => {
+  try {
+    // 1. Kiểm tra quyền Business Owner
+    if (req.user.role !== "BUSINESS_OWNER") {
+      return res.status(403).json({
+        success: false,
+        message: "Bạn không có quyền xem dịch vụ",
+      });
+    }
 
+    // 2. Lấy ID dịch vụ từ URL
+    const serviceId = req.params.id;
+
+    // 3. Kiểm tra ID hợp lệ
+    if (!mongoose.isValidObjectId(serviceId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID dịch vụ không hợp lệ",
+      });
+    }
+
+    // 4. Lấy ID Owner từ JWT
+    const ownerId = req.user._id || req.user.id;
+
+    // 5. Tìm dịch vụ theo ID
+    const service = await Service.findById(serviceId);
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ",
+      });
+    }
+
+    // 6. Kiểm tra Business có thuộc Owner không
+    const business = await Business.findOne({
+      _id: service.businessId,
+      ownerId,
+    });
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ thuộc doanh nghiệp của bạn",
+      });
+    }
+
+    // 7. Lấy thông tin danh mục của dịch vụ
+    await service.populate("categoryId", "name code description");
+
+    // 8. Trả kết quả
+    return res.status(200).json({
+      success: true,
+      message: "Lấy chi tiết dịch vụ thành công",
+      data: service,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   createService,
   getAllServices,
     updateService,
+    getServiceById,
 };

@@ -14,4 +14,7 @@ router.get("/services", authenticate, servicesController.getAllServices);
 // PATCH - Cập nhật dịch vụ
 router.patch("/services/:id", authenticate, servicesController.updateService);
 
+// GET - Xem chi tiết dịch vụ
+router.get("/services/:id", authenticate, servicesController.getServiceById);
+
 module.exports = router;
