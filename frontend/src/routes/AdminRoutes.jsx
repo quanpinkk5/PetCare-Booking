@@ -11,8 +11,30 @@ import BookingDetail from "../features/admin/pages/Bookings/BookingDetail";
 import PaymentList from "../features/admin/pages/Payments/PaymentList";
 import ReviewList from "../features/admin/pages/Reviews/ReviewList";
 import NotificationList from "../features/admin/pages/Notifications/NotificationList";
-
+import { useAuth } from "../context/AuthContext";
 const AdminRoutes = () => {
+    const { user, isAuthenticated, isAuthLoading } = useAuth();
+
+  // Đợi hệ thống kiểm tra và khôi phục phiên đăng nhập
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-slate-500">
+          Đang kiểm tra quyền truy cập...
+        </p>
+      </div>
+    );
+  }
+
+  // Chưa đăng nhập: chuyển đến Login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Không phải ADMIN: từ chối truy cập
+  if (user?.role !== "ADMIN") {
+    return <Navigate to="/" replace />;
+  }
   return (
     <Routes>
       <Route element={<AdminLayout />}>

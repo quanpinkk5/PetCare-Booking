@@ -104,21 +104,56 @@ const Login = ({ defaultTab }) => {
     setSuccessMsg("Mã OTP thử nghiệm là: 123456 (Nhập mã này để đăng nhập)");
   };
 
-  const redirectAfterAuth = (targetUser) => {
-    if (location.state?.from?.pathname) {
-      navigate(location.state.from.pathname, { replace: true });
-      return;
-    }
-    const effectiveUser = targetUser || user;
-    if (
-      effectiveUser?.role === "businessOwner" ||
-      effectiveUser?.role === "partner"
-    ) {
-      navigate("/business/dashboard", { replace: true });
-    } else {
-      navigate("/", { replace: true });
-    }
-  };
+  // const redirectAfterAuth = (targetUser) => {
+  //   if (location.state?.from?.pathname) {
+  //     navigate(location.state.from.pathname, { replace: true });
+  //     return;
+  //   }
+  //   const effectiveUser = targetUser || user;
+  //   if (
+  //     effectiveUser?.role === "businessOwner" ||
+  //     effectiveUser?.role === "partner"
+  //   ) {
+  //     navigate("/business/dashboard", { replace: true });
+  //   } else {
+  //     navigate("/", { replace: true });
+  //   }
+  // };
+  
+const redirectAfterAuth = (targetUser) => {
+  const effectiveUser = targetUser || user;
+
+  // ADMIN → Dashboard Admin
+  if (effectiveUser?.role === "ADMIN") {
+    navigate("/admin", { replace: true });
+    return;
+  }
+
+  // BUSINESS_OWNER → Dashboard chủ cơ sở
+  if (
+    effectiveUser?.role === "BUSINESS_OWNER" ||
+    effectiveUser?.role === "businessOwner" ||
+    effectiveUser?.role === "partner"
+  ) {
+    navigate("/business/dashboard", { replace: true });
+    return;
+  }
+
+  // CUSTOMER → Trang được yêu cầu trước đó hoặc trang chủ
+  const redirectUrl = location.state?.from?.pathname || "/";
+
+  // Không cho CUSTOMER chuyển hướng vào Admin/Business
+  if (
+    redirectUrl.startsWith("/admin") ||
+    redirectUrl.startsWith("/business")
+  ) {
+    navigate("/", { replace: true });
+    return;
+  }
+
+  navigate(redirectUrl, { replace: true });
+};
+
 
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
