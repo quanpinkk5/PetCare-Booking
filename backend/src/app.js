@@ -11,6 +11,9 @@ const petRoutes = require("./routes/customer/petRoutes");
 // businessOwner
 const businessesRoutes = require("./routes/businessOwner/businessesRoutes");
 
+// Branches
+const branchesRoutes = require("./routes/businessOwner/branchesRoutes");
+
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -46,3 +49,7 @@ module.exports = app;
 
 // BusinessOwner API
 app.use("/api/businessOwner", businessesRoutes);
+
+
+// Branches API
+app.use("/api/businessOwner", branchesRoutes);
