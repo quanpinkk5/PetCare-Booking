@@ -420,6 +420,77 @@ const resetPassword = async (req, res) => {
   }
 };
 
+
+  // * POST /api/auth/create-business-owner
+  //  * Chỉ Admin đã xác thực mới được tạo tài khoản Owner.
+  //  */
+const createBusinessOwner = async (req, res) => {
+  try {
+    const { fullName, email, phone, password } = req.body || {};
+
+    if (
+      typeof fullName !== "string" ||
+      !fullName.trim() ||
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      password.length < 8
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Vui lòng nhập đầy đủ thông tin. Mật khẩu tối thiểu 8 ký tự.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email đã được sử dụng",
+      });
+    }
+
+    // Không nhận role hoặc status từ frontend.
+    // User.js hiện xử lý hash password bằng pre('save').
+    const user = await User.create({
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      phone: typeof phone === "string" ? phone.trim() : "",
+      password,
+      role: "BUSINESS_OWNER",
+      status: "ACTIVE",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Tạo tài khoản Business Owner thành công",
+      data: {
+        user: formatUser(user),
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email đã được sử dụng",
+      });
+    }
+
+    console.error("Create Business Owner error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi tạo tài khoản",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -428,4 +499,5 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
+  createBusinessOwner,
 };

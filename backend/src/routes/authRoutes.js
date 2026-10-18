@@ -33,5 +33,6 @@ router.post(
 );
 router.post("/reset-password", authController.resetPassword);
 // router.post("/google", googleLogin);
+router.post("/businessOwner", authController.createBusinessOwner);
 
 module.exports = router;
