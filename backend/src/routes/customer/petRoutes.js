@@ -6,14 +6,36 @@ const authorize = require("../../middlewares/roleMiddleware");
 
 const petController = require("../../controllers/customer/petController");
 
-router.use(authenticate, authorize("CUSTOMER"));
+// POST - Tạo thú cưng
+router.post(
+  "/pets",
+  authenticate,
+  authorize("CUSTOMER"),
+  petController.createPet
+);
 
-// POST /api/customer/pets
-router.post("/pets", petController.createPet);
-// Lấy danh sách thú cưng
-router.get("/pets", petController.getPets);
-// Cập nhật thông tin thú cưng
-router.patch("/pets/:id", petController.updatePet);
-// Xóa mềm thú cưng
-router.delete("/pets/:id", petController.deletePet);
+// GET - Danh sách thú cưng
+router.get(
+  "/pets",
+  authenticate,
+  authorize("CUSTOMER"),
+  petController.getPets
+);
+
+// PATCH - Cập nhật thú cưng
+router.patch(
+  "/pets/:id",
+  authenticate,
+  authorize("CUSTOMER"),
+  petController.updatePet
+);
+
+// DELETE - Xóa mềm thú cưng
+router.delete(
+  "/pets/:id",
+  authenticate,
+  authorize("CUSTOMER"),
+  petController.deletePet
+);
+
 module.exports = router;

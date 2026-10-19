@@ -24,6 +24,18 @@ const schedulesRoutes = require("./routes/businessOwner/schedulesRoutes");
 
 // Schedule Exceptions
 const scheduleExceptionsRoutes = require("./routes/businessOwner/scheduleExceptionsRoutes");
+
+//Customer
+const customerBusinessesRoutes = require(
+  "./routes/customer/businessesRoutes"
+);
+const customerBranchesRoutes = require(
+  "./routes/customer/branchesRoutes"
+);
+const customerBranchServicesRoutes = require(
+  "./routes/customer/branchServicesRoutes"
+);
+
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -73,3 +85,11 @@ app.use("/api/businessOwner", schedulesRoutes);
 
 // Schedule Exceptions API
 app.use("/api/businessOwner", scheduleExceptionsRoutes);
+
+// Phân dành cho customer- Public API
+// Businesses API
+app.use("/api/customer", customerBusinessesRoutes);
+// Branches API
+app.use("/api/customer", customerBranchesRoutes);
+// branch services API
+app.use("/api/customer", customerBranchServicesRoutes);
