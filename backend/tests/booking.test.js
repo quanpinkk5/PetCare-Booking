@@ -66,7 +66,8 @@ const setup = (t, options = {}) => {
   t.mock.method(BranchService, 'findOneAndUpdate', async (filter, update, config) => {
     assert.deepEqual(filter, { _id: ids.offering, status: 'ACTIVE' });
     assert.deepEqual(update, { $inc: { bookingRevision: 1 } });
-    assert.deepEqual(config, { session, new: true });
+    assert.equal(config.session, session);
+    assert.ok(config.returnDocument === 'after' || config.new === true, 'Lock must return the updated offering');
     state.locks += 1;
     return options.missingOffering ? null : offering;
   });
