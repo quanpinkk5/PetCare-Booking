@@ -19,16 +19,17 @@ const ProfileSummary = ({
   user,
   activeTab = 'info',
   setActiveTab = () => {},
-  onAvatarChange = () => {}
+  onAvatarChange = () => {},
+  isAvatarSaving = false
 }) => {
   const fileInputRef = useRef(null);
 
   const handleAvatarFile = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      onAvatarChange(url);
+      onAvatarChange(file);
     }
+    e.target.value = '';
   };
 
   const navItems = [
@@ -46,7 +47,7 @@ const ProfileSummary = ({
         <div className="relative w-24 h-24 mx-auto mb-3 group">
           <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-emerald-400 to-teal-200 shadow-sm overflow-hidden">
             <img
-              alt={user?.name || 'User'}
+              alt={user?.fullName || user?.name || 'User'}
               src={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200'}
               className="w-full h-full rounded-full object-cover"
             />
@@ -55,6 +56,8 @@ const ProfileSummary = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             title="Đổi ảnh đại diện"
+            disabled={isAvatarSaving}
+            aria-label={isAvatarSaving ? 'Đang lưu ảnh đại diện' : 'Đổi ảnh đại diện'}
             className="absolute bottom-0 right-0 w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white transition-all transform hover:scale-110 cursor-pointer"
           >
             <Camera size={13} />
@@ -63,13 +66,14 @@ const ProfileSummary = ({
             type="file"
             ref={fileInputRef}
             onChange={handleAvatarFile}
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp"
+            disabled={isAvatarSaving}
             className="hidden"
           />
         </div>
 
         <h2 className="text-base font-bold text-slate-800 leading-snug">
-          {user?.name || 'Người dùng PetCare'}
+          {user?.fullName || user?.name || 'Người dùng PetCare'}
         </h2>
 
         {/* Member tags */}
@@ -83,7 +87,7 @@ const ProfileSummary = ({
               size={12}
               className="text-amber-500 fill-amber-500"
             />
-            {user?.tier || 'Thành viên Bạc'}
+            {user?.tier || 'Thành viên'}
           </span>
         </div>
 
@@ -115,7 +119,7 @@ const ProfileSummary = ({
             </div>
 
             <span className="text-base font-bold text-emerald-600">
-              {user?.petCount ?? 2}
+              {user?.petCount ?? '—'}
             </span>
           </Link>
 
@@ -132,7 +136,7 @@ const ProfileSummary = ({
             </div>
 
             <span className="text-base font-bold text-emerald-600">
-              {user?.bookingCount ?? 12}
+              {user?.bookingCount ?? '—'}
             </span>
           </Link>
 
@@ -149,7 +153,7 @@ const ProfileSummary = ({
             </div>
 
             <span className="text-base font-bold text-emerald-600">
-              {user?.reviewCount ?? 5}
+              {user?.reviewCount ?? '—'}
             </span>
           </Link>
         </div>

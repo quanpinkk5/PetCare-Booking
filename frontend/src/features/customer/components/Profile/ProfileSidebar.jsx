@@ -37,6 +37,7 @@ const ProfileSidebar = ({ pets = [], activities = [] }) => {
         </div>
 
         <div className="space-y-3">
+          {pets.length === 0 && <p className="text-xs text-slate-400">Xem thú cưng tại mục Quản lý thú cưng.</p>}
           {pets.map((pet) => (
             <Link
               key={pet.id}
@@ -99,6 +100,7 @@ const ProfileSidebar = ({ pets = [], activities = [] }) => {
         </div>
 
         <div className="space-y-3.5 text-xs">
+          {activities.length === 0 && <p className="text-slate-400">Chưa có dữ liệu hoạt động để hiển thị.</p>}
           {activities.map((activity) => {
             const Icon = activity.icon;
 
