@@ -565,18 +565,105 @@ const createBooking = async (req, res, next) => {
   }
 };
 // Lấy tất cả lịch đặt của khách hàng
+// ============================================
+// LẤY DANH SÁCH VÀ LỌC LỊCH ĐẶT THEO TRẠNG THÁI
+// GET /api/customer/bookings
+// ============================================
+
+// ============================================
+// LẤY DANH SÁCH LỊCH ĐẶT
+// HỖ TRỢ LỌC TRẠNG THÁI VÀ PHÂN TRANG
+// ============================================
+
 const getAllBookings = async (req, res, next) => {
   try {
+    // Lấy mã khách hàng đang đăng nhập
     const customerId = req.user._id || req.user.id;
 
-    const bookings = await Booking.find({ customerId })
-      .sort({ createdAt: -1 })
+    // Lấy thông tin lọc và phân trang
+    const { status } = req.query;
+    const pageInput = req.query.page ?? "1";
+    const limitInput = req.query.limit ?? "10";
+
+    // Kiểm tra số trang và số lịch đặt mỗi trang
+    const isPositiveInteger = (value) =>
+      /^\d+$/.test(String(value)) &&
+      Number.isSafeInteger(Number(value)) &&
+      Number(value) > 0;
+
+    if (
+      !isPositiveInteger(pageInput) ||
+      !isPositiveInteger(limitInput) ||
+      Number(limitInput) > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Số trang phải lớn hơn 0 và số lịch đặt mỗi trang phải từ 1 đến 100",
+      });
+    }
+
+    const page = Number(pageInput);
+    const limit = Number(limitInput);
+
+    // Kiểm tra trạng thái lịch đặt
+    const validStatuses = [
+      "PENDING",
+      "CONFIRMED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+    ];
+
+    if (status !== undefined && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Trạng thái lịch đặt không hợp lệ",
+      });
+    }
+
+    // Chỉ lấy lịch đặt thuộc khách hàng đang đăng nhập
+    const filter = { customerId };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    // Đếm tổng số lịch đặt phù hợp
+    const total = await Booking.countDocuments(filter);
+
+    const totalPages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    // Lấy lịch đặt theo trang
+    const bookings = await Booking.find(filter)
+      .populate("petId", "name species breed avatar")
+      .populate({
+        path: "branchServiceId",
+        select: "branchId serviceId price pricingUnit durationMinutes",
+        populate: [
+          {
+            path: "branchId",
+            select: "name address phone",
+          },
+          {
+            path: "serviceId",
+            select: "name serviceType images",
+          },
+        ],
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
 
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách lịch đặt thành công",
-      total: bookings.length,
+      total,
+      currentPage: page,
+      totalPages,
+      limit,
       data: bookings,
     });
   } catch (error) {

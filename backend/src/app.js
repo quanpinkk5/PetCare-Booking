@@ -43,6 +43,9 @@ const customerAvailableSlotsRoutes = require(
 const customerBookingRoutes = require(
   "./routes/customer/bookingRoutes"
 );
+// Review
+const customerReviewRoutes = require("./routes/customer/reviewRoutes");
+const publicReviewRoutes = require("./routes/public/reviewRoutes");
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -102,5 +105,8 @@ app.use("/api/businessOwner", scheduleExceptionsRoutes);
   app.use("/api/customer", customerBranchServicesRoutes);
   app.use('/api/customer', customerServicesRoutes);
   app.use("/api/customer", customerAvailableSlotsRoutes);
-// Private API - Booking
+// API - Booking
 app.use("/api/customer", customerBookingRoutes);
+// API - Review
+app.use("/api/customer", customerReviewRoutes);
+app.use("/api", publicReviewRoutes);
