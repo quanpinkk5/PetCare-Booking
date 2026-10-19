@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { MapPin, PawPrint } from 'lucide-react';
 import FacilityHero from '../../components/BusinessDetail/FacilityHero';
 import InPageTabs from '../../components/BusinessDetail/InPageTabs';
@@ -41,9 +41,9 @@ const BranchServices = ({ branch }) => {
   );
 };
 
-const BusinessDetailContent = ({ id }) => {
+const BusinessDetailContent = ({ id, initialBranchId }) => {
   const [result, setResult] = useState({ loading: true, business: null, branches: [], error: '' });
-  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +97,9 @@ const BusinessDetailContent = ({ id }) => {
 
 const BusinessDetail = () => {
   const { id } = useParams();
-  return <BusinessDetailContent key={id} id={id} />;
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branch') || '';
+  return <BusinessDetailContent key={`${id}:${branchId}`} id={id} initialBranchId={branchId} />;
 };
 
 export default BusinessDetail;

@@ -1,18 +1,14 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { serviceApi } from "../../services/serviceApi.js";
 import { Link } from "react-router-dom";
 
 import {
   PawPrint,
-  ChevronDown,
   Search,
-  Tag,
-  LayoutGrid,
-  ArrowDownWideNarrow,
   Scissors,
   Bath,
   Home,
   Droplets,
-  MapPin,
   ShieldHalf,
   CalendarClock,
   Zap,
@@ -26,145 +22,11 @@ import {
 import ServiceCategoryBar from "../../components/Service/ServiceCategoryBar";
 import ServiceCard from "../../components/Service/ServiceCard";
 
-const SERVICES = [
-  {
-    id: 1,
-    title: "Tắm & vệ sinh cơ bản",
-    tag: "Tắm & vệ sinh",
-    desc: "Tắm sạch, vệ sinh tai, cắt tỉa lông vùng cơ bản. Phù hợp cho thú cưng...",
-    price: "Từ 150.000đ",
-    time: "60 phút",
-    rating: 4.9,
-    reviews: 256,
-    locations: 12,
-    isPopular: true,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBbU66EbJkheVY5HMflWJKpZBC09mcARBVbVWbMqsoiet23-hTGn7sKjSVclfUPrC8nFXtb9uzUiPviU2pWTvGBllvj7IyZeLoVR378es4yKtjgw6T91_re2tFm07OhHoRPFNFlwD7bazlaDVi3Kv4Unl49OrNashSmB_WQjktu7bspQOaMVyD9m41IBuun7TUmm_r5oM0ZndRx1Eud5p6xpQNdwu4gHgWRJAWTLYvzggpg2b5arO9X",
-  },
-  {
-    id: 2,
-    title: "Premium Grooming",
-    tag: "Grooming",
-    desc: "Cắt tỉa, tạo kiểu lông chuyên nghiệp, sấy, chải bóng và chăm sóc toàn diện.",
-    price: "Từ 320.000đ",
-    time: "90 phút",
-    rating: 4.8,
-    reviews: 184,
-    locations: 18,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBgVvTjn08FLdJ774PLMrYhq1o9Q35spPNk_V_g_LfbKKk2L_FS3_YGuYwB-AE7iqB2EpHcqoGuXb48D9PNfHYh1Cud1_oRcu4-jfSLUE94Nd2YkCddOdebLblCHY0WOVTO9lep379q_ZFiZlNv1asr2s2srtOUMrvzocKOLENIY-sdY-2u-rsNIG7L5EEGK3yYjH6azXUMnn_Jp1FPFQl_0XMS8FgGDUaMT8PgGrTyUgZgMeQiCLWh",
-  },
-  {
-    id: 3,
-    title: "Spa thư giãn",
-    tag: "Spa thư giãn",
-    desc: "Massage, tắm thảo dược, ủ dưỡng lông giúp thú cưng thư giãn sâu.",
-    price: "Từ 280.000đ",
-    time: "75 phút",
-    rating: 4.9,
-    reviews: 132,
-    locations: 15,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCYj-6Q9AzNPYz95yf9HHVwtLfo7SzGuehBApbQbn0HeN6ZkW-bzH8Ed079Q7q_dPbWBV5VJasduZjNRcxCcHi71QNqNEWUcg3ZPuhgo1nUyuXhoYvJDansh1g-m-QaICdwTDFzb2roQCTwsKgcxRqf5drxlxzupCtQVY613pWAIYbcgWg6N_PqY9XLkSTd0kjXuLd6ORl9a8lXCSPsumOgBZ49Cdj1mjEVvzrLGGjLVeeSbZtXUyEx",
-  },
-  {
-    id: 4,
-    title: "Lưu trú qua đêm",
-    tag: "Lưu trú",
-    desc: "Lưu trú thoải mái, có người chăm sóc 24/7, chơi đùa và dạo ngoài trời.",
-    price: "Từ 200.000đ/ngày",
-    time: "Theo ngày",
-    rating: 4.9,
-    reviews: 98,
-    locations: 20,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAGK_l3Yd4ZMQqd2luaGSthxlxJXsYnZA3W4Zm9-d7NrrhRCJBAQ-uiCL8Sj0PoOd4Y7Ro6mlJWkonx_3Xmunn1e3fFKljycwdpmfvwiPUtPgX0hykoItDxw4EQ1NIVCZniZUN5Cqkkl0O34u7QFXX7Wc9HnIJNaZ_E-i5jiOmB_bzFKC2wLQLBhoLYkQADMfEmfnsKvG-yLeGUWNqkjrNbuyGR3mq4zzaccSv-uz8o2sXRBLexxHwW",
-  },
-  {
-    id: 5,
-    title: "Pet Sitting theo giờ",
-    tag: "Trông thú cưng",
-    desc: "Chăm sóc thú cưng tại nhà theo giờ: cho ăn, dọn vệ sinh, chơi cùng.",
-    price: "Từ 80.000đ/giờ",
-    time: "60 phút",
-    rating: 4.8,
-    reviews: 76,
-    locations: 12,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDfegNOUmzF-sCmqIoT3A1VsYJmn8j8X_9R8CuVJWmQNZLifOy8BFYwgu4nl39lqNPXglgPu0pFH4axSpNarCqs8gse04CIzG7JeUiL4gDybtItqngULa0aq4R36z64ou3WAeLiPelKg2N7sIHAh9crUFNUj-Ugy56qlZCILQayWTu8vJ-9NU0vT4iGXrtdaXCfUGUDZCzOw8pDkpARo2ADNULjH7J2X7FA75YMSV3NdMJ_qk9C3Dun",
-  },
-  {
-    id: 6,
-    title: "Cắt móng & vệ sinh tai",
-    tag: "Chăm sóc sức khỏe",
-    desc: "Cắt móng, mài móng và vệ sinh tai an toàn, nhẹ nhàng, không gây đau.",
-    price: "Từ 90.000đ",
-    time: "30 phút",
-    rating: 4.7,
-    reviews: 63,
-    locations: 14,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBcWlC39Qg1Po1DP87PqaH0zVSEWPy53GAvU5IRrqVQaA5hDp1gXaYcjfnJOzn2Kl2Tp0vn065nzWf_mQ-fMyRqFK7NLv8bXffXPnmbjb4snfYswA_YlHt4pSRofRgN6CuReNvbXH2SdhzIfb8LUnFHlRlx1fKA0qJbGkqBmCSCEneV7dnN48qUjT4IZ-XmIhA4jKk_EXx0E7l4uEksBSXmMHqrYoA9Nm4PmhBkp36TpnCWBXvOUogm",
-  },
-  {
-    id: 7,
-    title: "Trông thú cưng qua đêm",
-    tag: "Trông thú cưng",
-    desc: "Nhận trông thú cưng tại nhà bạn qua đêm, đảm bảo an toàn, yêu thương.",
-    price: "Từ 250.000đ/đêm",
-    time: "Theo ngày",
-    rating: 4.8,
-    reviews: 51,
-    locations: 9,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuARWGemb8qGkejwABlM0lpzmUCYa0d4CGpvaSKrX91i2dDNCwsWeMTCC6M0Q0uWhjZ4HR2_MNMClVvRWpnn8tatfi86BHfMOn9iq1oWfbaDYGsYi9X9oIjLUcU7mSsV8bMe_N5Z1B7r1E8aaXvFybUGtKM2Sqc8fVFpzWglEESC-TOlo_UMbafsHjJwMNkQtdhvwlzBvAwk1dkzGyMhVfNh330PjJcMXgonUV2QgOWOrK51_qB2ho7K",
-  },
-  {
-    id: 8,
-    title: "Vận chuyển thú cưng",
-    tag: "Dịch vụ khác",
-    desc: "Đưa đón thú cưng đến spa, bệnh viện hoặc sân bay an toàn, đúng giờ.",
-    price: "Từ 150.000đ/lượt",
-    time: "Theo chuyến",
-    rating: 4.7,
-    reviews: 29,
-    locations: 8,
-    isPopular: false,
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4irjg9uAQqoQDMbxfydSG968DA8kFepfdSFNOSTr8Iz8-7Ex9LVv86hlxku54yoF9aQrAsTjFt2fXNHqU2JtYzBVSLe9Qea8eKB_xsDid26tVyFjAJO1uGvWHFkO-xXQkBWI5tZEruPL2-f_PFinRd3wiqRMdhkOhvaS_cFAZxlY6OUff5wqX905NpcVZpJG8oLvVP1mj8QbGp3P9ELo2qDmlZh8BgL1G98z363J6WMect402lb_G",
-  },
-];
-
-const PROMOS = [
-  {
-    id: 1,
-    title: "Combo Tắm & Grooming",
-    badge: "Tiết kiệm 15%",
-    desc: "Tiết kiệm hơn khi đặt combo tắm + cắt tỉa lông cho bé cưng.",
-    price: "Từ 420.000đ",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAcyNN6sA10cKL9qvvc4FaXjq26536zUrn0Se4e1bO_b1KbQMw9XpoR-G0Tlwe2_SrCCeTnzgohgRR27jc8moOfke5zl_FCK5ci-h_9xro3m2mdSO8QA1A_nnpzqUsTFW0PZL5L4mJNA9s0JN0qyIRBIv2XMJkrYjleP5gJNtTWBKsoLcqd4pLDwW3Pm8pnehfNEu_Ygyog_2rUB44d2hMC1L8rbzy9_Hn7oE1CJdt4IsPSqUogP0up",
-  },
-  {
-    id: 2,
-    title: "Gói Spa cao cấp",
-    badge: "Thư giãn tối đa",
-    desc: "Liệu trình spa cao cấp giúp bé thư giãn và lông mềm mượt.",
-    price: "Từ 350.000đ",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDNTsyfkCL2QIzdvgCmlkpUVWEXz6lzwxL5LyhjMh2iMZRCkvGNd30QQ9lD4_KViF6Uwsa1lTnTKnXmpIMMUOzipUWRoZwFzhF7U9egIeDRGK544xO-ahZ2GikfwWE8Hl-q4eAR0eovv6ysyId7RLSq4MEooeiDaALA9cfy7fLpxVD281qKaBicirWiV7D5KBHf4Kg_hOySAoSE1ABis7Zb7EO4Dj5pj9pJUh529jZUgrnqq-j1EEq9",
-  },
-  {
-    id: 3,
-    title: "Lưu trú dài ngày",
-    badge: "Ưu đãi đến 20%",
-    desc: "Ưu đãi khi lưu trú từ 3 ngày trở lên. An tâm khi đi xa.",
-    price: "Từ 250.000đ/ngày",
-    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBdmKYUG8Qr0ISmS6W_V5sw6MyRcfd4-oy8myAx4SKtVDb6A-OQ-b3MvE4E0DnKbKgDGuCM6dsmUwdbSMCeA46Z1EyMKVhtarXYyMloJHdy0HFkn8QkU7zqAH8qRbq13N9Di9usH52l9G3C2uvifM3A0192wUZEh_66_jSITZFNcItdT99km7A-fBy4sqqyoEkPPBdYUDh_pCLjztcQRzveBNKR0LhBgFHfKhxJtDd6Yf5Boi84xtRh",
-  },
-];
-
 /* =========================
    HERO
 ========================= */
 
-const Hero = () => {
+const Hero = ({ children }) => {
   return (
     <section className="relative bg-gradient-to-br from-[#ebfaf3] via-[#e2f7ed] to-[#f4fcf8] rounded-3xl p-6 md:p-10 overflow-hidden border border-emerald-50">
 
@@ -236,45 +98,7 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mt-8 bg-white p-2 md:p-3 rounded-2xl shadow-sm border border-slate-200/80 flex flex-wrap items-center gap-2">
-
-        <div className="flex-1 min-w-[200px] flex items-center px-3 py-2 text-sm">
-          <Search className="w-4 h-4 text-slate-400 mr-2.5" />
-
-          <input
-            type="text"
-            placeholder="Tìm dịch vụ..."
-            className="w-full border-none p-0 focus:ring-0 text-slate-700 placeholder-slate-400 text-sm outline-none"
-          />
-        </div>
-
-        <div className="h-6 w-[1px] bg-slate-200 hidden md:block" />
-
-        {[
-          { icon: PawPrint, label: "Loại thú cưng" },
-          { icon: Tag, label: "Mức giá" },
-          { icon: LayoutGrid, label: "Hình thức" },
-          { icon: ArrowDownWideNarrow, label: "Phổ biến" },
-        ].map((filter, index) => (
-          <React.Fragment key={index}>
-
-            <div className="flex items-center text-xs md:text-sm text-slate-600 px-3 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer gap-2">
-              <filter.icon className="w-4 h-4 text-slate-400" />
-
-              <span>{filter.label}</span>
-
-              <ChevronDown className="w-3 h-3 text-slate-400 ml-1" />
-            </div>
-
-            {index < 3 && (
-              <div className="h-6 w-[1px] bg-slate-200 hidden md:block" />
-            )}
-
-          </React.Fragment>
-        ))}
-
-      </div>
+      {children}
     </section>
   );
 };
@@ -282,102 +106,6 @@ const Hero = () => {
 /* =========================
    SERVICE LIST
 ========================= */
-
-const ServiceList = () => {
-  return (
-    <section className="lg:col-span-8 space-y-6">
-
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-base font-bold text-slate-900">
-            Tất cả dịch vụ
-          </h2>
-
-          <span className="text-xs text-slate-400 font-normal">
-            | Hiển thị {SERVICES.length} dịch vụ
-          </span>
-        </div>
-
-        <a
-          href="#"
-          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700"
-        >
-          Xem tất cả
-        </a>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {SERVICES.map((service) => (
-          <ServiceCard
-            key={service.id}
-            service={service}
-          />
-        ))}
-      </div>
-
-      {/* Promotions */}
-      <div className="space-y-3 pt-4">
-
-        <h2 className="text-base font-bold text-slate-800">
-          Dịch vụ được yêu thích
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
-          {PROMOS.map((promo) => (
-            <div
-              key={promo.id}
-              className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex flex-col justify-between"
-            >
-
-              <div className="flex gap-2.5 items-start">
-
-                <img
-                  src={promo.img}
-                  alt={promo.title}
-                  className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
-                />
-
-                <div>
-                  <span className="text-xs font-bold text-slate-800 line-clamp-1">
-                    {promo.title}
-                  </span>
-
-                  <span className="inline-block bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5">
-                    {promo.badge}
-                  </span>
-
-                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">
-                    {promo.desc}
-                  </p>
-                </div>
-
-              </div>
-
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-50">
-
-                <span className="text-xs font-bold text-slate-800">
-                  {promo.price}
-                </span>
-
-                <Link
-                  to="/booking"
-                  className="text-[11px] font-semibold text-emerald-600 hover:underline border border-emerald-200 px-2 py-0.5 rounded-lg"
-                >
-                  Đặt ngay
-                </Link>
-
-              </div>
-
-            </div>
-          ))}
-
-        </div>
-      </div>
-    </section>
-  );
-};
 
 /* =========================
    SIDEBAR
@@ -467,7 +195,7 @@ const Sidebar = () => {
             {
               icon: Award,
               title: "Nhiều cơ sở uy tín",
-              desc: "Hơn 100+ đối tác được kiểm duyệt kỹ lưỡng",
+              desc: "Các cơ sở được kiểm duyệt thông tin",
             },
             {
               icon: Receipt,
@@ -521,10 +249,10 @@ const Sidebar = () => {
             Đội ngũ PetCare luôn sẵn sàng hỗ trợ và tư vấn dịch vụ phù hợp.
           </p>
 
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm">
+          <Link to="/messages" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm">
             <MessageCircle className="w-4 h-4" />
             <span>Chat với chúng tôi</span>
-          </button>
+          </Link>
 
         </div>
 
@@ -542,28 +270,97 @@ const Sidebar = () => {
    PAGE
 ========================= */
 
+const EMPTY_FILTERS = { search: '', petType: '', serviceType: '', minPrice: '', maxPrice: '' };
+const inputClass = 'mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal focus:border-emerald-500 focus:outline-none';
 const Services = () => {
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [query, setQuery] = useState({ ...EMPTY_FILTERS, categoryId: '', sort: 'newest', page: 1, limit: 8 });
+  const [result, setResult] = useState({ data: [], pagination: { total: 0, totalPages: 0 } });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [categoryState, setCategoryState] = useState({ data: [], loading: true, error: '' });
+  const [categoryAttempt, setCategoryAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    serviceApi.list(query).then((response) => { if (!cancelled) setResult(response); })
+      .catch((err) => { if (!cancelled) setError(err.message || 'Không thể tải dịch vụ.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [query, attempt]);
+  useEffect(() => {
+    let cancelled = false;
+    serviceApi.categories().then((response) => {
+      if (!cancelled) setCategoryState({ data: response.data, loading: false, error: '' });
+    }).catch((err) => {
+      if (!cancelled) setCategoryState({ data: [], loading: false, error: err.message || 'Không thể tải danh mục.' });
+    });
+    return () => { cancelled = true; };
+  }, [categoryAttempt]);
+  const updateQuery = (values) => {
+    setLoading(true); setError('');
+    setQuery((current) => ({ ...current, ...values }));
+  };
+  const change = (e) => setFilters((current) => ({ ...current, [e.target.name]: e.target.value }));
   return (
-    <div className="bg-slate-50 min-h-screen">
-
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-8 space-y-8">
-
-        {/* Hero */}
-        <Hero />
-
-        {/* Categories */}
-        <ServiceCategoryBar />
-
-        {/* Content */}
+    <div className="min-h-screen bg-slate-50">
+      <main className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 space-y-8">
+        <Hero>
+          <form onSubmit={(e) => { e.preventDefault(); updateQuery({ ...filters, page: 1 }); }} className="relative mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <label className="text-xs font-semibold">Tìm dịch vụ hoặc cơ sở
+                <input type="search" name="search" maxLength={200} value={filters.search} onChange={change} placeholder="Tên dịch vụ, cơ sở..." className={inputClass} />
+              </label>
+              <label className="text-xs font-semibold">Loại thú cưng
+                <select name="petType" value={filters.petType} onChange={change} className={inputClass}>
+                  <option value="">Tất cả</option><option value="DOG">Chó</option><option value="CAT">Mèo</option>
+                </select>
+              </label>
+              <label className="text-xs font-semibold">Hình thức
+                <select name="serviceType" value={filters.serviceType} onChange={change} className={inputClass}>
+                  <option value="">Tất cả</option><option value="APPOINTMENT">Theo lịch hẹn</option><option value="BOARDING">Lưu trú</option>
+                </select>
+              </label>
+              <label className="text-xs font-semibold">Giá từ (VNĐ)
+                <input type="number" name="minPrice" min="0" step="any" value={filters.minPrice} onChange={change} className={inputClass} placeholder="Không giới hạn" />
+              </label>
+              <label className="text-xs font-semibold">Giá đến (VNĐ)
+                <input type="number" name="maxPrice" min="0" step="any" value={filters.maxPrice} onChange={change} className={inputClass} placeholder="Không giới hạn" />
+              </label>
+              <div className="flex items-end gap-2">
+                <button type="submit" className="flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"><Search size={15} />Tìm kiếm</button>
+                <button type="button" onClick={() => { setFilters(EMPTY_FILTERS); updateQuery({ ...EMPTY_FILTERS, categoryId: '', page: 1, sort: 'newest' }); }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm">Đặt lại</button>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">Giá áp dụng theo đơn vị ghi trên từng dịch vụ (mỗi lần hoặc mỗi ngày).</p>
+          </form>
+        </Hero>
+        {categoryState.loading ? <p role="status" className="text-sm text-slate-500">Đang tải danh mục...</p>
+          : categoryState.error ? <div role="alert" className="text-sm text-red-700"><p>{categoryState.error}</p><button type="button" onClick={() => { setCategoryState({ data: [], loading: true, error: '' }); setCategoryAttempt((value) => value + 1); }} className="mt-2 underline">Tải lại danh mục</button></div>
+          : <ServiceCategoryBar categories={categoryState.data} selectedId={query.categoryId} onChange={(categoryId) => updateQuery({ categoryId, page: 1 })} />}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          <ServiceList />
-
+          <section className="lg:col-span-8 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <h2 className="text-base font-bold">Dịch vụ tại chi nhánh <span className="text-xs font-normal text-slate-500">({loading ? '...' : error ? '—' : result.pagination.total} kết quả)</span></h2>
+              <label className="text-xs">Sắp xếp
+                <select value={query.sort} onChange={(e) => updateQuery({ sort: e.target.value, page: 1 })} className="ml-2 rounded-lg border border-slate-200 p-2">
+                  <option value="newest">Mới nhất</option><option value="priceAsc">Giá thấp đến cao</option><option value="priceDesc">Giá cao đến thấp</option><option value="name">Tên A–Z</option>
+                </select>
+              </label>
+            </div>
+            {loading ? <p role="status" className="rounded-2xl bg-white p-8 text-center text-slate-500">Đang tải dịch vụ...</p>
+              : error ? <div role="alert" className="rounded-2xl bg-red-50 p-5 text-red-700"><p>{error}</p><button type="button" onClick={() => { setError(''); setLoading(true); setAttempt((value) => value + 1); }} className="mt-3 underline">Thử lại</button></div>
+              : result.data.length ? <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{result.data.map((item) => <ServiceCard key={item._id} service={item} />)}</div>
+              : <p className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">Không tìm thấy dịch vụ phù hợp.</p>}
+            {!loading && !error && result.pagination.totalPages > 1 && <nav aria-label="Phân trang dịch vụ" className="flex justify-center items-center gap-4 text-sm">
+              <button type="button" disabled={query.page <= 1} onClick={() => updateQuery({ page: query.page - 1 })} className="rounded-lg border border-slate-200 p-2 disabled:opacity-40">Trang trước</button>
+              <span>Trang {query.page} / {result.pagination.totalPages}</span>
+              <button type="button" disabled={query.page >= result.pagination.totalPages} onClick={() => updateQuery({ page: query.page + 1 })} className="rounded-lg border border-slate-200 p-2 disabled:opacity-40">Trang sau</button>
+            </nav>}
+          </section>
           <Sidebar />
-
         </div>
-
-      </div>
+      </main>
     </div>
   );
 };

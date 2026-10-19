@@ -1,73 +1,19 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { PawPrint } from 'lucide-react';
 
-const CATEGORIES = [
-  {
-    id: 1,
-    icon: "🛁",
-    label: "Tắm & vệ sinh",
-    bg: "bg-sky-50",
-  },
-  {
-    id: 2,
-    icon: "✂️",
-    label: "Grooming",
-    bg: "bg-amber-50",
-  },
-  {
-    id: 3,
-    icon: "💆",
-    label: "Spa thư giãn",
-    bg: "bg-rose-50",
-  },
-  {
-    id: 4,
-    icon: "🏠",
-    label: "Lưu trú qua đêm",
-    bg: "bg-emerald-50",
-  },
-  {
-    id: 5,
-    icon: "🐾",
-    label: "Trông thú cưng",
-    bg: "bg-indigo-50",
-  },
-  {
-    id: 6,
-    icon: "💅",
-    label: "Cắt móng & vệ sinh",
-    bg: "bg-purple-50",
-  },
-];
-
-const ServiceCategoryBar = () => {
-  return (
-    <section className="space-y-4">
-      <h2 className="text-base font-bold text-slate-800">
-        Danh mục dịch vụ nổi bật
-      </h2>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {CATEGORIES.map((category) => (
-          <Link
-            key={category.id}
-            to="/services"
-            className="bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all group"
-          >
-            <div
-              className={`w-14 h-14 rounded-full ${category.bg} flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform`}
-            >
-              {category.icon}
-            </div>
-
-            <span className="text-xs font-semibold text-slate-700 group-hover:text-emerald-600">
-              {category.label}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-};
+const ServiceCategoryBar = ({ categories = [], selectedId = '', onChange }) => (
+  <section className="space-y-4" aria-label="Danh mục dịch vụ">
+    <h2 className="text-base font-bold text-slate-800">Danh mục dịch vụ</h2>
+    <div className="flex flex-wrap gap-3">
+      <button type="button" aria-pressed={!selectedId} onClick={() => onChange('')}
+        className={'rounded-xl border px-4 py-3 text-sm font-semibold ' + (!selectedId ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600')}>Tất cả</button>
+      {categories.map((category) => (
+        <button type="button" key={category._id} aria-pressed={selectedId === category._id} onClick={() => onChange(category._id)}
+          className={'flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ' + (selectedId === category._id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300')}>
+          <PawPrint size={16} />{category.name}
+        </button>
+      ))}
+    </div>
+  </section>
+);
 
 export default ServiceCategoryBar;
