@@ -16,6 +16,14 @@ const branchesRoutes = require("./routes/businessOwner/branchesRoutes");
 // Services
 const servicesRoutes = require("./routes/businessOwner/servicesRoutes");
 
+// Branch Services
+const branchServicesRoutes = require("./routes/businessOwner/branchServicesRoutes");
+
+// Schedules
+const schedulesRoutes = require("./routes/businessOwner/schedulesRoutes");
+
+// Schedule Exceptions
+const scheduleExceptionsRoutes = require("./routes/businessOwner/scheduleExceptionsRoutes");
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -56,3 +64,12 @@ app.use("/api/businessOwner", branchesRoutes);
 
 //Services API
 app.use("/api/businessOwner", servicesRoutes);
+
+// Branch Services API
+app.use("/api/businessOwner", branchServicesRoutes);
+
+// Schedules API
+app.use("/api/businessOwner", schedulesRoutes);
+
+// Schedule Exceptions API
+app.use("/api/businessOwner", scheduleExceptionsRoutes);
