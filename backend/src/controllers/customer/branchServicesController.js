@@ -126,7 +126,116 @@ const getServicesByBranchId = async (req, res, next) => {
     next(error);
   }
 };
+// ==========================================
+// GET - Chi tiết dịch vụ tại một chi nhánh
+// ==========================================
+const getBranchServiceById = async (req, res, next) => {
+  try {
+    // 1. Lấy BranchService ID từ URL
+    const { id } = req.params;
 
+    // 2. Kiểm tra ID hợp lệ
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID dịch vụ tại chi nhánh không hợp lệ",
+      });
+    }
+
+    // 3. Tìm BranchService đang hoạt động
+    const branchService = await BranchService.findOne({
+      _id: id,
+      status: "ACTIVE",
+    })
+      .select(
+        "branchId serviceId price pricingUnit durationMinutes capacity petTypes status"
+      )
+      .lean();
+
+    if (!branchService) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ tại chi nhánh",
+      });
+    }
+
+    // 4. Kiểm tra Branch đang hoạt động
+    const branch = await Branch.findOne({
+      _id: branchService.branchId,
+      status: "ACTIVE",
+    })
+      .select(
+        "businessId name phone email address openingHours images"
+      )
+      .lean();
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ tại chi nhánh",
+      });
+    }
+
+    // 5. Kiểm tra Business đã được duyệt
+    const business = await Business.findOne({
+      _id: branch.businessId,
+      status: "APPROVED",
+    })
+      .select("name slug logo")
+      .lean();
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ tại chi nhánh",
+      });
+    }
+
+    // 6. Kiểm tra Service đang hoạt động
+    // và phải thuộc đúng Business
+    const service = await Service.findOne({
+      _id: branchService.serviceId,
+      businessId: business._id,
+      status: "ACTIVE",
+    })
+      .select(
+        "categoryId name description serviceType images"
+      )
+      .lean();
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ tại chi nhánh",
+      });
+    }
+
+    // 7. Trả về thông tin chi tiết
+    return res.status(200).json({
+      success: true,
+      message: "Lấy chi tiết dịch vụ tại chi nhánh thành công",
+      data: {
+        _id: branchService._id,
+        branchId: branchService.branchId,
+        serviceId: branchService.serviceId,
+
+        price: branchService.price,
+        pricingUnit: branchService.pricingUnit,
+        durationMinutes: branchService.durationMinutes,
+        capacity: branchService.capacity,
+        petTypes: branchService.petTypes,
+        status: branchService.status,
+
+        service,
+        branch,
+        business,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   getServicesByBranchId,
+    getBranchServiceById,
 };

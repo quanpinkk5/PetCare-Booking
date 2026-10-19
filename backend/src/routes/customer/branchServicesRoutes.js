@@ -8,5 +8,9 @@ router.get(
   "/branches/:id/services",
   branchServicesController.getServicesByBranchId,
 );
-
+// GET - Chi tiết dịch vụ tại chi nhánh
+router.get(
+  "/branchServices/:id",
+  branchServicesController.getBranchServiceById
+);
 module.exports = router;

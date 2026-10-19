@@ -36,7 +36,13 @@ const customerBranchServicesRoutes = require(
   "./routes/customer/branchServicesRoutes"
 );
 const customerServicesRoutes = require('./routes/customer/servicesRoutes');
-
+const customerAvailableSlotsRoutes = require(
+  "./routes/customer/availableSlotsRoutes"
+);
+// Booking
+const customerBookingRoutes = require(
+  "./routes/customer/bookingRoutes"
+);
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -88,10 +94,13 @@ app.use("/api/businessOwner", schedulesRoutes);
 app.use("/api/businessOwner", scheduleExceptionsRoutes);
 
 // Phân dành cho customer- Public API
-// Businesses API
-app.use("/api/customer", customerBusinessesRoutes);
-// Branches API
-app.use("/api/customer", customerBranchesRoutes);
-// branch services API
-app.use("/api/customer", customerBranchServicesRoutes);
-app.use('/api/customer', customerServicesRoutes);
+  // Businesses API
+  app.use("/api/customer", customerBusinessesRoutes);
+  // Branches API
+  app.use("/api/customer", customerBranchesRoutes);
+  // branch services API
+  app.use("/api/customer", customerBranchServicesRoutes);
+  app.use('/api/customer', customerServicesRoutes);
+  app.use("/api/customer", customerAvailableSlotsRoutes);
+// Private API - Booking
+app.use("/api/customer", customerBookingRoutes);
