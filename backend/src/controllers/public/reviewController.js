@@ -26,7 +26,7 @@ const getBusinessReviews = async (req, res, next) => {
     const filter = { businessId: business._id, status: 'VISIBLE' };
     if (rating) filter.rating = rating;
     const [reviews, total, counts] = await Promise.all([
-      Review.find(filter).select('rating comment images createdAt customerId branchId serviceId businessReply.content businessReply.repliedAt')
+      Review.find(filter).select('rating comment images createdAt customerId branchId serviceId isAnonymous businessReply.content businessReply.repliedAt')
         .populate('customerId', 'fullName avatar').populate('branchId', 'name').populate('serviceId', 'name')
         .sort(sorts[sort]).skip((page - 1) * limit).limit(limit).lean(),
       Review.countDocuments(filter),
@@ -43,7 +43,7 @@ const getBusinessReviews = async (req, res, next) => {
       data: reviews.map((review) => ({
         _id: review._id, rating: review.rating, comment: review.comment,
         images: review.images || [], createdAt: review.createdAt,
-        customer: { fullName: review.customerId?.fullName || 'Khách hàng', avatar: review.customerId?.avatar || '' },
+        customer: review.isAnonymous ? { fullName: 'Khách hàng ẩn danh', avatar: '' } : { fullName: review.customerId?.fullName || 'Khách hàng', avatar: review.customerId?.avatar || '' },
         branch: { name: review.branchId?.name || '' }, service: { name: review.serviceId?.name || '' },
         businessReply: review.businessReply?.content ? { content: review.businessReply.content, repliedAt: review.businessReply.repliedAt } : null,
       })),
@@ -76,7 +76,7 @@ const getAllReviews = async (req, res, next) => {
       success: true,
       message: "Lấy danh sách đánh giá thành công",
       total: reviews.length,
-      data: reviews,
+      data: reviews.map((review) => review.isAnonymous ? { ...review, customerId: null } : review),
     });
   } catch (error) {
     next(error);

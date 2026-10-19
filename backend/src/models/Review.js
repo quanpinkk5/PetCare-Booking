@@ -56,6 +56,15 @@ const reviewSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    subRatings: {
+      cleanliness: { type: Number, min: 1, max: 5 },
+      staff: { type: Number, min: 1, max: 5 },
+      care: { type: Number, min: 1, max: 5 },
+      price: { type: Number, min: 1, max: 5 },
+    },
+    tags: { type: [String], default: [] },
+    isAnonymous: { type: Boolean, default: false },
+    likedBy: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [], select: false },
 
     businessReply: {
       content: {

@@ -5,6 +5,8 @@ const authenticate = require("../../middlewares/authMiddleware");
 const authorize = require("../../middlewares/roleMiddleware");
 
 const reviewController = require("../../controllers/customer/reviewController");
+router.get('/reviews/pending-bookings', authenticate, authorize('CUSTOMER'), reviewController.getPendingReviews);
+router.patch('/reviews/:id/helpful', authenticate, authorize('CUSTOMER'), reviewController.setHelpful);
 
 // Khách hàng đánh giá dịch vụ
 router.post(

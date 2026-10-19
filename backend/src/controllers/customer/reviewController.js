@@ -1,397 +1,120 @@
+const mongoose = require('mongoose');
+const Review = require('../../models/Review');
+const Booking = require('../../models/Booking');
+const BranchService = require('../../models/BranchService');
+const Branch = require('../../models/Branch');
+const Service = require('../../models/Service');
+const Business = require('../../models/Business');
+require('../../models/Pet');
 
-const mongoose = require("mongoose");
-
-const Review = require("../../models/Review");
-const Booking = require("../../models/Booking");
-const BranchService = require("../../models/BranchService");
-const Branch = require("../../models/Branch");
-const Service = require("../../models/Service");
-const Business = require("../../models/Business");
-
-// ============================================
-// KHÁCH HÀNG TẠO ĐÁNH GIÁ DỊCH VỤ
-// POST /api/customer/reviews
-// ============================================
+const invalid = (message) => Object.assign(new Error(message), { status: 400 });
+const validate = (body, creating = false) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw invalid('Dữ liệu đánh giá không hợp lệ');
+  const allowed = ['rating', 'comment', 'images', 'subRatings', 'tags', 'isAnonymous', ...(creating ? ['bookingId'] : [])];
+  if (!Object.keys(body).length || Object.keys(body).some((field) => !allowed.includes(field))) throw invalid('Có trường thông tin không được phép gửi');
+  const data = {};
+  if (creating || body.rating !== undefined) {
+    if (!Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5) throw invalid('Số sao phải là số nguyên từ 1 đến 5');
+    data.rating = body.rating;
+  }
+  if (body.comment !== undefined) {
+    if (typeof body.comment !== 'string' || body.comment.length > 3000) throw invalid('Nội dung đánh giá tối đa 3000 ký tự');
+    data.comment = body.comment.trim();
+  }
+  if (body.images !== undefined) {
+    if (!Array.isArray(body.images) || body.images.length > 4 || !body.images.every((image) => typeof image === 'string' && /^https?:\/\/\S+$/.test(image) && image.length <= 2048)) throw invalid('Tối đa 4 ảnh với đường dẫn HTTP(S) hợp lệ');
+    data.images = body.images;
+  }
+  if (body.subRatings !== undefined) {
+    const sub = body.subRatings;
+    if (!sub || typeof sub !== 'object' || Array.isArray(sub) || Object.keys(sub).some((key) => !['cleanliness', 'staff', 'care', 'price'].includes(key) || !Number.isInteger(sub[key]) || sub[key] < 1 || sub[key] > 5)) throw invalid('Điểm chi tiết phải từ 1 đến 5');
+    data.subRatings = sub;
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.length > 5 || !body.tags.every((tag) => typeof tag === 'string' && tag.trim() && tag.length <= 100)) throw invalid('Tối đa 5 nhãn, mỗi nhãn tối đa 100 ký tự');
+    data.tags = [...new Set(body.tags.map((tag) => tag.trim()))];
+  }
+  if (body.isAnonymous !== undefined) {
+    if (typeof body.isAnonymous !== 'boolean') throw invalid('Trạng thái ẩn danh không hợp lệ');
+    data.isAnonymous = body.isAnonymous;
+  }
+  return data;
+};
+const handleError = (error, res, next) => {
+  if (error.code === 11000) return res.status(409).json({ success: false, message: 'Lịch đặt này đã được đánh giá' });
+  if (error.status === 400 || ['ValidationError', 'CastError'].includes(error.name)) return res.status(400).json({ success: false, message: error.status ? error.message : 'Thông tin đánh giá không hợp lệ' });
+  next(error);
+};
 
 const createReview = async (req, res, next) => {
   try {
-    // Lấy mã khách hàng đang đăng nhập
+    const data = validate(req.body, true);
     const customerId = req.user._id || req.user.id;
-
-    // Lấy dữ liệu khách hàng gửi lên
-    const {
-      bookingId,
-      rating,
-      comment,
-      images,
-    } = req.body;
-
-    // Kiểm tra mã lịch đặt
-    if (!mongoose.isValidObjectId(bookingId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Mã lịch đặt không hợp lệ",
-      });
-    }
-
-    // Kiểm tra số sao đánh giá
-    if (
-      !Number.isInteger(rating) ||
-      rating < 1 ||
-      rating > 5
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Số sao đánh giá phải là số nguyên từ 1 đến 5",
-      });
-    }
-
-    // Kiểm tra nội dung đánh giá
-    if (
-      comment !== undefined &&
-      typeof comment !== "string"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Nội dung đánh giá phải là chuỗi",
-      });
-    }
-
-    // Kiểm tra danh sách hình ảnh
-    if (
-      images !== undefined &&
-      (
-        !Array.isArray(images) ||
-        !images.every(
-          (image) => typeof image === "string"
-        )
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Danh sách hình ảnh không hợp lệ",
-      });
-    }
-
-    // Kiểm tra lịch đặt thuộc khách hàng
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      customerId,
-    }).lean();
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy lịch đặt của bạn",
-      });
-    }
-
-    // Chỉ được đánh giá lịch đã hoàn thành
-    if (booking.status !== "COMPLETED") {
-      return res.status(400).json({
-        success: false,
-        message: "Chỉ được đánh giá lịch đặt đã hoàn thành",
-      });
-    }
-
-    // Kiểm tra lịch đặt đã được đánh giá chưa
-    const existingReview = await Review.findOne({
-      bookingId,
-    }).lean();
-
-    if (existingReview) {
-      return res.status(409).json({
-        success: false,
-        message: "Lịch đặt này đã được đánh giá",
-      });
-    }
-
-    // Lấy thông tin dịch vụ tại chi nhánh
-    const branchService = await BranchService.findById(
-      booking.branchServiceId
-    ).lean();
-
-    if (!branchService) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy dịch vụ của lịch đặt",
-      });
-    }
-
-    // Lấy thông tin chi nhánh
-    const branch = await Branch.findById(
-      branchService.branchId
-    ).lean();
-
-    if (!branch) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy chi nhánh",
-      });
-    }
-
-    // Kiểm tra cơ sở kinh doanh tồn tại
-    const business = await Business.findById(
-      branch.businessId
-    ).lean();
-
-    if (!business) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy cơ sở kinh doanh",
-      });
-    }
-
-    // Kiểm tra dịch vụ thuộc cơ sở kinh doanh
-    const service = await Service.findOne({
-      _id: branchService.serviceId,
-      businessId: business._id,
-    }).lean();
-
-    if (!service) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy dịch vụ",
-      });
-    }
-
-    // Tạo đánh giá
-    const review = await Review.create({
-      bookingId: booking._id,
-      customerId,
-      businessId: business._id,
-      branchId: branch._id,
-      serviceId: service._id,
-      rating,
-      comment: comment || "",
-      images: images || [],
-      status: "VISIBLE",
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Đánh giá dịch vụ thành công",
-      data: review,
-    });
-
-  } catch (error) {
-    // Xử lý trường hợp hai yêu cầu đánh giá
-    // cùng một lịch đặt được gửi đồng thời
-    if (
-      error.code === 11000 &&
-      error.keyPattern?.bookingId
-    ) {
-      return res.status(409).json({
-        success: false,
-        message: "Lịch đặt này đã được đánh giá",
-      });
-    }
-
-    next(error);
-  }
+    const { bookingId } = req.body;
+    if (typeof bookingId !== 'string' || !mongoose.isValidObjectId(bookingId)) throw invalid('Mã lịch đặt không hợp lệ');
+    const booking = await Booking.findOne({ _id: bookingId, customerId }).lean();
+    if (!booking) return res.status(404).json({ success: false, message: 'Không tìm thấy lịch đặt của bạn' });
+    if (booking.status !== 'COMPLETED') throw invalid('Chỉ được đánh giá lịch đặt đã hoàn thành');
+    if (await Review.findOne({ bookingId }).lean()) return res.status(409).json({ success: false, message: 'Lịch đặt này đã được đánh giá' });
+    const offering = await BranchService.findById(booking.branchServiceId).lean();
+    const branch = offering && await Branch.findById(offering.branchId).lean();
+    const business = branch && await Business.findById(branch.businessId).lean();
+    const service = business && await Service.findOne({ _id: offering.serviceId, businessId: business._id }).lean();
+    if (!service) return res.status(404).json({ success: false, message: 'Không còn thông tin cơ sở hoặc dịch vụ của lịch đặt' });
+    const review = await Review.create({ ...data, bookingId: booking._id, customerId, businessId: business._id, branchId: branch._id, serviceId: service._id, status: 'VISIBLE' });
+    return res.status(201).json({ success: true, message: 'Đánh giá dịch vụ thành công', data: review });
+  } catch (error) { handleError(error, res, next); }
 };
-
 const updateReview = async (req, res, next) => {
   try {
-    // Lấy mã khách hàng và mã đánh giá
-    const customerId = req.user._id || req.user.id;
-    const { id } = req.params;
-
-    // Kiểm tra mã đánh giá
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Mã đánh giá không hợp lệ",
-      });
-    }
-
-    // Chỉ cho phép cập nhật các trường này
-    const allowedFields = ["rating", "comment", "images"];
-    const fields = Object.keys(req.body || {});
-
-    if (fields.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng cung cấp thông tin cần cập nhật",
-      });
-    }
-
-    if (fields.some((field) => !allowedFields.includes(field))) {
-      return res.status(400).json({
-        success: false,
-        message: "Có trường thông tin không được phép cập nhật",
-      });
-    }
-
-    const { rating, comment, images } = req.body;
-
-    // Kiểm tra số sao nếu có cập nhật
-    if (
-      rating !== undefined &&
-      (!Number.isInteger(rating) || rating < 1 || rating > 5)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Số sao đánh giá phải là số nguyên từ 1 đến 5",
-      });
-    }
-
-    // Kiểm tra nội dung nếu có cập nhật
-    if (
-      comment !== undefined &&
-      typeof comment !== "string"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Nội dung đánh giá phải là chuỗi",
-      });
-    }
-
-    // Kiểm tra hình ảnh nếu có cập nhật
-    if (
-      images !== undefined &&
-      (
-        !Array.isArray(images) ||
-        !images.every((image) => typeof image === "string")
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Danh sách hình ảnh không hợp lệ",
-      });
-    }
-
-    // Tạo dữ liệu cập nhật
-    const updateData = {};
-
-    if (rating !== undefined) {
-      updateData.rating = rating;
-    }
-
-    if (comment !== undefined) {
-      updateData.comment = comment;
-    }
-
-    if (images !== undefined) {
-      updateData.images = images;
-    }
-
-    // Chỉ cập nhật đánh giá thuộc khách hàng và đang hiển thị
-    const review = await Review.findOneAndUpdate(
-      {
-        _id: id,
-        customerId,
-        status: "VISIBLE",
-      },
-      {
-        $set: updateData,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Không tìm thấy đánh giá được phép cập nhật",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Cập nhật đánh giá thành công",
-      data: review,
-    });
-  } catch (error) {
-    next(error);
-  }
+    const data = validate(req.body);
+    if (!mongoose.isValidObjectId(req.params.id)) throw invalid('Mã đánh giá không hợp lệ');
+    const review = await Review.findOneAndUpdate({ _id: req.params.id, customerId: req.user._id || req.user.id, status: 'VISIBLE' }, { $set: data }, { returnDocument: 'after', runValidators: true });
+    if (!review) return res.status(404).json({ success: false, message: 'Không tìm thấy đánh giá được phép cập nhật' });
+    return res.status(200).json({ success: true, message: 'Cập nhật đánh giá thành công', data: review });
+  } catch (error) { handleError(error, res, next); }
 };
-
 const deleteReview = async (req, res, next) => {
   try {
-    // Lấy mã khách hàng đang đăng nhập
-    const customerId = req.user._id || req.user.id;
-
-    // Lấy mã đánh giá
-    const { id } = req.params;
-
-    // Kiểm tra mã đánh giá
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Mã đánh giá không hợp lệ",
-      });
-    }
-
-    // Chỉ ẩn đánh giá của khách hàng đang đăng nhập
-    // và đánh giá hiện đang hiển thị
-    const review = await Review.findOneAndUpdate(
-      {
-        _id: id,
-        customerId,
-        status: "VISIBLE",
-      },
-      {
-        $set: {
-          status: "HIDDEN",
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đánh giá có thể xóa của bạn",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Xóa đánh giá thành công",
-      data: review,
-    });
-  } catch (error) {
-    next(error);
-  }
+    if (!mongoose.isValidObjectId(req.params.id)) throw invalid('Mã đánh giá không hợp lệ');
+    const review = await Review.findOneAndUpdate({ _id: req.params.id, customerId: req.user._id || req.user.id, status: 'VISIBLE' }, { $set: { status: 'HIDDEN' } }, { returnDocument: 'after', runValidators: true });
+    if (!review) return res.status(404).json({ success: false, message: 'Không tìm thấy đánh giá có thể xóa của bạn' });
+    return res.status(200).json({ success: true, message: 'Xóa đánh giá thành công', data: { _id: review._id, status: review.status } });
+  } catch (error) { handleError(error, res, next); }
 };
-
 const getMyReviews = async (req, res, next) => {
   try {
-    // Lấy ID khách hàng từ token
     const customerId = req.user._id || req.user.id;
-
-    // Lấy tất cả đánh giá của khách hàng
-    const reviews = await Review.find({
-      customerId,
-    })
-      .populate("bookingId", "bookingCode bookingType status")
-      .populate("businessId", "name logo")
-      .populate("branchId", "name address")
-      .populate("serviceId", "name serviceType")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      message: "Lấy tất cả đánh giá của khách hàng thành công",
-      total: reviews.length,
-      data: reviews,
-    });
-  } catch (error) {
-    next(error);
-  }
+    const reviews = await Review.find({ customerId, status: 'VISIBLE' }).select('+likedBy')
+      .populate({ path: 'bookingId', select: 'bookingCode bookingType bookingDate checkInDate checkOutDate totalPrice petId updatedAt', populate: { path: 'petId', select: 'name breed gender avatar' } })
+      .populate('businessId', 'name logo').populate('branchId', 'name address').populate('serviceId', 'name description serviceType')
+      .sort({ createdAt: -1, _id: -1 }).lean();
+    return res.status(200).json({ success: true, data: reviews.map(({ likedBy = [], ...review }) => ({ ...review, likesCount: likedBy.length, isLiked: likedBy.some((id) => String(id) === String(customerId)) })), total: reviews.length });
+  } catch (error) { next(error); }
 };
-
-module.exports = {
-  createReview,
-    updateReview,
-    deleteReview,
-    getMyReviews,
+const getPendingReviews = async (req, res, next) => {
+  try {
+    const customerId = req.user._id || req.user.id;
+    // Include hidden reviews in this exclusion: one booking cannot receive a second review.
+    const reviewed = await Review.find({ customerId }).select('bookingId').lean();
+    const bookings = await Booking.find({ customerId, status: 'COMPLETED', _id: { $nin: reviewed.map((review) => review.bookingId) } })
+      .populate('petId', 'name breed gender avatar')
+      .populate({ path: 'branchServiceId', select: 'branchId serviceId', populate: [
+        { path: 'branchId', select: 'name address businessId', populate: { path: 'businessId', select: 'name logo' } },
+        { path: 'serviceId', select: 'name description' },
+      ] }).sort({ updatedAt: -1, _id: -1 }).lean();
+    return res.status(200).json({ success: true, data: bookings, total: bookings.length });
+  } catch (error) { next(error); }
 };
+const setHelpful = async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id) || typeof req.body?.liked !== 'boolean') throw invalid('Yêu cầu đánh dấu hữu ích không hợp lệ');
+    const customerId = req.user._id || req.user.id;
+    const update = req.body.liked ? { $addToSet: { likedBy: customerId } } : { $pull: { likedBy: customerId } };
+    const review = await Review.findOneAndUpdate({ _id: req.params.id, customerId, status: 'VISIBLE' }, update, { returnDocument: 'after' }).select('+likedBy').lean();
+    if (!review) return res.status(404).json({ success: false, message: 'Không tìm thấy đánh giá của bạn' });
+    const likes = review.likedBy || [];
+    return res.status(200).json({ success: true, data: { _id: review._id, likesCount: likes.length, isLiked: likes.some((id) => String(id) === String(customerId)) } });
+  } catch (error) { handleError(error, res, next); }
+};
+module.exports = { createReview, updateReview, deleteReview, getMyReviews, getPendingReviews, setHelpful };

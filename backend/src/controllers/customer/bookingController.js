@@ -577,98 +577,76 @@ const createBooking = async (req, res, next) => {
 
 const getAllBookings = async (req, res, next) => {
   try {
-    // Lấy mã khách hàng đang đăng nhập
     const customerId = req.user._id || req.user.id;
-
-    // Lấy thông tin lọc và phân trang
-    const { status } = req.query;
-    const pageInput = req.query.page ?? "1";
-    const limitInput = req.query.limit ?? "10";
-
-    // Kiểm tra số trang và số lịch đặt mỗi trang
-    const isPositiveInteger = (value) =>
-      /^\d+$/.test(String(value)) &&
-      Number.isSafeInteger(Number(value)) &&
-      Number(value) > 0;
-
-    if (
-      !isPositiveInteger(pageInput) ||
-      !isPositiveInteger(limitInput) ||
-      Number(limitInput) > 100
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Số trang phải lớn hơn 0 và số lịch đặt mỗi trang phải từ 1 đến 100",
-      });
+    const { status, search = '', time = 'all' } = req.query;
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+    const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+    if (!Number.isSafeInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100 ||
+        !Number.isSafeInteger((page - 1) * limit) ||
+        (status !== undefined && !validStatuses.includes(status)) || typeof search !== 'string' || search.length > 200 ||
+        !['all', 'today', 'week', 'month'].includes(time)) {
+      return res.status(400).json({ success: false, message: 'Bộ lọc hoặc phân trang lịch đặt không hợp lệ' });
     }
-
-    const page = Number(pageInput);
-    const limit = Number(limitInput);
-
-    // Kiểm tra trạng thái lịch đặt
-    const validStatuses = [
-      "PENDING",
-      "CONFIRMED",
-      "IN_PROGRESS",
-      "COMPLETED",
-      "CANCELLED",
-    ];
-
-    if (status !== undefined && !validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Trạng thái lịch đặt không hợp lệ",
-      });
-    }
-
-    // Chỉ lấy lịch đặt thuộc khách hàng đang đăng nhập
     const filter = { customerId };
-
-    if (status) {
-      filter.status = status;
+    if (status) filter.status = status;
+    const now = getVietnamNow();
+    const today = parseDate(now.date);
+    if (time !== 'all') {
+      let from = today;
+      let until = nextDay(today);
+      if (time === 'week') {
+        from = new Date(today.getTime() - ((today.getUTCDay() + 6) % 7) * DAY);
+        until = new Date(from.getTime() + 7 * DAY);
+      } else if (time === 'month') {
+        from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+        until = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
+      }
+      filter.$or = [
+        { bookingType: 'APPOINTMENT', bookingDate: { $gte: from, $lt: until } },
+        { bookingType: 'BOARDING', checkInDate: { $lt: until }, checkOutDate: { $gt: from } },
+      ];
     }
-
-    // Đếm tổng số lịch đặt phù hợp
-    const total = await Booking.countDocuments(filter);
-
-    const totalPages = Math.ceil(total / limit);
-    const skip = (page - 1) * limit;
-
-    // Lấy lịch đặt theo trang
-    const bookings = await Booking.find(filter)
-      .populate("petId", "name species breed avatar")
-      .populate({
-        path: "branchServiceId",
-        select: "branchId serviceId price pricingUnit durationMinutes",
-        populate: [
-          {
-            path: "branchId",
-            select: "name address phone",
-          },
-          {
-            path: "serviceId",
-            select: "name serviceType images",
-          },
-        ],
-      })
-      .sort({ createdAt: -1, _id: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      message: "Lấy danh sách lịch đặt thành công",
-      total,
-      currentPage: page,
-      totalPages,
-      limit,
-      data: bookings,
+    if (search.trim()) {
+      const regex = { $regex: search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+      const [pets, branches, services] = await Promise.all([
+        Pet.find({ ownerId: customerId, $or: [{ name: regex }, { breed: regex }] }).select('_id').lean(),
+        Branch.find({ name: regex }).select('_id').lean(),
+        Service.find({ name: regex }).select('_id').lean(),
+      ]);
+      const offerings = await BranchService.find({ $or: [
+        { branchId: { $in: branches.map((item) => item._id) } },
+        { serviceId: { $in: services.map((item) => item._id) } },
+      ] }).select('_id').lean();
+      filter.$and = [{ $or: [
+        { bookingCode: regex }, { petId: { $in: pets.map((item) => item._id) } },
+        { branchServiceId: { $in: offerings.map((item) => item._id) } },
+      ] }];
+    }
+    const nowTime = minutesToTime(now.minutes);
+    const [total, bookings, counts, upcoming] = await Promise.all([
+      Booking.countDocuments(filter),
+      Booking.find(filter).populate('petId', 'name species breed gender dateOfBirth avatar')
+        .populate({ path: 'branchServiceId', select: 'branchId serviceId price pricingUnit durationMinutes', populate: [
+          { path: 'branchId', select: 'name address phone' },
+          { path: 'serviceId', select: 'name description serviceType images' },
+        ] }).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      Booking.aggregate([
+        { $match: { customerId: new mongoose.Types.ObjectId(String(customerId)) } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      Booking.countDocuments({ customerId, status: 'CONFIRMED', $or: [
+        { bookingType: 'APPOINTMENT', bookingDate: { $gt: today } },
+        { bookingType: 'APPOINTMENT', bookingDate: today, startTime: { $gt: nowTime } },
+        { bookingType: 'BOARDING', checkInDate: { $gte: today } },
+      ] }),
+    ]);
+    const statusCounts = Object.fromEntries(validStatuses.map((value) => [value, counts.find((item) => item._id === value)?.count || 0]));
+    return res.status(200).json({ success: true, message: 'Lấy danh sách lịch đặt thành công',
+      total, currentPage: page, totalPages: Math.ceil(total / limit), limit, data: bookings,
+      summary: { total: Object.values(statusCounts).reduce((sum, count) => sum + count, 0), statusCounts, upcoming },
     });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 };
 // ============================================
 // XEM CHI TIẾT LỊCH ĐẶT CỦA KHÁCH HÀNG
@@ -697,7 +675,7 @@ const getBookingById = async (req, res, next) => {
       customerId: customerId,
     })
       // Lấy thông tin thú cưng
-      .populate("petId", "name species breed gender dateOfBirth weight avatar")
+      .populate("petId", "name species breed gender dateOfBirth weight personality avatar")
 
       // Lấy thông tin dịch vụ tại chi nhánh
       .populate({
@@ -751,6 +729,17 @@ const cancelBooking = async (req, res, next) => {
 
     // Lấy mã lịch đặt từ đường dẫn
     const { id } = req.params;
+    const reasons = {
+      busy: 'Có việc bận đột xuất / Thay đổi kế hoạch',
+      reschedule: 'Muốn dời sang ngày hoặc khung giờ khác',
+      pet_sick: 'Thú cưng gặp vấn đề sức khỏe chưa thể đi',
+      other_branch: 'Đặt nhầm cơ sở hoặc tìm được chỗ gần hơn',
+      other: 'Lý do khác',
+    };
+    const reason = req.body?.reason;
+    if (reason !== undefined && (typeof reason !== 'string' || !Object.hasOwn(reasons, reason))) {
+      return res.status(400).json({ success: false, message: 'Lý do hủy lịch không hợp lệ' });
+    }
 
     // Kiểm tra mã lịch đặt
     if (!mongoose.isValidObjectId(id)) {
@@ -808,7 +797,7 @@ const cancelBooking = async (req, res, next) => {
           statusHistory: {
             status: "CANCELLED",
             changedBy: customerId,
-            note: "Khách hàng hủy lịch đặt",
+            note: reason ? `Khách hàng hủy lịch đặt: ${reasons[reason]}` : "Khách hàng hủy lịch đặt",
           },
         },
       },

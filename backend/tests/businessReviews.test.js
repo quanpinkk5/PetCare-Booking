@@ -106,3 +106,23 @@ test('no reviews and deleted related records produce honest empty or neutral val
   assert.deepEqual(response.data[0].images, []);
   assert.equal(response.data[0].businessReply, null);
 });
+
+test('anonymous reviews never expose the customer name or avatar through public endpoints', async (t) => {
+  approved(t);
+  t.mock.method(Review, 'find', () => reviewQuery([{
+    _id: 'anonymous-1', rating: 5, isAnonymous: true,
+    customerId: { _id: 'private-id', fullName: 'Private name', avatar: 'private-avatar' },
+  }]));
+  t.mock.method(Review, 'countDocuments', async () => 1);
+  t.mock.method(Review, 'aggregate', async () => [{ _id: 5, count: 1 }]);
+  const scoped = await get();
+  assert.deepEqual(scoped.data[0].customer, { fullName: 'Khách hàng ẩn danh', avatar: '' });
+  t.mock.method(Review, 'find', () => ({
+    populate() { return this; }, sort() { return this; },
+    lean: async () => [{ _id: 'anonymous-1', isAnonymous: true, customerId: { fullName: 'Private name' } }],
+  }));
+  const controller = require('../src/controllers/public/reviewController');
+  let publicData;
+  await controller.getAllReviews({}, { status() { return this; }, json(data) { publicData = data; } }, (error) => { throw error; });
+  assert.equal(publicData.data[0].customerId, null);
+});
