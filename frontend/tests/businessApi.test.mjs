@@ -59,3 +59,17 @@ test('opening hours show actual values and never invent an opening schedule', ()
   assert.deepEqual(openingHoursText([null, {}]), ['Chưa cập nhật giờ mở cửa']);
   assert.deepEqual(openingHoursText([{ day: 'T2', openTime: '08:00', closeTime: '18:00' }, { day: 'CN', isClosed: true }]), ['T2: 08:00 - 18:00', 'CN: Đóng cửa']);
 });
+
+test('business review requests use a scoped public endpoint with rating, sorting and pagination', async (t) => {
+  authApi.setAccessToken(null);
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const parsed = new URL(url);
+    assert.equal(parsed.pathname, '/api/businesses/business-1/reviews');
+    assert.equal(parsed.searchParams.get('page'), '2');
+    assert.equal(parsed.searchParams.get('rating'), '5');
+    assert.equal(parsed.searchParams.get('sort'), 'highest');
+    assert.equal(options.headers.Authorization, undefined);
+    return Response.json({ data: [], summary: { totalReviews: 0 }, pagination: { page: 2 } });
+  });
+  assert.equal((await businessApi.reviews('business-1', { page: 2, rating: 5, sort: 'highest' })).summary.totalReviews, 0);
+});
