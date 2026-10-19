@@ -35,6 +35,7 @@ const customerBranchesRoutes = require(
 const customerBranchServicesRoutes = require(
   "./routes/customer/branchServicesRoutes"
 );
+const customerServicesRoutes = require('./routes/customer/servicesRoutes');
 
 const app = express();
 
@@ -93,3 +94,4 @@ app.use("/api/customer", customerBusinessesRoutes);
 app.use("/api/customer", customerBranchesRoutes);
 // branch services API
 app.use("/api/customer", customerBranchServicesRoutes);
+app.use('/api/customer', customerServicesRoutes);
