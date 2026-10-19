@@ -1,8 +1,6 @@
 import {
     PawPrint,
     Search,
-    MapPin,
-    LayoutGrid,
     Star,
     CheckCircle2,
     List,
@@ -15,151 +13,42 @@ import {
 
 import { Link } from "react-router-dom";
 import BusinessCard from "../../components/BusinessList/BusinessCard";
-import { mockBusinesses } from "../../services/mockBusinesses";
+import { useEffect, useState } from "react";
+import { businessApi } from "../../services/businessApi.js";
 
 /* =========================
 FILTER BAR
 ========================= */
 
-const FilterBar = () => {
-    return (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 mt-2">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-
-                {/* Search */}
-                <div className="md:col-span-3">
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-0.5">
-                        Tìm tên cơ sở hoặc dịch vụ
-                    </label>
-
-                    <div className="relative flex items-center">
-                        <Search
-                            size={14}
-                            className="absolute left-2.5 text-gray-400"
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Ví dụ: Puppy Love, Grooming..."
-                            className="w-full pl-8 pr-2 py-1.5 text-xs text-gray-800 bg-gray-50 rounded-lg border-gray-200 focus:border-[#0fa958] focus:ring-1 focus:ring-[#0fa958] placeholder-gray-400"
-                        />
-                    </div>
-                </div>
-
-                {/* Location */}
-                <div className="md:col-span-2">
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-0.5">
-                        Địa điểm
-                    </label>
-
-                    <div className="relative flex items-center">
-                        <MapPin
-                            size={14}
-                            className="absolute left-2 text-[#0fa958]"
-                        />
-
-                        <select className="w-full pl-7 pr-7 py-1.5 text-xs text-gray-700 bg-gray-50 rounded-lg border-gray-200 focus:border-[#0fa958] focus:ring-1 focus:ring-[#0fa958]">
-                            <option>Chọn khu vực</option>
-                            <option>Hà Nội</option>
-                            <option>TP. Hồ Chí Minh</option>
-                            <option>Đà Nẵng</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* Service */}
-                <div className="md:col-span-2">
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-0.5">
-                        Danh mục dịch vụ
-                    </label>
-
-                    <div className="relative flex items-center">
-                        <LayoutGrid
-                            size={14}
-                            className="absolute left-2 text-[#0fa958]"
-                        />
-
-                        <select className="w-full pl-7 pr-7 py-1.5 text-xs text-gray-700 bg-gray-50 rounded-lg border-gray-200 focus:border-[#0fa958] focus:ring-1 focus:ring-[#0fa958]">
-                            <option>Tất cả dịch vụ</option>
-                            <option>Tắm & Spa</option>
-                            <option>Grooming / Cắt tỉa</option>
-                            <option>Lưu trú thú cưng</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* Rating */}
-                <div className="md:col-span-1">
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-0.5">
-                        Đánh giá
-                    </label>
-
-                    <div className="relative flex items-center">
-                        <Star
-                            size={14}
-                            className="absolute left-1.5 text-yellow-500 fill-current"
-                        />
-
-                        <select className="w-full pl-5 pr-6 py-1.5 text-xs text-gray-700 bg-gray-50 rounded-lg border-gray-200 focus:border-[#0fa958] focus:ring-1 focus:ring-[#0fa958]">
-                            <option>Tất cả</option>
-                            <option>4.5+ ⭐</option>
-                            <option>4.0+ ⭐</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* Price */}
-                <div className="md:col-span-1">
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-0.5">
-                        Khoảng giá
-                    </label>
-
-                    <select className="w-full px-2 py-1.5 text-xs text-gray-700 bg-gray-50 rounded-lg border-gray-200 focus:border-[#0fa958] focus:ring-1 focus:ring-[#0fa958]">
-                        <option>Tất cả</option>
-                        <option>&lt; 150k</option>
-                        <option>150k - 300k</option>
-                        <option>&gt; 300k</option>
-                    </select>
-                </div>
-
-                {/* Open now */}
-                <div className="md:col-span-1 flex items-center pt-3">
-                    <label className="inline-flex items-center text-[11px] text-gray-700 font-medium cursor-pointer">
-                        <input
-                            type="checkbox"
-                            className="w-3.5 h-3.5 text-[#0fa958] border-gray-300 rounded focus:ring-[#0fa958]"
-                        />
-
-                        <span className="ml-1.5 leading-tight">
-                            Chỉ hiển thị đang mở cửa
-                        </span>
-                    </label>
-                </div>
-
-                {/* Buttons */}
-                <div className="md:col-span-2 flex items-center space-x-2 pt-2 md:pt-3">
-
-                    <button className="flex-1 inline-flex items-center justify-center space-x-1 bg-[#0fa958] hover:bg-[#0c8e4a] text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm transition">
-                        <Search size={14} />
-                        <span>Tìm kiếm</span>
-                    </button>
-
-                    <button className="inline-flex items-center justify-center space-x-1 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium py-2 px-2.5 rounded-lg transition">
-                        <RotateCcw size={14} />
-                        <span>Đặt lại</span>
-                    </button>
-
-                </div>
+const FilterBar = ({ filters, onChange, onSearch, onReset }) => (
+    <form onSubmit={(e) => { e.preventDefault(); onSearch(); }} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <label className="text-xs font-semibold text-gray-700">Tên cơ sở
+                <input value={filters.search} onChange={(e) => onChange({ ...filters, search: e.target.value })}
+                    placeholder="Nhập tên cơ sở..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-semibold text-gray-700">Địa điểm
+                <input value={filters.location} onChange={(e) => onChange({ ...filters, location: e.target.value })}
+                    placeholder="Tỉnh/thành, quận/huyện..." className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-semibold text-gray-700">Đánh giá
+                <select value={filters.minRating} onChange={(e) => onChange({ ...filters, minRating: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <option value="">Tất cả đánh giá</option><option value="4">Từ 4 sao</option><option value="4.5">Từ 4.5 sao</option>
+                </select>
+            </label>
+            <div className="flex gap-2">
+                <button type="submit" className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm text-white"><Search size={14} />Tìm kiếm</button>
+                <button type="button" onClick={onReset} className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"><RotateCcw size={14} />Đặt lại</button>
             </div>
         </div>
-    );
-};
+    </form>
+);
 
 /* =========================
 HERO
 ========================= */
 
-const HeroBanner = () => {
+const HeroBanner = ({ children }) => {
     return (
         <section
             className="relative pt-6 pb-20 border-b border-gray-100 overflow-hidden"
@@ -234,7 +123,7 @@ const HeroBanner = () => {
                     </div>
                 </div>
 
-                <FilterBar />
+                {children}
 
             </div>
         </section>
@@ -319,11 +208,32 @@ const Sidebar = () => {
 PAGE
 ========================= */
 
+const EMPTY_FILTERS = { search: '', location: '', minRating: '' };
 const BusinessList = () => {
+    const [filters, setFilters] = useState(EMPTY_FILTERS);
+    const [query, setQuery] = useState({ ...EMPTY_FILTERS, page: 1, limit: 8, sort: 'newest' });
+    const [result, setResult] = useState({ data: [], pagination: { total: 0, totalPages: 0 } });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [attempt, setAttempt] = useState(0);
+    const [view, setView] = useState('grid');
+    useEffect(() => {
+        let cancelled = false;
+        businessApi.list(query).then((response) => {
+            if (!cancelled) setResult(response);
+        }).catch((err) => { if (!cancelled) setError(err.message || 'Không thể tải danh sách cơ sở.'); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, [query, attempt]);
+    const changeQuery = (values) => { setError(''); setLoading(true); setQuery((current) => ({ ...current, ...values })); };
+    const totalPages = result.pagination.totalPages;
+
     return (
         <div className="antialiased">
 
-            <HeroBanner />
+            <HeroBanner><FilterBar filters={filters} onChange={setFilters}
+                onSearch={() => changeQuery({ ...filters, page: 1 })}
+                onReset={() => { setFilters(EMPTY_FILTERS); changeQuery({ ...EMPTY_FILTERS, page: 1, sort: 'newest' }); }} /></HeroBanner>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
 
@@ -338,7 +248,7 @@ const BusinessList = () => {
                             <div className="text-sm font-bold text-gray-900">
                                 Hiển thị{" "}
                                 <span className="text-gray-900 font-extrabold">
-                                    {mockBusinesses.length} cơ sở
+                                    {loading ? '...' : error ? '—' : result.pagination.total} cơ sở
                                 </span>
                             </div>
 
@@ -347,25 +257,26 @@ const BusinessList = () => {
                                 <div className="flex items-center space-x-1.5 text-xs text-gray-600">
                                     <span>Sắp xếp theo:</span>
 
-                                    <select className="py-1 pl-2.5 pr-7 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#0fa958]">
-                                        <option>Phổ biến nhất</option>
-                                        <option>Đánh giá cao nhất</option>
-                                        <option>Giá thấp đến cao</option>
+                                    <select aria-label="Sắp xếp cơ sở" value={query.sort} onChange={(e) => changeQuery({ sort: e.target.value, page: 1 })} className="py-1 pl-2.5 pr-7 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#0fa958]">
+                                        <option value="newest">Mới nhất</option>
+                                        <option value="popular">Nhiều đánh giá nhất</option>
+                                        <option value="rating">Đánh giá cao nhất</option>
+
                                     </select>
                                 </div>
 
                                 <div className="flex items-center space-x-1 bg-gray-100 p-0.5 rounded-md border border-gray-200">
 
                                     <button
-                                        className="p-1 rounded bg-[#0fa958] text-white shadow-xs"
-                                        title="Grid view"
+                                        className={view === 'grid' ? 'p-1 rounded bg-emerald-600 text-white' : 'p-1 rounded text-gray-500'}
+                                        title="Dạng lưới" aria-pressed={view === 'grid'} onClick={() => setView('grid')}
                                     >
                                         <Grid size={14} />
                                     </button>
 
                                     <button
-                                        className="p-1 rounded text-gray-500 hover:text-gray-800"
-                                        title="List view"
+                                        className={view === 'list' ? 'p-1 rounded bg-emerald-600 text-white' : 'p-1 rounded text-gray-500'}
+                                        title="Dạng danh sách" aria-pressed={view === 'list'} onClick={() => setView('list')}
                                     >
                                         <List size={14} />
                                     </button>
@@ -374,51 +285,19 @@ const BusinessList = () => {
                             </div>
                         </div>
 
-                        {/* Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
-
-                            {mockBusinesses.map((business) => (
-                                <BusinessCard
-                                    key={business.id}
-                                    business={business}
-                                />
-                            ))}
-
-                        </div>
-
-                        {/* Pagination */}
-                        <div className="flex items-center justify-center space-x-1.5 mt-8 text-xs font-semibold">
-
-                            <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
-                                <ChevronLeft size={14} />
-                            </button>
-
-                            <button className="w-7 h-7 bg-[#0fa958] text-white rounded shadow-xs flex items-center justify-center">
-                                1
-                            </button>
-
-                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                2
-                            </button>
-
-                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                3
-                            </button>
-
-                            <span className="px-1 text-gray-400">
-                                ...
-                            </span>
-
-                            <button className="w-7 h-7 text-gray-700 hover:bg-gray-100 rounded border border-gray-200 bg-white flex items-center justify-center">
-                                6
-                            </button>
-
-                            <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded border border-gray-200 bg-white">
-                                <ChevronRight size={14} />
-                            </button>
-
-                        </div>
-
+                        {loading ? <p role="status" className="p-8 text-center">Đang tải danh sách cơ sở...</p>
+                            : error ? <div role="alert" className="rounded-xl bg-red-50 p-5 text-red-700">
+                                <p>{error}</p><button type="button" onClick={() => { setError(''); setLoading(true); setAttempt((value) => value + 1); }} className="mt-3 underline">Thử lại</button>
+                              </div>
+                            : result.data.length ? <div className={view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4' : 'grid grid-cols-1 gap-4'}>
+                                {result.data.map((business) => <BusinessCard key={business._id} business={business} />)}
+                              </div>
+                            : <p className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">Không tìm thấy cơ sở phù hợp.</p>}
+                        {!loading && !error && totalPages > 1 && <nav aria-label="Phân trang cơ sở" className="mt-8 flex flex-wrap justify-center gap-2 text-sm">
+                            <button type="button" aria-label="Trang trước" disabled={query.page <= 1} onClick={() => changeQuery({ page: query.page - 1 })} className="rounded border p-2 disabled:opacity-40"><ChevronLeft size={16} /></button>
+                            <span className="px-3 py-2">Trang {query.page} / {totalPages}</span>
+                            <button type="button" aria-label="Trang sau" disabled={query.page >= totalPages} onClick={() => changeQuery({ page: query.page + 1 })} className="rounded border p-2 disabled:opacity-40"><ChevronRight size={16} /></button>
+                        </nav>}
                     </section>
 
                     <Sidebar />

@@ -1,9 +1,9 @@
-import React from "react";
+
 import {
     Home,
     MapPin,
     Scissors,
-    CalendarDays,
+
     MessageSquare,
 } from "lucide-react";
 
@@ -35,13 +35,7 @@ const InPageTabs = () => {
                 Dịch vụ
             </a>
 
-            <a
-                href="#lich-trong"
-                className="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 flex items-center gap-1.5 transition whitespace-nowrap"
-            >
-                <CalendarDays className="w-3.5 h-3.5" />
-                Lịch trống
-            </a>
+
 
             <a
                 href="#danh-gia"

@@ -14,15 +14,26 @@ import {
 } from "lucide-react";
 
 import { Link, useNavigate } from "react-router-dom";
-import ServiceCategoryBar from "../../components/Service/ServiceCategoryBar";
 import HowItWorks from "../../components/Home/HowItWorks";
 import ReviewCard from "../../components/BusinessDetail/ReviewCard";
 import BusinessCard from "../../components/BusinessList/BusinessCard";
-import { mockBusinesses } from "../../services/mockBusinesses";
+import { useEffect, useState } from "react";
+import { businessApi } from "../../services/businessApi.js";
 
 const Home = () => {
     const navigate = useNavigate();
-    const businesses = mockBusinesses.slice(1, 4);
+    const [businesses, setBusinesses] = useState([]);
+    const [businessStatus, setBusinessStatus] = useState('Đang tải cơ sở...');
+    useEffect(() => {
+        let cancelled = false;
+        businessApi.list({ limit: 3, sort: 'popular' }).then((response) => {
+            if (!cancelled) {
+                setBusinesses(response.data);
+                setBusinessStatus(response.data.length ? '' : 'Chưa có cơ sở để hiển thị.');
+            }
+        }).catch(() => { if (!cancelled) setBusinessStatus('Không thể tải cơ sở. Vui lòng xem tại trang Cơ sở.'); });
+        return () => { cancelled = true; };
+    }, []);
 
     const reviews = [
         {
@@ -316,9 +327,10 @@ const Home = () => {
                         </div>
 
                         <div className="space-y-4">
-                            {businesses.map((business, index) => (
+                            {businessStatus && <p role="status" className="text-sm text-gray-500">{businessStatus}</p>}
+                            {businesses.map((business) => (
                                 <BusinessCard
-                                    key={index}
+                                    key={business._id}
                                     business={business}
                                 />
                             ))}
