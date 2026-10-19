@@ -1,9 +1,16 @@
 const Business = require("../../models/Business");
+const Branch = require("../../models/Branch");
 const mongoose = require("mongoose");
 // GET /api/customer/businesses
 const getAllBusinesses = async (req, res, next) => {
   try {
-    const { search = "" } = req.query;
+    const { search = "", location = "", sort = "newest" } = req.query;
+    const minRating = Number(req.query.minRating ?? 0);
+    const sorts = {
+      newest: { createdAt: -1, _id: -1 },
+      rating: { averageRating: -1, totalReviews: -1, _id: -1 },
+      popular: { totalReviews: -1, averageRating: -1, _id: -1 },
+    };
 
     // Validate phân trang
     const page = Number(req.query.page ?? 1);
@@ -23,10 +30,12 @@ const getAllBusinesses = async (req, res, next) => {
     }
 
     // Validate tìm kiếm
-    if (typeof search !== "string") {
+    if (typeof search !== "string" || typeof location !== "string" ||
+        typeof sort !== "string" || !Object.hasOwn(sorts, sort) ||
+        !Number.isFinite(minRating) || minRating < 0 || minRating > 5) {
       return res.status(400).json({
         success: false,
-        message: "search phải là chuỗi",
+        message: "Bộ lọc tìm kiếm không hợp lệ",
       });
     }
 
@@ -47,13 +56,25 @@ const getAllBusinesses = async (req, res, next) => {
       };
     }
 
+    if (minRating > 0) filter.averageRating = { $gte: minRating };
+    if (location.trim()) {
+      const escapedLocation = location.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = { $regex: escapedLocation, $options: "i" };
+      const ids = await Branch.distinct("businessId", {
+        status: "ACTIVE",
+        $or: [{ "address.province": regex }, { "address.district": regex },
+          { "address.ward": regex }, { "address.detail": regex }, { address: regex }],
+      });
+      filter._id = { $in: ids };
+    }
+
     // Lấy danh sách và tổng số doanh nghiệp
     const [businesses, total] = await Promise.all([
       Business.find(filter)
         .select(
           "name slug description logo images phone averageRating totalReviews",
         )
-        .sort({ createdAt: -1, _id: -1 })
+        .sort(sorts[sort])
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -61,10 +82,22 @@ const getAllBusinesses = async (req, res, next) => {
       Business.countDocuments(filter),
     ]);
 
+    const branches = businesses.length ? await Branch.find({
+      businessId: { $in: businesses.map((item) => item._id) }, status: "ACTIVE",
+    }).select("businessId name address").sort({ createdAt: -1, _id: -1 }).lean() : [];
+    const branchesByBusiness = new Map();
+    for (const branch of branches) {
+      const key = branch.businessId.toString();
+      if (!branchesByBusiness.has(key)) branchesByBusiness.set(key, []);
+      branchesByBusiness.get(key).push(branch);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách doanh nghiệp thành công",
-      data: businesses,
+      data: businesses.map((business) => ({
+        ...business, branches: branchesByBusiness.get(business._id.toString()) || [],
+      })),
       pagination: {
         page,
         limit,
