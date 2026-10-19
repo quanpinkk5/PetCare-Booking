@@ -5,11 +5,18 @@ const updateProfile = async (req, res, next) => {
     const userId = req.user._id || req.user.id;
     const body = req.body || {};
 
+    if (typeof body !== "object" || Array.isArray(body)) {
+      return res.status(400).json({ success: false, message: "Dữ liệu hồ sơ không hợp lệ" });
+    }
+
     const allowedFields = [
       "fullName",
       "phone",
       "avatar",
       "address",
+      "gender",
+      "birthday",
+      "bio",
     ];
 
     // Không cho phép gửi các field ngoài danh sách
@@ -63,6 +70,37 @@ const updateProfile = async (req, res, next) => {
       }
 
       updates.avatar = body.avatar.trim();
+      const avatar = updates.avatar;
+      const image = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(avatar);
+      if (avatar && !(image && Buffer.byteLength(image[2], "base64") <= 256 * 1024) &&
+          !(/^https?:\/\/\S+$/.test(avatar) && avatar.length <= 2048)) {
+        return res.status(400).json({ success: false, message: "Ảnh phải là URL HTTP(S) hoặc ảnh PNG, JPEG, WebP tối đa 256 KB" });
+      }
+    }
+
+    if (body.gender !== undefined) {
+      if (!["", "Nam", "Nữ", "Khác"].includes(body.gender)) {
+        return res.status(400).json({ success: false, message: "Giới tính không hợp lệ" });
+      }
+      updates.gender = body.gender;
+    }
+
+    if (body.birthday !== undefined) {
+      const value = body.birthday;
+      const date = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+        ? new Date(`${value}T00:00:00.000Z`) : null;
+      if (value !== "" && (!date || Number.isNaN(date.getTime()) ||
+          date.toISOString().slice(0, 10) !== value || date > new Date())) {
+        return res.status(400).json({ success: false, message: "Ngày sinh không hợp lệ" });
+      }
+      updates.birthday = value;
+    }
+
+    if (body.bio !== undefined) {
+      if (typeof body.bio !== "string" || body.bio.trim().length > 1000) {
+        return res.status(400).json({ success: false, message: "Ghi chú phải là chuỗi tối đa 1000 ký tự" });
+      }
+      updates.bio = body.bio.trim();
     }
 
     // Kiểm tra địa chỉ
@@ -109,11 +147,11 @@ const updateProfile = async (req, res, next) => {
             });
           }
 
-          address[field] = body.address[field].trim();
+          address[`address.${field}`] = body.address[field].trim();
         }
       }
 
-      updates.address = address;
+      Object.assign(updates, address);
     }
 
     if (Object.keys(updates).length === 0) {
@@ -135,7 +173,7 @@ const updateProfile = async (req, res, next) => {
         runValidators: true,
       }
     ).select(
-      "_id fullName email phone avatar address role status"
+      "_id fullName email phone avatar address role status gender birthday bio"
     );
 
     if (!customer) {
@@ -152,16 +190,23 @@ const updateProfile = async (req, res, next) => {
         user: {
           id: customer._id.toString(),
           fullName: customer.fullName,
+          name: customer.fullName,
           email: customer.email,
           phone: customer.phone,
           avatar: customer.avatar,
           address: customer.address,
+          gender: customer.gender || "",
+          birthday: customer.birthday || "",
+          bio: customer.bio || "",
           role: customer.role,
           status: customer.status,
         },
       },
     });
   } catch (error) {
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Thông tin hồ sơ không hợp lệ" });
+    }
     next(error);
   }
 };

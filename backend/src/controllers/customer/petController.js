@@ -1,411 +1,122 @@
 const Pet = require("../../models/Pet");
-const Booking = require("../../models/Booking");
 const mongoose = require("mongoose");
 
-const createPet = async (req, res, next) => {
+const editableFields = ["name", "species", "breed", "gender", "dateOfBirth", "weight",
+  "avatar", "personality", "feedingNotes", "careNotes"];
+
+const validatePet = (body, partial = false) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("Thông tin thú cưng không hợp lệ");
+  }
+  const invalidFields = Object.keys(body).filter((field) => !editableFields.includes(field));
+  if (invalidFields.length) throw new Error("Không được cập nhật: " + invalidFields.join(", "));
+  if (!Object.keys(body).length) throw new Error("Không có thông tin để lưu");
+  const data = {};
+  if (!partial || body.name !== undefined) {
+    if (typeof body.name !== "string" || !body.name.trim()) throw new Error("Tên thú cưng không được để trống");
+    data.name = body.name.trim();
+  }
+  if (!partial || body.species !== undefined) {
+    if (!["DOG", "CAT"].includes(body.species)) throw new Error("Loài thú cưng phải là DOG hoặc CAT");
+    data.species = body.species;
+  }
+  if (body.gender !== undefined) {
+    if (body.gender !== null && !["MALE", "FEMALE"].includes(body.gender)) throw new Error("Giới tính phải là MALE hoặc FEMALE");
+    data.gender = body.gender;
+  }
+  if (body.weight !== undefined) {
+    if (body.weight !== null && (typeof body.weight !== "number" || !Number.isFinite(body.weight) || body.weight <= 0)) {
+      throw new Error("Cân nặng phải là số lớn hơn 0");
+    }
+    data.weight = body.weight;
+  }
+  if (body.dateOfBirth !== undefined) {
+    if (body.dateOfBirth === null) {
+      data.dateOfBirth = null;
+    } else {
+      const value = body.dateOfBirth;
+      const date = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+        ? new Date(value + "T00:00:00.000Z") : null;
+      if (!date || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value || date > new Date()) {
+        throw new Error("Ngày sinh không hợp lệ, cần có dạng YYYY-MM-DD và không ở tương lai");
+      }
+      data.dateOfBirth = date;
+    }
+  }
+  for (const field of ["breed", "avatar", "personality", "feedingNotes", "careNotes"]) {
+    if (body[field] !== undefined) {
+      if (typeof body[field] !== "string") throw new Error(field + " phải là chuỗi");
+      data[field] = body[field].trim();
+      if (field !== "avatar" && data[field].length > 2000) throw new Error(field + " tối đa 2000 ký tự");
+    }
+  }
+  if (data.avatar) {
+    const image = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(data.avatar);
+    const isImage = image && Buffer.byteLength(image[2], "base64") <= 256 * 1024;
+    const isUrl = /^https?:\/\/\S+$/.test(data.avatar) && data.avatar.length <= 2048;
+    if (!isImage && !isUrl) throw new Error("Ảnh phải là URL HTTP(S) hoặc ảnh PNG, JPEG, WebP tối đa 256 KB");
+  }
+  return data;
+};
+
+const getPetData = (req, res, partial) => {
   try {
-    // 1. Lấy ID Customer từ JWT
-    const ownerId = req.user._id || req.user.id;
-
-    // 2. Lấy thông tin thú cưng từ frontend
-    const {
-      name,
-      species,
-      breed,
-      gender,
-      dateOfBirth,
-      weight,
-      avatar,
-      personality,
-      feedingNotes,
-      careNotes,
-    } = req.body || {};
-
-    // 3. Kiểm tra tên
-    if (typeof name !== "string" || !name.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Tên thú cưng không được để trống",
-      });
-    }
-
-    // 4. Kiểm tra loài
-    if (!["DOG", "CAT"].includes(species)) {
-      return res.status(400).json({
-        success: false,
-        message: "Loài thú cưng phải là DOG hoặc CAT",
-      });
-    }
-
-    // 5. Kiểm tra cân nặng nếu được gửi lên
-    if (
-      weight !== undefined &&
-      (typeof weight !== "number" || !Number.isFinite(weight) || weight <= 0)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Cân nặng phải là số lớn hơn 0",
-      });
-    }
-
-    // 6. Chỉ lấy các trường được phép tạo
-    const petData = {
-      ownerId,
-      name: name.trim(),
-      species,
-      status: "ACTIVE",
-    };
-
-    const optionalStrings = {
-      breed,
-      gender,
-      avatar,
-      personality,
-      feedingNotes,
-      careNotes,
-    };
-
-    for (const [field, value] of Object.entries(optionalStrings)) {
-      if (value !== undefined) {
-        if (typeof value !== "string") {
-          return res.status(400).json({
-            success: false,
-            message: `${field} phải là chuỗi`,
-          });
-        }
-
-        petData[field] = value.trim();
-      }
-    }
-
-    if (weight !== undefined) {
-      petData.weight = weight;
-    }
-
-    // 7. Kiểm tra ngày sinh
-    if (dateOfBirth !== undefined) {
-      if (
-        typeof dateOfBirth !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Ngày sinh phải có dạng YYYY-MM-DD",
-        });
-      }
-
-      const parsedDate = new Date(`${dateOfBirth}T00:00:00.000Z`);
-
-      if (
-        Number.isNaN(parsedDate.getTime()) ||
-        parsedDate.toISOString().slice(0, 10) !== dateOfBirth ||
-        parsedDate > new Date()
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Ngày sinh không hợp lệ",
-        });
-      }
-
-      petData.dateOfBirth = parsedDate;
-    }
-
-    // 8. Lưu Pet vào MongoDB
-    const pet = await Pet.create(petData);
-
-    // 9. Trả kết quả về frontend
-    return res.status(201).json({
-      success: true,
-      message: "Thêm thú cưng thành công",
-      data: pet,
-    });
+    return validatePet(req.body, partial);
   } catch (error) {
-    // Lỗi validation của Mongoose
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    next(error);
+    res.status(400).json({ success: false, message: error.message });
+    return null;
   }
 };
+
+const handleError = (error, res, next) => {
+  if (["ValidationError", "CastError"].includes(error.name)) {
+    return res.status(400).json({ success: false, message: "Thông tin thú cưng không hợp lệ" });
+  }
+  next(error);
+};
+
+const createPet = async (req, res, next) => {
+  const data = getPetData(req, res, false);
+  if (!data) return;
+  try {
+    const pet = await Pet.create({ ...data, ownerId: req.user._id || req.user.id, status: "ACTIVE" });
+    return res.status(201).json({ success: true, message: "Thêm thú cưng thành công", data: pet });
+  } catch (error) { handleError(error, res, next); }
+};
+
 const getPets = async (req, res, next) => {
   try {
-    // 1. Lấy ID Customer từ JWT
-    const ownerId = req.user._id || req.user.id;
-
-    // 2. Tìm danh sách Pet của Customer
-    const pets = await Pet.find({
-      ownerId: ownerId,
-      status: "ACTIVE",
-    }).sort({ createdAt: -1 });
-
-    // 3. Trả kết quả về frontend
-    return res.status(200).json({
-      success: true,
-      message: "Lấy danh sách thú cưng thành công",
-      data: pets,
-    });
-  } catch (error) {
-    next(error);
-  }
+    const pets = await Pet.find({ ownerId: req.user._id || req.user.id, status: "ACTIVE" }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, message: "Lấy danh sách thú cưng thành công", data: pets });
+  } catch (error) { handleError(error, res, next); }
 };
+
 const updatePet = async (req, res, next) => {
-  try {
-    // 1. Lấy ID Customer từ JWT
-    const ownerId = req.user._id || req.user.id;
-
-    // 2. Lấy ID thú cưng từ URL
-    const petId = req.params.id;
-
-    // 3. Kiểm tra ID hợp lệ
-    if (!mongoose.isValidObjectId(petId)) {
-      return res.status(400).json({
-        success: false,
-        message: "ID thú cưng không hợp lệ",
-      });
-    }
-
-    // 4. Các trường Customer được phép sửa
-    const allowedFields = [
-      "name",
-      "species",
-      "breed",
-      "gender",
-      "dateOfBirth",
-      "weight",
-      "avatar",
-      "personality",
-      "feedingNotes",
-      "careNotes",
-    ];
-
-    const body = req.body || {};
-
-    // Không cho sửa các trường ngoài danh sách
-    const invalidFields = Object.keys(body).filter(
-      (field) => !allowedFields.includes(field),
-    );
-
-    if (invalidFields.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không được cập nhật: ${invalidFields.join(", ")}`,
-      });
-    }
-
-    const updates = {};
-
-    // 5. Kiểm tra tên
-    if (body.name !== undefined) {
-      if (typeof body.name !== "string" || !body.name.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Tên thú cưng không được để trống",
-        });
-      }
-
-      updates.name = body.name.trim();
-    }
-
-    // 6. Kiểm tra loài
-    if (body.species !== undefined) {
-      if (!["DOG", "CAT"].includes(body.species)) {
-        return res.status(400).json({
-          success: false,
-          message: "Loài thú cưng phải là DOG hoặc CAT",
-        });
-      }
-
-      updates.species = body.species;
-    }
-
-    // 7. Kiểm tra giới tính
-    if (body.gender !== undefined) {
-      if (!["MALE", "FEMALE"].includes(body.gender)) {
-        return res.status(400).json({
-          success: false,
-          message: "Giới tính phải là MALE hoặc FEMALE",
-        });
-      }
-
-      updates.gender = body.gender;
-    }
-
-    // 8. Kiểm tra cân nặng
-    if (body.weight !== undefined) {
-      if (
-        typeof body.weight !== "number" ||
-        !Number.isFinite(body.weight) ||
-        body.weight <= 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Cân nặng phải là số lớn hơn 0",
-        });
-      }
-
-      updates.weight = body.weight;
-    }
-
-    // 9. Kiểm tra ngày sinh
-    if (body.dateOfBirth !== undefined) {
-      if (
-        typeof body.dateOfBirth !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(body.dateOfBirth)
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Ngày sinh phải có dạng YYYY-MM-DD",
-        });
-      }
-
-      const date = new Date(`${body.dateOfBirth}T00:00:00.000Z`);
-
-      if (
-        Number.isNaN(date.getTime()) ||
-        date.toISOString().slice(0, 10) !== body.dateOfBirth ||
-        date > new Date()
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Ngày sinh không hợp lệ",
-        });
-      }
-
-      updates.dateOfBirth = date;
-    }
-
-    // 10. Kiểm tra các trường dạng chuỗi
-    const stringFields = [
-      "breed",
-      "avatar",
-      "personality",
-      "feedingNotes",
-      "careNotes",
-    ];
-
-    for (const field of stringFields) {
-      if (body[field] !== undefined) {
-        if (typeof body[field] !== "string") {
-          return res.status(400).json({
-            success: false,
-            message: `${field} phải là chuỗi`,
-          });
-        }
-
-        updates[field] = body[field].trim();
-      }
-    }
-
-    // 11. Kiểm tra có dữ liệu cần sửa không
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Không có thông tin để cập nhật",
-      });
-    }
-
-    // 12. Chỉ sửa Pet thuộc Customer và đang ACTIVE
-    const pet = await Pet.findOneAndUpdate(
-      {
-        _id: petId,
-        ownerId,
-        status: "ACTIVE",
-      },
-      {
-        $set: updates,
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
-
-    if (!pet) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy thú cưng",
-      });
-    }
-
-    // 13. Trả thông tin mới
-    return res.status(200).json({
-      success: true,
-      message: "Cập nhật thú cưng thành công",
-      data: pet,
-    });
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    next(error);
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ success: false, message: "ID thú cưng không hợp lệ" });
   }
+  const data = getPetData(req, res, true);
+  if (!data) return;
+  try {
+    const pet = await Pet.findOneAndUpdate({
+      _id: req.params.id, ownerId: req.user._id || req.user.id, status: "ACTIVE",
+    }, { $set: data }, { new: true, runValidators: true });
+    if (!pet) return res.status(404).json({ success: false, message: "Không tìm thấy thú cưng" });
+    return res.status(200).json({ success: true, message: "Cập nhật thú cưng thành công", data: pet });
+  } catch (error) { handleError(error, res, next); }
 };
-// Dele /api/customer/pets/:id
+
 const deletePet = async (req, res, next) => {
-  try {
-    // Lấy ID Customer từ JWT
-    const ownerId = req.user._id || req.user.id;
-
-    // Lấy ID Pet từ URL
-    const petId = req.params.id;
-
-    // Kiểm tra ID hợp lệ
-    if (!mongoose.isValidObjectId(petId)) {
-      return res.status(400).json({
-        success: false,
-        message: "ID thú cưng không hợp lệ",
-      });
-    }
-
-    // Xóa mềm: ACTIVE -> INACTIVE
-    const pet = await Pet.findOneAndUpdate(
-      {
-        _id: petId,
-        ownerId,
-        status: "ACTIVE",
-      },
-      {
-        $set: {
-          status: "INACTIVE",
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!pet) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy thú cưng",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Xóa thú cưng thành công",
-      data: {
-        _id: pet._id,
-        status: pet.status,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ success: false, message: "ID thú cưng không hợp lệ" });
   }
+  try {
+    const pet = await Pet.findOneAndUpdate({
+      _id: req.params.id, ownerId: req.user._id || req.user.id, status: "ACTIVE",
+    }, { $set: { status: "INACTIVE" } }, { new: true, runValidators: true });
+    if (!pet) return res.status(404).json({ success: false, message: "Không tìm thấy thú cưng" });
+    return res.status(200).json({ success: true, message: "Xóa thú cưng thành công", data: { _id: pet._id, status: pet.status } });
+  } catch (error) { handleError(error, res, next); }
 };
 
-module.exports = {
-  createPet,
-  getPets,
-  updatePet,
-  deletePet
-};
+module.exports = { createPet, getPets, updatePet, deletePet };

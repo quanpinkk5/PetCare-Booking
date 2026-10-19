@@ -35,7 +35,7 @@ app.use(
 );
 
 // Đọc request body dạng JSON
-app.use(express.json());
+app.use(express.json({ limit: "512kb" }));
 
 // API kiểm tra backend
 app.get("/api/health", (req, res) => {
