@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   X,
   Star,
-  Sparkles,
   Camera,
-  Plus,
   Trash2,
   AlertCircle,
-  ShieldCheck,
   Check,
   Coins
 } from "lucide-react";
@@ -24,48 +21,21 @@ const SAMPLE_PHOTO_PRESETS = [
 ];
 
 const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmitReview }) => {
-  if (!isOpen || !targetItem) return null;
 
-  const [rating, setRating] = useState(5);
+
+  const [rating, setRating] = useState(isEditMode ? targetItem?.rating || 5 : 5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [subRatings, setSubRatings] = useState({
-    cleanliness: 5,
-    staff: 5,
-    care: 5,
-    price: 5
-  });
-  const [comment, setComment] = useState("");
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [images, setImages] = useState([]);
+  const [subRatings, setSubRatings] = useState(isEditMode && targetItem?.subRatings ? targetItem.subRatings : { cleanliness: 5, staff: 5, care: 5, price: 5 });
+  const [comment, setComment] = useState(isEditMode ? targetItem?.comment || "" : "");
+  const [selectedTags, setSelectedTags] = useState(isEditMode ? targetItem?.tags || [] : []);
+  const [images, setImages] = useState(isEditMode ? targetItem?.images || [] : []);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(isEditMode ? targetItem?.isAnonymous || false : false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Populate data when targetItem changes
-  useEffect(() => {
-    if (isEditMode && targetItem) {
-      setRating(targetItem.rating || 5);
-      setSubRatings(
-        targetItem.subRatings || { cleanliness: 5, staff: 5, care: 5, price: 5 }
-      );
-      setComment(targetItem.comment || "");
-      setSelectedTags(targetItem.tags || []);
-      setImages(targetItem.images || []);
-      setIsAnonymous(targetItem.isAnonymous || false);
-    } else {
-      // Default initial state for new review
-      setRating(5);
-      setSubRatings({ cleanliness: 5, staff: 5, care: 5, price: 5 });
-      setComment("");
-      setSelectedTags(["Nhân viên nhiệt tình", "Không gian sạch sẽ"]);
-      setImages(targetItem?.petImg ? [targetItem.petImg] : []);
-      setIsAnonymous(false);
-    }
-    setErrorMsg("");
-    setShowUrlInput(false);
-    setImageUrlInput("");
-  }, [targetItem, isEditMode, isOpen]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  if (!isOpen || !targetItem) return null;
 
   const handleToggleTag = (tag) => {
     if (selectedTags.includes(tag)) {
@@ -102,8 +72,9 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (rating < 1) {
       setErrorMsg("Vui lòng chọn số sao đánh giá (từ 1 đến 5 sao)");
       return;
@@ -125,7 +96,10 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
       updatedAt: isEditMode ? new Date().toLocaleDateString("vi-VN") + " " + new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : null
     };
 
-    onSubmitReview(reviewPayload, isEditMode);
+    setIsSubmitting(true); setErrorMsg('');
+    try { await onSubmitReview(reviewPayload, isEditMode); }
+    catch (error) { setErrorMsg(error.message || 'Không thể lưu đánh giá. Vui lòng thử lại.'); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
@@ -147,6 +121,7 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
           <button
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X size={16} />
@@ -156,7 +131,7 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <div role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0 text-red-500" />
               <span>{errorMsg}</span>
             </div>
@@ -181,7 +156,7 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
             {!isEditMode && (
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-bold shrink-0">
                 <Coins size={14} className="text-amber-500 fill-amber-400" />
-                <span>+50 PetPoint</span>
+                <span>Chia sẻ trải nghiệm</span>
               </div>
             )}
           </div>
@@ -402,7 +377,7 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
                 className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
               />
               <span className="text-xs text-slate-600">
-                Đánh giá ẩn danh (tên hiển thị sẽ chuyển thành dạng N***n)
+                Đánh giá ẩn danh (ẩn tên và ảnh đại diện khi hiển thị công khai)
               </span>
             </label>
           </div>
@@ -413,6 +388,7 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
           <button
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
           >
             Hủy bỏ
@@ -420,10 +396,11 @@ const ReviewModal = ({ isOpen, onClose, targetItem, isEditMode = false, onSubmit
           <button
             type="button"
             onClick={handleSubmit}
+            disabled={isSubmitting}
             className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-600/20 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Check size={14} />
-            <span>{isEditMode ? "Cập nhật đánh giá" : "Gửi đánh giá (+50 PetPoint)"}</span>
+            <span>{isSubmitting ? "Đang gửi..." : isEditMode ? "Cập nhật đánh giá" : "Gửi đánh giá"}</span>
           </button>
         </div>
       </div>
