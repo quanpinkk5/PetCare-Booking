@@ -70,6 +70,16 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+
+    gender: {
+      type: String,
+      enum: ["MALE", "FEMALE", "OTHER"],
+      default: null,
+    },
     // googleId: {
     //   type: String,
     //   unique: true,

@@ -95,7 +95,7 @@ const refreshAuthSession = async (refreshToken) => {
         lastUsedAt: new Date(),
       },
     },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   if (!updatedSession) {
