@@ -8,32 +8,13 @@ const getServiceIcon = (name = "") => {
     return Sparkles;
 };
 
-const getServiceDuration = (name = "") => {
-    const lower = name.toLowerCase();
-    if (lower.includes("tắm")) return "45 - 60 phút";
-    if (lower.includes("grooming")) return "60 - 90 phút";
-    if (lower.includes("spa")) return "75 - 100 phút";
-    return "60 phút";
-};
-
-const getServiceIncludes = (name = "") => {
-    const lower = name.toLowerCase();
-    if (lower.includes("tắm")) {
-        return ["Tắm sấy khử mùi", "Vệ sinh tai & vắt tuyến hôi", "Cắt mài móng cơ bản"];
-    }
-    if (lower.includes("grooming")) {
-        return ["Cắt tỉa tạo kiểu lông", "Tắm massage thảo dược", "Cạo bàn, vệ sinh tai móng"];
-    }
-    if (lower.includes("spa")) {
-        return ["Ủ dưỡng lông bóng mượt", "Ngâm bồn sục Jacuzzi", "Massage thư giãn toàn thân"];
-    }
-    return ["Chăm sóc toàn diện", "Kiểm tra da lông", "Xịt nước hoa cao cấp"];
-};
-
 const BookingServiceSelector = ({
     services,
     selectedService,
     onSelect,
+    onRetry,
+    loading = false,
+    error = "",
 }) => {
     return (
         <section id="step-service" className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 transition-all">
@@ -52,19 +33,22 @@ const BookingServiceSelector = ({
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Quy trình chăm sóc chuyên sâu với trang thiết bị vô trùng
+                            Dịch vụ tại chi nhánh phù hợp với loài thú cưng đã chọn
                         </p>
                     </div>
                 </div>
             </div>
 
             <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                {services.map((service, index) => {
+                {loading && <p role="status" className="text-sm text-slate-500">Đang tải dịch vụ...</p>}
+                {error && <p role="alert" className="text-sm text-red-600">{error} <button type="button" onClick={onRetry} className="underline">Thử lại</button></p>}
+                {!loading && !error && !services.length && <p className="text-sm text-slate-500">Chọn thú cưng và chi nhánh có dịch vụ phù hợp.</p>}
+                {services.map((service) => {
                     const isSelected = selectedService?.id === service.id;
                     const Icon = getServiceIcon(service.name);
-                    const duration = getServiceDuration(service.name);
-                    const includes = getServiceIncludes(service.name);
-                    const isPopular = index === 1;
+                    const duration = service.bookingType === 'BOARDING' ? 'Theo ngày lưu trú' : service.durationMinutes + ' phút';
+                    const includes = service.petTypes.map((type) => type === 'CAT' ? 'Dành cho mèo' : 'Dành cho chó');
+                    const isPopular = false;
 
                     return (
                         <button

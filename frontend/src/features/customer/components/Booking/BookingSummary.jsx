@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
     Receipt,
     PawPrint,
@@ -8,9 +7,7 @@ import {
     Tag,
     ShieldCheck,
     ArrowRight,
-    Sparkles,
     CheckCircle2,
-    Info,
 } from "lucide-react";
 
 const BookingSummary = ({
@@ -21,62 +18,16 @@ const BookingSummary = ({
     selectedTime,
     selectedAddons = [],
     onConfirm,
+    disabled = false,
+    submitting = false,
+    checkOutDate,
+    numberOfDays = 1,
 }) => {
-    const [couponInput, setCouponInput] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
-    const [couponError, setCouponError] = useState("");
-
-    // Calculate prices
-    const parsePrice = (priceStr) => {
-        if (!priceStr) return 0;
-        return parseInt(priceStr.replace(/\D/g, ""), 10) || 0;
-    };
-
-    const basePrice = parsePrice(selectedService?.price || "150.000₫");
-    const addonsTotal = selectedAddons.reduce((acc, curr) => acc + parsePrice(curr.price || "50.000₫"), 0);
-    const subtotal = basePrice + addonsTotal;
-
-    const discountAmount = appliedCoupon
-        ? appliedCoupon.type === "percent"
-            ? Math.round((subtotal * appliedCoupon.value) / 100)
-            : appliedCoupon.value
-        : 0;
-
-    const finalTotal = Math.max(0, subtotal - discountAmount);
-
-    const handleApplyCoupon = (e) => {
-        e.preventDefault();
-        setCouponError("");
-        const code = couponInput.trim().toUpperCase();
-
-        if (!code) return;
-
-        if (code === "PETCARE10") {
-            setAppliedCoupon({ code: "PETCARE10", value: 10, type: "percent", label: "Giảm 10% tổng đơn" });
-        } else if (code === "WELCOME" || code === "WELCOME30") {
-            setAppliedCoupon({ code: "WELCOME30", value: 30000, type: "fixed", label: "Giảm 30.000₫ đơn đầu" });
-        } else {
-            setCouponError("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
-        }
-    };
-
-    const handleRemoveCoupon = () => {
-        setAppliedCoupon(null);
-        setCouponInput("");
-        setCouponError("");
-    };
-
-    const handleFormConfirm = () => {
-        onConfirm({
-            basePrice,
-            addonsTotal,
-            discountAmount,
-            finalTotal,
-            appliedCoupon,
-            selectedAddons,
-        });
-    };
-
+    const basePrice = selectedService?.unitPrice ?? 0;
+    const addonsTotal = 0;
+    const discountAmount = 0;
+    const finalTotal = basePrice * numberOfDays;
+    const handleFormConfirm = () => { if (!disabled) onConfirm(); };
     return (
         <aside id="step-summary" className="sticky top-24 rounded-3xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/90 transition-all">
             {/* Header */}
@@ -178,7 +129,7 @@ const BookingSummary = ({
                         <span className="text-slate-400 block text-[11px]">Lịch hẹn:</span>
                         <div className="flex items-center gap-1.5 font-bold text-slate-800">
                             <span>{selectedDate || "Chưa chọn ngày"}</span>
-                            {selectedTime ? (
+                            {selectedService?.bookingType === 'BOARDING' ? <span>→ {checkOutDate || 'Chưa chọn ngày trả'}</span> : selectedTime ? (
                                 <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[11px]">
                                     {selectedTime}
                                 </span>
@@ -192,57 +143,14 @@ const BookingSummary = ({
 
             {/* Voucher / Coupon Form */}
             <div className="mt-4 pt-1 pb-4 border-b border-slate-100">
-                <form onSubmit={handleApplyCoupon} className="space-y-2">
-                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                        <Tag size={12} className="text-emerald-600" />
-                        <span>Mã ưu đãi / Khuyến mãi</span>
-                    </label>
-
-                    {appliedCoupon ? (
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs">
-                            <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
-                                <Sparkles size={14} className="text-emerald-600" />
-                                <span>{appliedCoupon.code}</span>
-                                <span className="text-[11px] font-normal text-emerald-700">
-                                    ({appliedCoupon.label})
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleRemoveCoupon}
-                                className="text-[11px] text-red-600 hover:text-red-700 font-semibold cursor-pointer"
-                            >
-                                Xóa
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                placeholder="Nhập: PETCARE10 hoặc WELCOME"
-                                value={couponInput}
-                                onChange={(e) => setCouponInput(e.target.value)}
-                                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs uppercase font-medium focus:border-emerald-500 outline-none placeholder:normal-case placeholder:text-slate-400"
-                            />
-                            <button
-                                type="submit"
-                                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer shrink-0"
-                            >
-                                Áp dụng
-                            </button>
-                        </div>
-                    )}
-
-                    {couponError && (
-                        <p className="text-[11px] text-red-500 font-medium">{couponError}</p>
-                    )}
-                </form>
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5"><Tag size={12} /> Mã ưu đãi / Khuyến mãi</label>
+                <input disabled placeholder="Chưa hỗ trợ mã ưu đãi" className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
             </div>
 
             {/* Price breakdown */}
             <div className="mt-4 space-y-2 text-xs">
                 <div className="flex items-center justify-between text-slate-500">
-                    <span>Giá dịch vụ chính</span>
+                    <span>Giá dịch vụ chính {selectedService?.bookingType === 'BOARDING' ? '(× ' + numberOfDays + ' ngày)' : ''}</span>
                     <span className="font-semibold text-slate-800">
                         {basePrice.toLocaleString("vi-VN")}₫
                     </span>
@@ -270,7 +178,7 @@ const BookingSummary = ({
                             Tổng thanh toán
                         </span>
                         <span className="text-[10px] text-slate-400">
-                            Đã bao gồm VAT & vật tư
+                            Giá được cơ sở xác nhận khi tạo lịch
                         </span>
                     </div>
                     <span className="text-2xl font-black text-emerald-600">
@@ -284,15 +192,17 @@ const BookingSummary = ({
                 <button
                     type="button"
                     onClick={handleFormConfirm}
-                    className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 px-4 py-3.5 font-bold text-sm text-white shadow-lg shadow-emerald-600/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01]"
+                    disabled={disabled}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed w-full rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 px-4 py-3.5 font-bold text-sm text-white shadow-lg shadow-emerald-600/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01]"
                 >
-                    <span>Xác nhận đặt lịch ngay</span>
+                    <span>{submitting ? "Đang tạo lịch..." : "Xác nhận đặt lịch ngay"}</span>
                     <ArrowRight size={16} />
                 </button>
 
+                {disabled && !submitting && <p className="text-xs text-center text-amber-700">Vui lòng hoàn tất các lựa chọn và chọn thời gian hợp lệ.</p>}
                 <p className="text-[11px] text-center text-slate-400 flex items-center justify-center gap-1">
                     <ShieldCheck size={13} className="text-emerald-500" />
-                    <span>Miễn phí hủy lịch trước 2 giờ khởi hành</span>
+                    <span>Theo dõi và quản lý lịch trong Lịch đặt của tôi</span>
                 </p>
             </div>
 
@@ -300,11 +210,11 @@ const BookingSummary = ({
             <div className="mt-4 pt-3.5 border-t border-slate-100/90 grid grid-cols-2 gap-2 text-[10.5px] text-slate-500 font-medium">
                 <div className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                    <span>Dụng cụ vô trùng</span>
+                    <span>Giá theo dịch vụ</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                    <span>Bác sĩ thú y trực</span>
+                    <span>Lịch trống cập nhật</span>
                 </div>
             </div>
         </aside>

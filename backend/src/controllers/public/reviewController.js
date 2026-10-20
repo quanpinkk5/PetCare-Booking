@@ -83,7 +83,51 @@ const getAllReviews = async (req, res, next) => {
   }
 };
 
+// Three latest public reviews from completed bookings at approved businesses.
+const getFeaturedReviews = async (req, res, next) => {
+  try {
+    const reviews = await Review.aggregate([
+      { $match: { status: 'VISIBLE' } },
+      { $sort: { createdAt: -1, _id: -1 } },
+      { $lookup: {
+        from: 'businesses', localField: 'businessId', foreignField: '_id',
+        pipeline: [{ $match: { status: 'APPROVED' } }, { $project: { name: 1 } }], as: 'business',
+      } },
+      { $unwind: '$business' },
+      { $lookup: {
+        from: 'bookings', let: { bookingId: '$bookingId', customerId: '$customerId' },
+        pipeline: [{ $match: { status: 'COMPLETED', $expr: { $and: [
+          { $eq: ['$_id', '$$bookingId'] }, { $eq: ['$customerId', '$$customerId'] },
+        ] } } }, { $project: { _id: 1 } }], as: 'booking',
+      } },
+      { $unwind: '$booking' },
+      { $limit: 3 },
+      { $lookup: {
+        from: 'users', localField: 'customerId', foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, fullName: 1, avatar: 1 } }], as: 'customer',
+      } },
+      { $lookup: {
+        from: 'services', localField: 'serviceId', foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1 } }], as: 'service',
+      } },
+      { $project: {
+        _id: 1, rating: 1, comment: 1, createdAt: 1,
+        business: 1, service: { $arrayElemAt: ['$service', 0] },
+        customer: { $cond: ['$isAnonymous', { fullName: 'Khách hàng ẩn danh', avatar: '' },
+          { $arrayElemAt: ['$customer', 0] }] },
+      } },
+    ]);
+    return res.status(200).json({ success: true, data: reviews.map((review) => ({
+      _id: review._id, rating: review.rating, comment: review.comment || '', createdAt: review.createdAt,
+      customer: { fullName: review.customer?.fullName || 'Khách hàng', avatar: review.customer?.avatar || '' },
+      service: { name: review.service?.name || '' },
+      business: { _id: review.business._id, name: review.business.name }, verified: true,
+    })) });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
+  getFeaturedReviews,
   getAllReviews,
   getBusinessReviews,
 };

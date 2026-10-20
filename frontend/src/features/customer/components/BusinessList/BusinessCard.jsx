@@ -1,6 +1,6 @@
 import { PawPrint, MapPin, Star, CheckCircle2, Building2, Calendar, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatAddress, imageUrl } from "../../services/businessData.js";
+import { formatAddress, imageUrl, businessRating } from "../../services/businessData.js";
 
 const BusinessCard = ({
     business,
@@ -17,8 +17,7 @@ const BusinessCard = ({
     const businessId = card._id || card.id;
     const cover = imageUrl(card.images, card.logo || card.img || card.image);
     const address = card.branches?.map((branch) => formatAddress(branch.address)).filter(Boolean).join("; ") || card.location || "Xem thông tin chi nhánh";
-    const displayRating = card.totalReviews > 0 ? card.averageRating : (card.rating || 4.9);
-    const reviewCount = card.totalReviews || card.reviewsCount || 0;
+    const { label: ratingLabel, count: reviewCount, hasRating } = businessRating(card);
     const detailUrl = `/businesses/${businessId}`;
     const branchCount = card.branches?.length || 0;
 
@@ -43,8 +42,8 @@ const BusinessCard = ({
 
                     {/* Rating Pill */}
                     <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-xs border border-slate-100 flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                        <Star size={13} className="text-amber-400 fill-amber-400" />
-                        <span>{displayRating != null ? Number(displayRating).toFixed(1) : "5.0"}</span>
+                        <Star size={13} className={hasRating ? "text-amber-400 fill-amber-400" : "text-slate-400"} />
+                        <span>{ratingLabel}</span>
                         {reviewCount > 0 && <span className="text-[10px] text-slate-400 font-normal">({reviewCount})</span>}
                     </div>
                 </div>
@@ -153,8 +152,8 @@ const BusinessCard = ({
 
                     {/* Rating Badge */}
                     <div className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-lg shadow-xs border border-slate-100 flex items-center gap-1 text-[11px] font-bold text-slate-800">
-                        <Star size={12} className="text-amber-400 fill-amber-400" />
-                        <span>{displayRating != null ? Number(displayRating).toFixed(1) : "5.0"}</span>
+                        <Star size={12} className={hasRating ? "text-amber-400 fill-amber-400" : "text-slate-400"} />
+                        <span>{ratingLabel}</span>
                         {reviewCount > 0 && <span className="text-[10px] text-slate-400 font-normal">({reviewCount})</span>}
                     </div>
 

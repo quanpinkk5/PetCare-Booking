@@ -28,7 +28,7 @@ const PetCard = ({ pet, onView, onEdit, onDelete }) => (
         <button type="button" onClick={() => onEdit(pet)} aria-label={'Sửa ' + pet.name} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"><Pencil size={15} /></button>
         <button type="button" onClick={() => onDelete(pet)} aria-label={'Xóa ' + pet.name} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 size={15} /></button>
       </div>
-      <Link to="/booking" className="block rounded-lg bg-emerald-600 py-2 text-center text-xs font-semibold text-white hover:bg-emerald-700">Đặt dịch vụ</Link>
+      <Link to={'/booking?petId=' + encodeURIComponent(pet._id)} className="block rounded-lg bg-emerald-600 py-2 text-center text-xs font-semibold text-white hover:bg-emerald-700">Đặt dịch vụ</Link>
     </div>
   </article>
 );

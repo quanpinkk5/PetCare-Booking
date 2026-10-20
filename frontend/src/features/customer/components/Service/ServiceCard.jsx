@@ -7,8 +7,7 @@ import {
   Moon,
   Building2,
   ArrowRight,
-  Sparkles,
-  Tag
+  Sparkles
 } from 'lucide-react';
 import { formatAddress, imageUrl, servicePrice } from '../../services/businessData.js';
 
@@ -116,10 +115,10 @@ const ServiceCard = ({ service: offering, viewMode = 'grid' }) => {
             </div>
 
             <Link
-              to={details}
+              to={'/booking?branchServiceId=' + encodeURIComponent(offering._id)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 border border-emerald-200/80 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all duration-200 shadow-2xs"
             >
-              <span>Xem cơ sở & Đặt lịch</span>
+              <span>Đặt lịch dịch vụ</span>
               <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -227,10 +226,10 @@ const ServiceCard = ({ service: offering, viewMode = 'grid' }) => {
         </div>
 
         <Link
-          to={details}
+          to={'/booking?branchServiceId=' + encodeURIComponent(offering._id)}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-bold text-emerald-700 border border-emerald-200 shadow-2xs group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all duration-200"
         >
-          <span>Xem chi tiết & Đặt lịch</span>
+          <span>Đặt lịch dịch vụ</span>
           <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>

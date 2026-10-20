@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Archive, Search, SlidersHorizontal } from "lucide-react";
-import { CHAT_LIST } from "../../data/messagesData";
 
 const ConversationItem = ({ chat, selected, onSelect }) => {
     return (
@@ -48,12 +47,12 @@ const ConversationItem = ({ chat, selected, onSelect }) => {
     );
 };
 
-const ChatSidebar = ({ selectedChatId, onSelectChat }) => {
+const ChatSidebar = ({ chats = [], loading = false, selectedChatId, onSelectChat }) => {
     const [keyword, setKeyword] = useState("");
     const [filter, setFilter] = useState("all");
 
     const filteredChats = useMemo(() => {
-        return CHAT_LIST.filter((chat) => {
+        return chats.filter((chat) => {
             const matchesKeyword = chat.name
                 .toLowerCase()
                 .includes(keyword.toLowerCase());
@@ -61,11 +60,11 @@ const ChatSidebar = ({ selectedChatId, onSelectChat }) => {
             const matchesFilter =
                 filter === "all" ||
                 (filter === "unread" && chat.unread > 0) ||
-                (filter === "booked" && chat.id === 1);
+                (filter === "booked" && Boolean(chat.bookingId));
 
             return matchesKeyword && matchesFilter;
         });
-    }, [keyword, filter]);
+    }, [chats, keyword, filter]);
 
     const filters = [
         { id: "all", label: "Tất cả" },
@@ -128,7 +127,7 @@ const ChatSidebar = ({ selectedChatId, onSelectChat }) => {
                     ))
                 ) : (
                     <p className="py-8 text-center text-xs text-slate-400">
-                        Không tìm thấy cuộc trò chuyện.
+                        {loading ? "Đang tải cuộc trò chuyện..." : "Không tìm thấy cuộc trò chuyện."}
                     </p>
                 )}
             </div>

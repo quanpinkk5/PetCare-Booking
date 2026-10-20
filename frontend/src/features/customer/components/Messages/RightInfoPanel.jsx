@@ -8,7 +8,6 @@ import {
   Phone,
 } from "lucide-react";
 
-import { BOOKING_INFO, PET_INFO } from "../../data/messagesData";
 
 const InfoRow = ({ label, children }) => (
   <div className="flex items-center justify-between gap-3">
@@ -19,8 +18,12 @@ const InfoRow = ({ label, children }) => (
 
 const RightInfoPanel = ({ chat }) => {
   const navigate = useNavigate();
-  const currentBooking = chat?.bookingInfo || BOOKING_INFO;
-  const currentPet = chat?.petInfo || PET_INFO;
+  const currentBooking = chat?.bookingInfo || {
+    id: 'Chưa có lịch đặt liên quan', service: '—', branch: '—', dateTime: '—', status: '—',
+  };
+  const currentPet = chat?.petInfo || {
+    name: 'Chưa có thông tin thú cưng', breed: '—', weight: '—', note: '—',
+  };
 
   return (
     <aside className="custom-scrollbar col-span-12 space-y-3.5 overflow-y-auto pr-0.5 lg:col-span-3">
@@ -53,11 +56,11 @@ const RightInfoPanel = ({ chat }) => {
 
         <div className="pt-3">
           <div className="mb-3 flex items-center space-x-3">
-            <img
+            {currentPet.image ? <img
               src={currentPet.image}
               alt={currentPet.name}
               className="h-12 w-12 rounded-xl border border-slate-100 object-cover shadow-sm"
-            />
+            /> : <PawPrint className="h-12 w-12 rounded-xl bg-slate-50 p-3 text-slate-300" />}
 
             <div>
               <h4 className="text-xs font-bold text-slate-900">
@@ -89,7 +92,8 @@ const RightInfoPanel = ({ chat }) => {
         <div className="space-y-2 pt-3">
           <button
             type="button"
-            onClick={() => navigate(`/my-bookings/${currentBooking.id}`)}
+            disabled={!currentBooking.recordId}
+            onClick={() => navigate(`/my-bookings/${currentBooking.recordId}`)}
             className="flex w-full items-center justify-center space-x-2 rounded-xl border border-[#009879] px-3 py-2 text-xs font-semibold text-[#009879] hover:bg-[#009879]/5 transition-colors cursor-pointer"
           >
             <FileText size={14} />
@@ -107,7 +111,8 @@ const RightInfoPanel = ({ chat }) => {
 
           <button
             type="button"
-            onClick={() => alert(`Đang kết nối cuộc gọi tới ${chat?.name || "cơ sở"}...`)}
+            disabled={!chat?.phone}
+            onClick={() => { window.location.href = `tel:${chat.phone}`; }}
             className="flex w-full items-center justify-center space-x-2 rounded-xl border border-[#009879] px-3 py-2 text-xs font-semibold text-[#009879] hover:bg-[#009879]/5 transition-colors cursor-pointer"
           >
             <Phone size={14} />

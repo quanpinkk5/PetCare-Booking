@@ -7,40 +7,29 @@ const BookingPetSelector = ({
     onSelect,
     onAddPet,
 }) => {
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [newPet, setNewPet] = useState({
+        species: "DOG",
         name: "",
         breed: "",
         gender: "Đực",
         weight: "",
-        image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop&q=80",
     });
 
-    const handleCreatePet = (e) => {
+    const handleCreatePet = async (e) => {
         e.preventDefault();
-        if (!newPet.name.trim()) return;
-
-        const created = {
-            id: Date.now(),
-            name: newPet.name,
-            breed: newPet.breed || "Thú cưng",
-            gender: newPet.gender,
-            weight: newPet.weight ? `${newPet.weight}kg` : "4kg",
-            image: newPet.image,
-        };
-
-        if (onAddPet) {
-            onAddPet(created);
-        }
-        onSelect(created);
-        setShowAddModal(false);
-        setNewPet({
-            name: "",
-            breed: "",
-            gender: "Đực",
-            weight: "",
-            image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop&q=80",
-        });
+        if (saving || !newPet.name.trim()) return;
+        setSaving(true); setSaveError('');
+        try {
+            await onAddPet({ name: newPet.name.trim(), species: newPet.species, breed: newPet.breed.trim(),
+                gender: newPet.gender === 'Đực' ? 'MALE' : 'FEMALE',
+                ...(newPet.weight ? { weight: Number(newPet.weight) } : {}) });
+            setShowAddModal(false);
+            setNewPet({ name: '', species: 'DOG', breed: '', gender: 'Đực', weight: '' });
+        } catch (error) { setSaveError(error.message); }
+        finally { setSaving(false); }
     };
 
     return (
@@ -78,7 +67,7 @@ const BookingPetSelector = ({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 {pets.map((pet) => {
                     const isSelected = selectedPet?.id === pet.id;
-                    const isCat = pet.breed?.toLowerCase().includes("mèo");
+                    const isCat = pet.species === "CAT";
 
                     return (
                         <button
@@ -109,7 +98,8 @@ const BookingPetSelector = ({
                                 <div className="relative shrink-0">
                                     <div className="h-14 w-14 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center">
                                         <img
-                                            src={pet.image}
+                                            src={pet.image || undefined}
+                                            hidden={!pet.image}
                                             alt={pet.name}
                                             onError={(e) => {
                                                 e.currentTarget.style.display = "none";
@@ -119,7 +109,7 @@ const BookingPetSelector = ({
                                             }}
                                             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
-                                        <div className="hidden h-full w-full items-center justify-center bg-emerald-50 text-emerald-600">
+                                        <div className={`${pet.image ? "hidden" : "flex"} h-full w-full items-center justify-center bg-emerald-50 text-emerald-600`}>
                                             {isCat ? <Cat size={22} /> : <Dog size={22} />}
                                         </div>
                                     </div>
@@ -189,6 +179,12 @@ const BookingPetSelector = ({
                         </div>
 
                         <form onSubmit={handleCreatePet} className="mt-4 space-y-3.5">
+                            <label className="block text-xs font-semibold text-slate-700">Loài thú cưng
+                                <select value={newPet.species} onChange={(e) => setNewPet({ ...newPet, species: e.target.value })} className="ml-3 rounded-xl border p-2">
+                                    <option value="DOG">Chó</option><option value="CAT">Mèo</option>
+                                </select>
+                            </label>
+                            {saveError && <p role="alert" className="text-xs text-red-600">{saveError}</p>}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                                     Tên bé cưng *
@@ -222,7 +218,7 @@ const BookingPetSelector = ({
                                         Cân nặng (kg)
                                     </label>
                                     <input
-                                        type="number"
+                                        type="number" min="0.01" step="any"
                                         placeholder="VD: 5"
                                         value={newPet.weight}
                                         onChange={(e) => setNewPet({ ...newPet, weight: e.target.value })}
@@ -262,10 +258,10 @@ const BookingPetSelector = ({
                                     Hủy
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="submit" disabled={saving}
                                     className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition cursor-pointer"
                                 >
-                                    Lưu bé cưng
+                                    {saving ? "Đang lưu..." : "Lưu bé cưng"}
                                 </button>
                             </div>
                         </form>
