@@ -1,299 +1,429 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-import ServiceCategoryFilter from '../../components/serviceCategory/ServiceCategoryFilter';
-import ServiceCategoryTable from '../../components/serviceCategory/ServiceCategoryTable';
-import ServiceCategoryForm from '../../components/serviceCategory/ServiceCategoryForm';
-import ServiceCategoryDetailModal from '../../components/serviceCategory/ServiceCategoryDetailModal';
+import ServiceCategoryFilter from "../../components/serviceCategory/ServiceCategoryFilter";
+import ServiceCategoryTable from "../../components/serviceCategory/ServiceCategoryTable";
+import ServiceCategoryForm from "../../components/serviceCategory/ServiceCategoryForm";
+import ServiceCategoryDetailModal from "../../components/serviceCategory/ServiceCategoryDetailModal";
 
-import {
-  Scissors,
-  Bath,
-  Sparkles,
-  HeartHandshake,
-  Hotel,
-  ShieldAlert,
-  Ear,
-  PawPrint,
-} from 'lucide-react';
+import { adminServiceCategoryApi } from "../../services/adminServiceCategoryApi";
+
+const EMPTY_FORM = {
+  id: null,
+  name: "",
+  code: "",
+  description: "",
+  icon: "PawPrint",
+  status: "ACTIVE",
+};
+
+const toApiStatus = (value) => {
+  if (value === "Hoạt động" || value === "ACTIVE") {
+    return "ACTIVE";
+  }
+
+  if (value === "Tạm ẩn" || value === "INACTIVE") {
+    return "INACTIVE";
+  }
+
+  return "all";
+};
 
 export default function ServiceCategoryList() {
   const [appliedFilters, setAppliedFilters] = useState({
-    searchQuery: '',
-    statusFilter: 'Trạng thái: Tất cả',
+    search: "",
+    status: "all",
   });
+
+  const [categories, setCategories] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedCategoryForDetail, setSelectedCategoryForDetail] = useState(null);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  const [formData, setFormData] = useState({
-    id: null,
-    name: '',
-    code: '',
-    description: '',
-    icon: 'PawPrint',
-    status: 'active',
+  const [selectedCategoryForDetail, setSelectedCategoryForDetail] =
+    useState(null);
+
+  const [updatingCategoryId, setUpdatingCategoryId] = useState(null);
+
+  const actionInProgress = useRef(false);
+
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
   });
 
-  const [categories, setCategories] = useState([
-    {
-      id: 1,
-      name: 'Grooming',
-      code: 'GROOMING',
-      description:
-        'Dịch vụ cắt tỉa lông, tạo kiểu và chăm sóc ngoại hình thú cưng.',
-      status: 'Hoạt động',
-      branchCount: 56,
-      updatedAt: '22/05/2025 14:30',
-      updatedBy: 'Admin',
-      icon: Scissors,
-      iconBg: 'bg-emerald-50 text-emerald-600',
-    },
-    {
-      id: 2,
-      name: 'Tắm',
-      code: 'TAM',
-      description:
-        'Dịch vụ tắm sạch, sấy khô và vệ sinh tổng thể.',
-      status: 'Hoạt động',
-      branchCount: 54,
-      updatedAt: '22/05/2025 13:45',
-      updatedBy: 'Admin',
-      icon: Bath,
-      iconBg: 'bg-sky-50 text-sky-600',
-    },
-    {
-      id: 3,
-      name: 'Spa',
-      code: 'SPA',
-      description:
-        'Dịch vụ spa thư giãn, massage và chăm sóc chuyên sâu.',
-      status: 'Hoạt động',
-      branchCount: 48,
-      updatedAt: '21/05/2025 16:10',
-      updatedBy: 'Admin',
-      icon: Sparkles,
-      iconBg: 'bg-purple-50 text-purple-600',
-    },
-    {
-      id: 4,
-      name: 'Cắt móng',
-      code: 'CATMONG',
-      description:
-        'Dịch vụ cắt móng và dũa móng an toàn cho thú cưng.',
-      status: 'Hoạt động',
-      branchCount: 52,
-      updatedAt: '21/05/2025 10:25',
-      updatedBy: 'Admin',
-      icon: HeartHandshake,
-      iconBg: 'bg-amber-50 text-amber-600',
-    },
-    {
-      id: 5,
-      name: 'Boarding',
-      code: 'BOARDING',
-      description:
-        'Dịch vụ lưu trú qua đêm cho thú cưng.',
-      status: 'Hoạt động',
-      branchCount: 60,
-      updatedAt: '20/05/2025 09:15',
-      updatedBy: 'Admin',
-      icon: Hotel,
-      iconBg: 'bg-blue-50 text-blue-600',
-    },
-    {
-      id: 6,
-      name: 'Pet Sitting',
-      code: 'PETSITTING',
-      description:
-        'Dịch vụ trông giữ thú cưng tại nhà.',
-      status: 'Hoạt động',
-      branchCount: 33,
-      updatedAt: '20/05/2025 08:40',
-      updatedBy: 'Admin',
-      icon: ShieldAlert,
-      iconBg: 'bg-rose-50 text-rose-600',
-    },
-    {
-      id: 7,
-      name: 'Vệ sinh tai',
-      code: 'VESINHTAI',
-      description:
-        'Dịch vụ vệ sinh tai, loại bỏ ráy tai và khử mùi.',
-      status: 'Hoạt động',
-      branchCount: 41,
-      updatedAt: '19/05/2025 15:55',
-      updatedBy: 'Admin',
-      icon: Ear,
-      iconBg: 'bg-teal-50 text-teal-600',
-    },
-    {
-      id: 8,
-      name: 'Chăm sóc lông',
-      code: 'CHAMSOCLONG',
-      description:
-        'Dịch vụ dưỡng lông, ủ lông và phục hồi lông hư tổn.',
-      status: 'Tạm ẩn',
-      branchCount: 18,
-      updatedAt: '18/05/2025 11:20',
-      updatedBy: 'Admin',
-      icon: PawPrint,
-      iconBg: 'bg-orange-50 text-orange-600',
-    },
-  ]);
+  // =========================
+  // 1. TẢI DANH SÁCH TỪ API
+  // =========================
+  useEffect(() => {
+    let cancelled = false;
 
-  const handleAddNew = () => {
-    setFormData({
-      id: null,
-      name: '',
-      code: '',
-      description: '',
-      icon: 'PawPrint',
-      status: 'active',
-    });
-    setIsFormOpen(true);
+    const loadCategories = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await adminServiceCategoryApi.getCategories({
+          search: appliedFilters.search,
+          status: appliedFilters.status,
+          page,
+          limit: pageSize,
+        });
+
+        if (cancelled) return;
+
+        if (
+          response?.success === false ||
+          !Array.isArray(response?.data?.categories)
+        ) {
+          throw new Error(response?.message || "Dữ liệu danh mục không hợp lệ");
+        }
+
+        const data = response.data;
+        const nextPagination = {
+          page: Number(data.pagination?.page ?? page),
+          limit: Number(data.pagination?.limit ?? pageSize),
+          total: Number(data.pagination?.total ?? 0),
+          totalPages: Number(data.pagination?.totalPages ?? 0),
+        };
+
+        // Sau khi lọc hoặc dữ liệu thay đổi,
+        // trang cũ có thể không còn tồn tại.
+        if (page > 1 && page > Math.max(1, nextPagination.totalPages)) {
+          setPage(Math.max(1, nextPagination.totalPages));
+          return;
+        }
+
+        setCategories(data.categories);
+        setPagination(nextPagination);
+      } catch (err) {
+        if (cancelled) return;
+
+        setCategories([]);
+        setError(err.message || "Không thể tải danh mục dịch vụ");
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters, page, pageSize, refreshKey]);
+
+  // =========================
+  // 2. THÔNG BÁO TỰ ẨN
+  // =========================
+  useEffect(() => {
+    if (!message.text) return;
+
+    const timer = setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  const reloadCategories = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
-  const handleEditCategory = (item) => {
-    setFormData({
-      id: item.id,
-      name: item.name,
-      code: item.code,
-      description: item.description || '',
-      icon: 'PawPrint',
-      status: item.status === 'Hoạt động' ? 'active' : 'inactive',
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setFormData({
-      id: null,
-      name: '',
-      code: '',
-      description: '',
-      icon: 'PawPrint',
-      status: 'active',
-    });
-  };
-
-  const handleSaveCategory = (data) => {
-    const formattedStatus = data.status === 'active' ? 'Hoạt động' : 'Tạm ẩn';
-
-    if (data.id) {
-      // Update existing category
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === data.id
-            ? {
-                ...cat,
-                name: data.name,
-                code: data.code,
-                description: data.description,
-                status: formattedStatus,
-                updatedAt: new Date().toLocaleString('vi-VN', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-              }
-            : cat
-        )
-      );
-    } else {
-      // Create new category
-      const newCat = {
-        id: Date.now(),
-        name: data.name,
-        code: data.code,
-        description: data.description,
-        status: formattedStatus,
-        branchCount: 0,
-        updatedAt: new Date().toLocaleString('vi-VN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        updatedBy: 'Admin',
-        icon: PawPrint,
-        iconBg: 'bg-emerald-50 text-emerald-600',
-      };
-      setCategories((prev) => [newCat, ...prev]);
-    }
-
-    handleCloseForm();
-  };
-
+  // =========================
+  // 3. TÌM KIẾM / LỌC
+  // =========================
   const handleFilter = ({ searchQuery, statusFilter }) => {
-    setAppliedFilters({ searchQuery, statusFilter });
+    setAppliedFilters({
+      search: (searchQuery || "").trim(),
+      status: toApiStatus(statusFilter),
+    });
+
+    setPage(1);
   };
 
   const handleResetFilter = () => {
     setAppliedFilters({
-      searchQuery: '',
-      statusFilter: 'Trạng thái: Tất cả',
+      search: "",
+      status: "all",
     });
+
+    setPage(1);
   };
 
-  const filteredCategories = useMemo(() => {
-    const { searchQuery, statusFilter } = appliedFilters;
+  // =========================
+  // 4. PHÂN TRANG
+  // =========================
+  const handlePageChange = (nextPage) => {
+    if (
+      isLoading ||
+      actionInProgress.current ||
+      nextPage < 1 ||
+      nextPage > pagination.totalPages ||
+      nextPage === page
+    ) {
+      return;
+    }
 
-    return categories.filter((item) => {
-      if (statusFilter !== 'Trạng thái: Tất cả') {
-        if (statusFilter === 'Hoạt động' && item.status !== 'Hoạt động') {
-          return false;
-        }
-        if (statusFilter === 'Tạm ẩn' && item.status !== 'Tạm ẩn') {
-          return false;
-        }
-      }
+    setPage(nextPage);
+  };
 
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase();
-        const matchName = item.name.toLowerCase().includes(query);
-        const matchCode = item.code.toLowerCase().includes(query);
+  const handlePageSizeChange = (nextSize) => {
+    if (isLoading || actionInProgress.current || ![20, 50].includes(nextSize)) {
+      return;
+    }
 
-        return matchName || matchCode;
-      }
+    setPageSize(nextSize);
+    setPage(1);
+  };
 
-      return true;
+  // =========================
+  // 5. MỞ FORM THÊM / SỬA
+  // =========================
+  const handleAddNew = () => {
+    if (actionInProgress.current) return;
+
+    setFormError("");
+    setFormData({ ...EMPTY_FORM });
+    setIsFormOpen(true);
+  };
+
+  const handleEditCategory = (item) => {
+    if (actionInProgress.current) return;
+
+    setSelectedCategoryForDetail(null);
+    setFormError("");
+
+    setFormData({
+      id: item._id,
+      name: item.name || "",
+      code: item.code || "",
+      description: item.description || "",
+      icon: item.icon || "PawPrint",
+      status: item.status || "ACTIVE",
     });
-  }, [categories, appliedFilters]);
 
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    if (actionInProgress.current) return;
+
+    setIsFormOpen(false);
+    setFormError("");
+    setFormData({ ...EMPTY_FORM });
+  };
+
+  // =========================
+  // 6. THÊM / CẬP NHẬT DANH MỤC
+  // =========================
+  const handleSaveCategory = async (data) => {
+    if (actionInProgress.current) return;
+
+    const payload = {
+      name: data.name.trim(),
+      code: data.code.trim().toUpperCase(),
+      description: data.description.trim(),
+      icon: data.icon,
+      status: data.status,
+    };
+
+    if (!payload.name) {
+      setFormError("Vui lòng nhập tên danh mục.");
+      return;
+    }
+
+    if (!/^[A-Z0-9_]{2,50}$/.test(payload.code)) {
+      setFormError(
+        "Mã danh mục phải có 2–50 ký tự, chỉ gồm chữ, số và dấu gạch dưới.",
+      );
+      return;
+    }
+
+    if (payload.description.length > 255) {
+      setFormError("Mô tả tối đa 255 ký tự.");
+      return;
+    }
+
+    actionInProgress.current = true;
+    setIsSaving(true);
+    setFormError("");
+
+    try {
+      let response;
+
+      if (data.id) {
+        response = await adminServiceCategoryApi.updateCategory(
+          data.id,
+          payload,
+        );
+      } else {
+        response = await adminServiceCategoryApi.createCategory(payload);
+      }
+
+      if (response?.success === false) {
+        throw new Error(response.message || "Không thể lưu danh mục");
+      }
+
+      setIsFormOpen(false);
+      setFormData({ ...EMPTY_FORM });
+
+      setMessage({
+        type: "success",
+        text: data.id
+          ? "Cập nhật danh mục thành công."
+          : "Thêm danh mục mới thành công.",
+      });
+
+      // Danh mục mới hiển thị ở trang đầu.
+      if (!data.id) {
+        setPage(1);
+      }
+
+      reloadCategories();
+    } catch (err) {
+      setFormError(err.message || "Không thể lưu danh mục dịch vụ");
+    } finally {
+      actionInProgress.current = false;
+      setIsSaving(false);
+    }
+  };
+
+  // =========================
+  // 7. BẬT / TẮT DANH MỤC
+  // =========================
+  const handleToggleStatus = async (item) => {
+    if (actionInProgress.current) return;
+
+    const expectedStatus = item.status;
+    const newStatus = expectedStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+    const actionLabel = newStatus === "ACTIVE" ? "kích hoạt" : "tạm ẩn";
+
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn ${actionLabel} danh mục ` +
+        `"${item.name}" không?`,
+    );
+
+    if (!confirmed) return;
+
+    actionInProgress.current = true;
+    setUpdatingCategoryId(item._id);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const response = await adminServiceCategoryApi.updateCategoryStatus(
+        item._id,
+        expectedStatus,
+        newStatus,
+      );
+
+      if (response?.success === false) {
+        throw new Error(response.message || "Không thể cập nhật trạng thái");
+      }
+
+      setMessage({
+        type: "success",
+        text: `Đã ${actionLabel} danh mục "${item.name}".`,
+      });
+
+      reloadCategories();
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.message || "Không thể thay đổi trạng thái danh mục",
+      });
+
+      // Tải lại nếu trạng thái đã đổi bởi Admin khác.
+      reloadCategories();
+    } finally {
+      actionInProgress.current = false;
+      setUpdatingCategoryId(null);
+    }
+  };
+
+  // =========================
+  // 8. RENDER
+  // =========================
   return (
     <main className="p-6 md:p-8 space-y-6 flex-1">
-      {/* Component Filter riêng */}
       <ServiceCategoryFilter
         onFilter={handleFilter}
         onReset={handleResetFilter}
         onAddNew={handleAddNew}
       />
 
-      {/* Bảng danh mục dịch vụ */}
+      {message.text && (
+        <div
+          role={message.type === "error" ? "alert" : "status"}
+          className={`rounded-xl border p-3 text-xs ${
+            message.type === "error"
+              ? "bg-rose-50 border-rose-200 text-rose-700"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3 text-xs"
+        >
+          {error}
+          <button
+            type="button"
+            onClick={reloadCategories}
+            className="ml-3 font-semibold underline"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
       <section className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col">
         <ServiceCategoryTable
           categories={categories}
-          filteredCategories={filteredCategories}
+          pagination={pagination}
+          isLoading={isLoading}
+          hasError={Boolean(error)}
+          updatingCategoryId={updatingCategoryId}
           onEdit={handleEditCategory}
-          onViewDetail={(item) => setSelectedCategoryForDetail(item)}
+          onViewDetail={setSelectedCategoryForDetail}
+          onToggleStatus={handleToggleStatus}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
         />
       </section>
 
-      {/* Pop-up Modal Thêm/Chỉnh sửa */}
       {isFormOpen && (
         <ServiceCategoryForm
           formData={formData}
           setFormData={setFormData}
           onReset={handleCloseForm}
           onSave={handleSaveCategory}
+          isSaving={isSaving}
+          error={formError}
         />
       )}
 
-      {/* Pop-up Modal Xem chi tiết */}
       {selectedCategoryForDetail && (
         <ServiceCategoryDetailModal
           category={selectedCategoryForDetail}

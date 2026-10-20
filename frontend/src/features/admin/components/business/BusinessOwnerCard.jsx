@@ -1,16 +1,42 @@
-import {
-  User,
-  Mail,
-  Phone,
-} from 'lucide-react';
+import { useState } from "react";
+
+import { User, Mail, Phone } from "lucide-react";
+
+function OwnerAvatar({ avatar, name }) {
+  const [failedUrl, setFailedUrl] = useState("");
+
+  const hasImage =
+    typeof avatar === "string" && avatar.trim() !== "" && avatar !== failedUrl;
+
+  return (
+    <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg overflow-hidden ring-2 ring-slate-100 shrink-0">
+      {hasImage ? (
+        <img
+          src={avatar}
+          alt={name || "Chủ sở hữu"}
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(avatar)}
+        />
+      ) : (
+        <span>
+          {name?.trim()?.charAt(0)?.toUpperCase() || (
+            <User className="w-5 h-5" />
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function BusinessOwnerCard({ facility }) {
-  const ownerName = facility?.owner || 'Nguyễn Minh Anh';
-  const ownerAvatar =
-    facility?.ownerAvatar ||
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuAxlDYSUDLkclrEKDhEeuarVNgBP11GOuFWhBXohfGIw8SG7PPcWw98oanvP9ysjUdlu7hHp3TQWdkCb4RhqHq3hG_lssJM3Cv3Sh8xNJdp8FR7XvncogFam-fSR12we0c_1DLnqsmACXSaMfVm2DghQOwgCCNs769D2fimel3KrNJOvr1v8Kj0tJ-pQunPZIGoERkCbRLyBHCrLpD61YYym8Obmo9e7wMSPXpbN-4';
-  const ownerEmail = facility?.email || 'minhanh.nguyen@gmail.com';
-  const ownerPhone = facility?.phone || '0912 345 678';
+  const owner = facility?.owner;
+
+  const ownerName = owner?.fullName || "Không xác định";
+
+  const ownerEmail = owner?.email || "Chưa cập nhật";
+
+  const ownerPhone = owner?.phone || "Chưa cập nhật";
 
   return (
     <section className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
@@ -20,21 +46,17 @@ export default function BusinessOwnerCard({ facility }) {
       </h3>
 
       <div className="flex items-center gap-4">
-        <img
-          src={ownerAvatar}
-          alt={ownerName}
-          className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-100 shrink-0"
-        />
+        <OwnerAvatar avatar={owner?.avatar} name={ownerName} />
 
         <div className="min-w-0">
           <h4 className="text-sm font-bold text-slate-900 truncate">
             {ownerName}
           </h4>
 
-          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1 truncate">
+          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1 min-w-0">
             <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
 
-            <span className="truncate">
+            <span className="truncate" title={ownerEmail}>
               {ownerEmail}
             </span>
           </div>
