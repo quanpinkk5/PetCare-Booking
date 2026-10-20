@@ -15,6 +15,7 @@ const BookingServiceSelector = ({
     onRetry,
     loading = false,
     error = "",
+    emptyMessage = "Chọn thú cưng và chi nhánh có dịch vụ phù hợp.",
 }) => {
     return (
         <section id="step-service" className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 transition-all">
@@ -42,7 +43,7 @@ const BookingServiceSelector = ({
             <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                 {loading && <p role="status" className="text-sm text-slate-500">Đang tải dịch vụ...</p>}
                 {error && <p role="alert" className="text-sm text-red-600">{error} <button type="button" onClick={onRetry} className="underline">Thử lại</button></p>}
-                {!loading && !error && !services.length && <p className="text-sm text-slate-500">Chọn thú cưng và chi nhánh có dịch vụ phù hợp.</p>}
+                {!loading && !error && !services.length && <p role="status" className="text-sm text-slate-500">{emptyMessage}</p>}
                 {services.map((service) => {
                     const isSelected = selectedService?.id === service.id;
                     const Icon = getServiceIcon(service.name);

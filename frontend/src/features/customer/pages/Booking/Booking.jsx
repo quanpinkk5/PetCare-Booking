@@ -5,7 +5,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import { bookingApi } from '../../services/bookingApi.js';
 import { businessApi } from '../../services/businessApi.js';
 import { petApi } from '../../services/petApi.js';
-import { boardingDays, bookingPet, eligibleServices, loadBookingBranches, bookingPayload, vietnamToday } from '../../services/bookingFormData.js';
+import { boardingDays, bookingPet, eligibleServices, initialBookingLocation, loadBookingBranches, bookingPayload, vietnamToday } from '../../services/bookingFormData.js';
 import BookingStepper from '../../components/Booking/BookingStepper';
 import BookingPetSelector from '../../components/Booking/BookingPetSelector';
 import BookingBranchSelector from '../../components/Booking/BookingBranchSelector';
@@ -19,6 +19,7 @@ const Booking = () => {
   const { user, isAuthLoading } = useAuth();
   const [params] = useSearchParams();
   const [requested] = useState(() => ({ petId: params.get('petId'), branchId: params.get('branchId'),
+    businessId: params.get('businessId'),
     offeringId: params.get('branchServiceId'), serviceName: params.get('service') }));
   const [petsList, setPetsList] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -44,17 +45,21 @@ const Booking = () => {
     let active = true;
     const load = async () => {
       try {
-        const [pets, branchList, preferred] = await Promise.all([
-          petApi.list(), loadBookingBranches(businessApi),
+        const [pets, preferred] = await Promise.all([
+          petApi.list(),
           requested.offeringId ? bookingApi.offering(requested.offeringId) : Promise.resolve(null),
         ]);
+        const branchId = preferred?.data.branchId || requested.branchId;
+        const branchList = await loadBookingBranches(businessApi, {
+          businessId: requested.businessId || preferred?.data.branch?.businessId || preferred?.data.business?._id,
+          branchId,
+        });
         if (!active) return;
         const mapped = pets.data.map(bookingPet);
         setPetsList(mapped);
         setBranches(branchList);
         setSelectedPet(mapped.find((pet) => pet.id === requested.petId) || mapped[0] || null);
-        const branchId = preferred?.data.branchId || requested.branchId;
-        setSelectedBranch(branchList.find((branch) => branch.id === branchId) || branchList[0] || null);
+        setSelectedBranch(initialBookingLocation(branchList, branchId));
         setSelectedService(null);
         setSelectedTime('');
         setError('');
@@ -66,8 +71,9 @@ const Booking = () => {
   }, [isAuthLoading, user, requested, retry]);
 
   const branchId = selectedBranch?.id;
+  const isMainLocation = Boolean(selectedBranch?.isMain);
   useEffect(() => {
-    if (!branchId) return;
+    if (!branchId || isMainLocation) return;
     let active = true;
     businessApi.services(branchId).then((response) => {
       if (active) setOfferings({ branchId, data: response.data, loading: false, error: '' });
@@ -75,9 +81,9 @@ const Booking = () => {
       if (active) setOfferings({ branchId, data: [], loading: false, error: err.message });
     });
     return () => { active = false; };
-  }, [branchId, retry]);
+  }, [branchId, isMainLocation, retry]);
 
-  const servicesLoading = Boolean(branchId) && (offerings.branchId !== branchId || offerings.loading);
+  const servicesLoading = Boolean(branchId) && !isMainLocation && (offerings.branchId !== branchId || offerings.loading);
   const services = eligibleServices(offerings.branchId === branchId ? offerings.data : [], selectedPet);
   // Resolve a deep-linked service only while the customer has not made a manual choice.
   const service = selectedService || (!manualSelection && (services.find((item) => item.id === requested.offeringId)
@@ -117,6 +123,7 @@ const Booking = () => {
   };
   const days = service?.bookingType === 'BOARDING' ? boardingDays(selectedDate, checkOutDate) : 1;
   const ready = !loading && !servicesLoading && !slotsLoading && selectedPet && selectedBranch && service
+    && selectedBranch.canBook !== false
     && selectedDate >= vietnamToday()
     && (service.bookingType === 'BOARDING' ? days > 0 : slots.some((slot) => slot.startTime === selectedTime && slot.remainingCapacity > 0));
   const handleConfirm = async () => {
@@ -192,6 +199,7 @@ const Booking = () => {
               onSelect={selectService}
               onRetry={() => { setLoading(true); setRetry((value) => value + 1); }}
               loading={servicesLoading} error={offerings.branchId === branchId ? offerings.error : ''}
+              emptyMessage={isMainLocation ? 'Cơ sở chính chưa có gói dịch vụ đặt lịch trực tiếp. Vui lòng chọn một chi nhánh bên trên để xem dịch vụ và lịch trống.' : undefined}
             />
 
             <BookingDateTimeSelector

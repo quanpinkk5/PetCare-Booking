@@ -10,6 +10,7 @@ export const businessApi = {
   },
   detail: (id) => apiRequest(`/customer/businesses/${encodeURIComponent(id)}`),
   branches: (id) => apiRequest(`/customer/businesses/${encodeURIComponent(id)}/branches`),
+  branch: (id) => apiRequest(`/customer/branches/${encodeURIComponent(id)}`),
   services: (id) => apiRequest(`/customer/branches/${encodeURIComponent(id)}/services`),
   reviews: (id, filters = {}) => {
     const query = new URLSearchParams();

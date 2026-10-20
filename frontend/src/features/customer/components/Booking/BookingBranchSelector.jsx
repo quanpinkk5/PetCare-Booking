@@ -5,6 +5,8 @@ const BookingBranchSelector = ({
     selectedBranch,
     onSelect,
 }) => {
+    const mainCount = branches.filter((branch) => branch.isMain).length;
+    const branchCount = branches.length - mainCount;
     return (
         <section id="step-branch" className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 transition-all">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -18,11 +20,13 @@ const BookingBranchSelector = ({
                                 2. Chọn cơ sở chăm sóc
                             </h2>
                             <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-100">
-                                {branches.length} chi nhánh
+                                {mainCount > 0 ? `${mainCount} cơ sở chính · ${branchCount} chi nhánh` : `${branchCount} chi nhánh`}
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Chọn chi nhánh thuận tiện nhất với vị trí của bạn
+                            {branches[0]?.businessName && branches.every((branch) => branch.businessId === branches[0].businessId)
+                                ? `Chọn địa điểm của ${branches[0].businessName} thuận tiện nhất với bạn`
+                                : 'Chọn địa điểm chăm sóc thuận tiện nhất với vị trí của bạn'}
                         </p>
                     </div>
                 </div>
@@ -41,7 +45,7 @@ const BookingBranchSelector = ({
                             key={branch.id}
                             type="button"
                             onClick={() => onSelect(branch)}
-                            className={`group relative rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                            className={`group relative rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer disabled:cursor-default flex flex-col justify-between ${
                                 isSelected
                                     ? "border-emerald-500 bg-gradient-to-br from-emerald-50/80 via-teal-50/20 to-white shadow-md shadow-emerald-500/10 ring-2 ring-emerald-500/20"
                                     : "border-slate-200/90 bg-white hover:border-emerald-300 hover:shadow-sm hover:-translate-y-0.5"
@@ -63,11 +67,11 @@ const BookingBranchSelector = ({
                             <div className="flex gap-3.5 items-start">
                                 {/* Facility Image */}
                                 <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/60 shadow-xs">
-                                    <img
+                                    {branchImg ? <img
                                         src={branchImg}
                                         alt={branch.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
+                                    /> : <Building2 className="h-full w-full p-5 text-slate-300" />}
                                     <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] font-bold text-white flex items-center gap-0.5">
                                         <Star size={9} className="text-amber-400 fill-amber-400" />
                                         {rating}
@@ -79,6 +83,9 @@ const BookingBranchSelector = ({
                                         <h3 className="font-bold text-sm text-slate-900 group-hover:text-emerald-700 transition truncate">
                                             {branch.name}
                                         </h3>
+                                        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                            {branch.isMain ? 'Cơ sở chính' : 'Chi nhánh'}
+                                        </span>
                                         {branch.isNearest && (
                                             <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold border border-amber-200/80">
                                                 Gần bạn nhất
@@ -97,7 +104,7 @@ const BookingBranchSelector = ({
                             <div className="mt-3.5 pt-3 border-t border-slate-100/90 flex items-center justify-between text-[11px] text-slate-500">
                                 <span className="flex items-center gap-1">
                                     <Clock size={12} className="text-slate-400" />
-                                    Giờ trống theo lịch dịch vụ
+                                    {branch.canBook === false ? 'Chưa nhận đặt lịch trực tiếp' : 'Giờ trống theo lịch dịch vụ'}
                                 </span>
                                 <span className="flex items-center gap-1 font-medium text-slate-600">
                                     <Phone size={11} className="text-slate-400" />
