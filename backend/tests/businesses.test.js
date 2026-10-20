@@ -31,19 +31,26 @@ const chain = (result, checks = {}) => ({
   then(resolve, reject) { return Promise.resolve(result).then(resolve, reject); },
 });
 
-test('public business list filters approved businesses, escapes search and paginates before attaching active branches', async (t) => {
-  let countFilter;
-  t.mock.method(Business, 'find', (filter) => {
-    countFilter = filter;
-    assert.equal(filter.status, 'APPROVED');
-    assert.deepEqual(filter.name, { $regex: 'Pet\\.\\*', $options: 'i' });
-    assert.deepEqual(filter.averageRating, { $gte: 4.5 });
-    return chain([{ _id: id, name: 'Pet.*', averageRating: 4.8 }], {
-      skip: (value) => assert.equal(value, 8), limit: (value) => assert.equal(value, 8),
-      sort: (value) => assert.deepEqual(value, { averageRating: -1, totalReviews: -1, _id: -1 }),
+test('public business list computes visible review ratings before filtering, sorting and pagination', async (t) => {
+  t.mock.method(Business, 'aggregate', async (pipeline) => {
+    assert.equal(pipeline[0].$match.status, 'APPROVED');
+    assert.deepEqual(pipeline[0].$match.name, { $regex: 'Pet\\.\\*', $options: 'i' });
+    assert.equal(pipeline[0].$match.averageRating, undefined);
+    assert.deepEqual(pipeline[1].$lookup, {
+      from: 'reviews', localField: '_id', foreignField: 'businessId',
+      pipeline: [
+        { $match: { status: 'VISIBLE' } },
+        { $group: { _id: null, averageRating: { $avg: '$rating' }, totalReviews: { $sum: 1 } } },
+      ], as: 'reviewStats',
     });
+    assert.ok(pipeline[2].$set.averageRating);
+    assert.deepEqual(pipeline[3], { $match: { averageRating: { $gte: 4.5 } } });
+    assert.deepEqual(pipeline[4].$facet.data.slice(0, 3), [
+      { $sort: { averageRating: -1, totalReviews: -1, _id: -1 } }, { $skip: 8 }, { $limit: 8 },
+    ]);
+    assert.deepEqual(pipeline[4].$facet.count, [{ $count: 'total' }]);
+    return [{ data: [{ _id: id, name: 'Pet.*', averageRating: 4.8, totalReviews: 5 }], count: [{ total: 9 }] }];
   });
-  t.mock.method(Business, 'countDocuments', async (filter) => { assert.deepEqual(filter, countFilter); return 9; });
   t.mock.method(Branch, 'find', (filter) => {
     assert.deepEqual(filter, { businessId: { $in: [id] }, status: 'ACTIVE' });
     return chain([{ _id: branchId, businessId: id, address: { province: 'Hà Nội' } }]);
@@ -51,6 +58,8 @@ test('public business list filters approved businesses, escapes search and pagin
   const response = await get('/businesses', { search: 'Pet.*', minRating: '4.5', sort: 'rating', page: '2', limit: '8' });
   assert.equal(response.status, 200);
   assert.equal(response.data[0].branches[0]._id, branchId);
+  assert.equal(response.data[0].averageRating, 4.8);
+  assert.equal(response.data[0].totalReviews, 5);
   assert.deepEqual(response.pagination, { page: 2, limit: 8, total: 9, totalPages: 2 });
 });
 
@@ -61,8 +70,7 @@ test('location searches only active branches and constrains business IDs', async
     assert.equal(filter.$or[0]['address.province'].$regex, 'Hà Nội');
     return [id];
   });
-  t.mock.method(Business, 'find', (filter) => { assert.deepEqual(filter._id, { $in: [id] }); return chain([]); });
-  t.mock.method(Business, 'countDocuments', async () => 0);
+  t.mock.method(Business, 'aggregate', async (pipeline) => { assert.deepEqual(pipeline[0].$match._id, { $in: [id] }); return [{ data: [], count: [] }]; });
   const response = await get('/businesses', { location: 'Hà Nội' });
   assert.equal(response.status, 200);
   assert.equal(response.pagination.total, 0);
@@ -70,7 +78,7 @@ test('location searches only active branches and constrains business IDs', async
 });
 
 test('invalid pagination and filters fail before database reads', async (t) => {
-  const find = t.mock.method(Business, 'find', () => { throw new Error('Unexpected query'); });
+  const find = t.mock.method(Business, 'aggregate', () => { throw new Error('Unexpected query'); });
   for (const query of [{ page: '0' }, { limit: '101' }, { page: '1.5' }, { minRating: '6' }, { minRating: 'abc' }, { sort: '__proto__' }, { search: {} }, { location: {} }]) {
     assert.equal((await get('/businesses', query)).status, 400);
   }
@@ -79,13 +87,18 @@ test('invalid pagination and filters fail before database reads', async (t) => {
 
 test('business details are public and unavailable businesses return 404', async (t) => {
   assert.equal((await get('/businesses/invalid')).status, 400);
-  const find = t.mock.method(Business, 'findOne', (filter) => {
-    assert.deepEqual(filter, { _id: id, status: 'APPROVED' });
-    return chain({ _id: id, name: 'Approved business' });
+  const find = t.mock.method(Business, 'aggregate', async (pipeline) => {
+    assert.equal(pipeline[0].$match._id.toString(), id);
+    assert.equal(pipeline[0].$match.status, 'APPROVED');
+    assert.equal(pipeline[1].$lookup.from, 'reviews');
+    return [{ _id: id, name: 'Approved business', averageRating: 0, totalReviews: 0 }];
   });
-  assert.equal((await get(`/businesses/${id}`)).data.name, 'Approved business');
-  find.mock.mockImplementation(() => chain(null));
-  assert.equal((await get(`/businesses/${id}`)).status, 404);
+  const result = await get('/businesses/' + id);
+  assert.equal(result.data.name, 'Approved business');
+  assert.equal(result.data.averageRating, 0);
+  assert.equal(result.data.totalReviews, 0);
+  find.mock.mockImplementation(async () => []);
+  assert.equal((await get('/businesses/' + id)).status, 404);
 });
 
 test('branches are only returned for approved businesses and ACTIVE status', async (t) => {

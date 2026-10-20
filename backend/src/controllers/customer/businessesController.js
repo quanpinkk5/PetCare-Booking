@@ -1,6 +1,22 @@
 const Business = require("../../models/Business");
 const Branch = require("../../models/Branch");
 const mongoose = require("mongoose");
+// Compute public ratings on read so edits and hidden reviews are reflected immediately.
+const ratingStages = () => [
+  { $lookup: {
+    from: 'reviews', localField: '_id', foreignField: 'businessId',
+    pipeline: [
+      { $match: { status: 'VISIBLE' } },
+      { $group: { _id: null, averageRating: { $avg: '$rating' }, totalReviews: { $sum: 1 } } },
+    ], as: 'reviewStats',
+  } },
+  { $set: {
+    averageRating: { $divide: [{ $floor: { $add: [
+      { $multiply: [{ $ifNull: [{ $arrayElemAt: ['$reviewStats.averageRating', 0] }, 0] }, 10] }, 0.5,
+    ] } }, 10] },
+    totalReviews: { $ifNull: [{ $arrayElemAt: ['$reviewStats.totalReviews', 0] }, 0] },
+  } },
+];
 // GET /api/customer/businesses
 const getAllBusinesses = async (req, res, next) => {
   try {
@@ -17,11 +33,11 @@ const getAllBusinesses = async (req, res, next) => {
     const limit = Number(req.query.limit ?? 10);
 
     if (
-      !Number.isInteger(page) ||
+      !Number.isSafeInteger(page) ||
       page < 1 ||
       !Number.isInteger(limit) ||
       limit < 1 ||
-      limit > 100
+      limit > 100 || !Number.isSafeInteger((page - 1) * limit)
     ) {
       return res.status(400).json({
         success: false,
@@ -56,7 +72,6 @@ const getAllBusinesses = async (req, res, next) => {
       };
     }
 
-    if (minRating > 0) filter.averageRating = { $gte: minRating };
     if (location.trim()) {
       const escapedLocation = location.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = { $regex: escapedLocation, $options: "i" };
@@ -68,19 +83,22 @@ const getAllBusinesses = async (req, res, next) => {
       filter._id = { $in: ids };
     }
 
-    // Lấy danh sách và tổng số doanh nghiệp
-    const [businesses, total] = await Promise.all([
-      Business.find(filter)
-        .select(
-          "name slug description logo images phone averageRating totalReviews",
-        )
-        .sort(sorts[sort])
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-
-      Business.countDocuments(filter),
+    // Filter and sort computed ratings BEFORE pagination, never cached Business values.
+    const [result] = await Business.aggregate([
+      { $match: filter },
+      ...ratingStages(),
+      ...(minRating > 0 ? [{ $match: { averageRating: { $gte: minRating } } }] : []),
+      { $facet: {
+        data: [
+          { $sort: sorts[sort] }, { $skip: skip }, { $limit: limit },
+          { $project: { name: 1, slug: 1, description: 1, logo: 1, images: 1,
+            phone: 1, averageRating: 1, totalReviews: 1 } },
+        ],
+        count: [{ $count: 'total' }],
+      } },
     ]);
+    const businesses = result?.data || [];
+    const total = result?.count[0]?.total || 0;
 
     const branches = businesses.length ? await Branch.find({
       businessId: { $in: businesses.map((item) => item._id) }, status: "ACTIVE",
@@ -126,14 +144,12 @@ const getBusinessById = async (req, res, next) => {
     }
 
     // 3. Tìm doanh nghiệp đã được Admin duyệt
-    const business = await Business.findOne({
-      _id: id,
-      status: "APPROVED",
-    })
-      .select(
-        "name slug description logo images phone email averageRating totalReviews createdAt",
-      )
-      .lean();
+    const [business] = await Business.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id), status: 'APPROVED' } },
+      ...ratingStages(),
+      { $project: { name: 1, slug: 1, description: 1, logo: 1, images: 1, phone: 1,
+        email: 1, averageRating: 1, totalReviews: 1, createdAt: 1 } },
+    ]);
 
     // 4. Không tìm thấy doanh nghiệp
     if (!business) {

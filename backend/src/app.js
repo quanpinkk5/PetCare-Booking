@@ -26,27 +26,20 @@ const schedulesRoutes = require("./routes/businessOwner/schedulesRoutes");
 const scheduleExceptionsRoutes = require("./routes/businessOwner/scheduleExceptionsRoutes");
 
 //Customer
-const customerBusinessesRoutes = require(
-  "./routes/customer/businessesRoutes"
-);
-const customerBranchesRoutes = require(
-  "./routes/customer/branchesRoutes"
-);
-const customerBranchServicesRoutes = require(
-  "./routes/customer/branchServicesRoutes"
-);
-const customerServicesRoutes = require('./routes/customer/servicesRoutes');
-const customerAvailableSlotsRoutes = require(
-  "./routes/customer/availableSlotsRoutes"
-);
+const customerBusinessesRoutes = require("./routes/customer/businessesRoutes");
+const customerBranchesRoutes = require("./routes/customer/branchesRoutes");
+const customerBranchServicesRoutes = require("./routes/customer/branchServicesRoutes");
+const customerServicesRoutes = require("./routes/customer/servicesRoutes");
+const customerAvailableSlotsRoutes = require("./routes/customer/availableSlotsRoutes");
 // Booking
-const customerBookingRoutes = require(
-  "./routes/customer/bookingRoutes"
-);
+const customerBookingRoutes = require("./routes/customer/bookingRoutes");
 // Review
 const customerReviewRoutes = require("./routes/customer/reviewRoutes");
 const publicReviewRoutes = require("./routes/public/reviewRoutes");
 const app = express();
+
+// Message
+const customerMessageRoutes = require("./routes/customer/messageRoutes");
 
 // Cho phép frontend React gọi API và gửi cookie
 app.use(
@@ -97,16 +90,19 @@ app.use("/api/businessOwner", schedulesRoutes);
 app.use("/api/businessOwner", scheduleExceptionsRoutes);
 
 // Phân dành cho customer- Public API
-  // Businesses API
-  app.use("/api/customer", customerBusinessesRoutes);
-  // Branches API
-  app.use("/api/customer", customerBranchesRoutes);
-  // branch services API
-  app.use("/api/customer", customerBranchServicesRoutes);
-  app.use('/api/customer', customerServicesRoutes);
-  app.use("/api/customer", customerAvailableSlotsRoutes);
+// Businesses API
+app.use("/api/customer", customerBusinessesRoutes);
+// Branches API
+app.use("/api/customer", customerBranchesRoutes);
+// branch services API
+app.use("/api/customer", customerBranchServicesRoutes);
+app.use("/api/customer", customerServicesRoutes);
+app.use("/api/customer", customerAvailableSlotsRoutes);
 // API - Booking
 app.use("/api/customer", customerBookingRoutes);
 // API - Review
 app.use("/api/customer", customerReviewRoutes);
 app.use("/api", publicReviewRoutes);
+
+// API - Message
+app.use("/api/customer", customerMessageRoutes);
