@@ -1,275 +1,449 @@
-import { useMemo, useState } from 'react';
-import ReviewTable from '../../components/review/ReviewTable';
-import ReviewDetailPanel from '../../components/review/ReviewDetailPanel';
+import { useEffect, useRef, useState } from "react";
 
-const initialReviews = [
-  {
-    id: 'RVW-20250520-001245',
-    customer: {
-      name: 'Trần Minh Anh',
-      email: 'minhanh@gmail.com',
-      phone: '0901 234 567',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCvf5yZ9iT0NgqHswKkJSUGPUEN2vLmVwS6ljVucOpOUCIWZ21lgTOEJzEW7-ia-LCDyeCePB-z9p0q59Y5N4kUpXoXmu-2Iub-Hk4wz6sJj80m5NqKEBvE48sSopoYSz4Hgwb5hKXnZXu44_IKXjWxk6F9ypYwRwNuqqEfXclsJj1ALu-WY1eFDKTR1lw21Lrz2CrgjuBzQbakpiwot5GqyDeWhCP0a-eXP8cEGM4',
-    },
-    facility: {
-      name: 'Happy Paws Spa',
-      location: 'Quận 1, TP.HCM',
-    },
-    service: 'Tắm & Cắt tỉa lông',
-    petType: 'Chó - Poodle',
-    rating: 5,
-    content:
-      'Dịch vụ rất tốt, nhân viên nhiệt tình và chu đáo. Bé nhà mình được tắm sạch sẽ, cắt tỉa đẹp. Sẽ quay lại ủng hộ nhiều lần nữa!',
-    createdDate: '20/05/2025',
-    createdTime: '14:30',
-    status: 'HIỂN THỊ',
-    media: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDBwxV8jxFkHWRnyayc_LZmfL9DryQTm5emWSIbYFV8CkbrZFrKvZYGEGC9difzumZ8sCGLttQZ4SgDsodEwWh_4EeNHRmITSyb3ZEAiGfMefgBz3lo_HyKZcVf9HoKAzXuHHi-RvY3tNhucloyIIFdCVJ2Px0V1POu83wQAvtcOrm_7DGrQi2OiLZS-0ZsJs12laeKSfCVruhpmIwwIRvR2PaGaiGJFMd-hVLSBhI',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCcAT8lwadULSf36oeOeKcFCbeHJhM-Bwm33K0blQxTCjAUbzsOYF8qg_wk3bLtiPHCfZhuUpYZI7Uq-b21OlJ---K8q6UX_2Vd4VJR7XQi-LCe7rVAiwOJrFvT329PYxSnh0NcTiOTrjyIKMiKRW0fhxzMBlcV_7RrS54OvaGyBuifzGS6MoHJUvXc8PJC221BlriHONkya4AQbMZp6OW4NnnyeS2gbgbZ70ljUu0',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDKKP4Jxn-NOOUt1g8aYqGgZxiR3JQTxIvu92zHh-D3s8ugLZMNSfraVov4b53eIwpkwgh4_29jwGtrm6nd1OaDmEWlqQz5bbUUEDCt7ujZTPWPWT0k01DmUNuxsqc7DKGA0OUoNqKlg78rMLjFFFbXcomN0Y8VDjNeE5hYKBKG6IbBSwW5mT-GYcV_EQROoiLVhA2TjnoeFU1oBbLf_jwlvdEt1w11nQot9YMv_bQ',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCymEN_jbFnkAP58e95IyciMhkcUHlixWQBGtQFEym6brp2hMTys6imKIFCGZSDsP_uAoMZcub3hcjrPRdoT26vWmxYfMCSWkRPCC8uYL4Js5YKU7p5VQwM8DsIXYYNcUesK8dcoF9lc4Lf0dkL0cxgVhWLqr61hkc0dLcVHOqRYvUKs3m_Fuo07uvKKSG6tbiviQCm6IcfgUPnzxkF-VtC_gTX-fziIqm3RrVpPUI',
-    ],
-    extraMediaCount: 2,
-  },
+import ReviewTable from "../../components/review/ReviewTable";
+import ReviewDetailPanel from "../../components/review/ReviewDetailPanel";
 
-  {
-    id: 'RVW-20250519-001244',
-    customer: {
-      name: 'Lê Hoàng Nam',
-      email: 'nam.le1990@gmail.com',
-      phone: '0912 345 678',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuD3HPZhnvCx-trCJSZlygPxv23fwq1_39m8-TDFiS1h5QiGdDHhkuA-SkRJBqc0iwDQqxRGN7U-t12jwrmtpf8jrm_f62TcyXtz5v6xH0q00aZ-cfz-qSzOdPACdooSh1wIVHuYK9nPXi1sHAiWthP3n4-ZTBhcJcG9p4wRqMFI00Ash8Q0PKhoV17HdqF0HK8JeJc4nMp3bVuoYxB45puIsQX5cPVTRM9UqDa5Tcs',
-    },
-    facility: {
-      name: 'PetCare Center',
-      location: 'Cầu Giấy, Hà Nội',
-    },
-    service: 'Khách sạn thú cưng',
-    petType: 'Mèo - Anh lông ngắn',
-    rating: 4,
-    content:
-      'Phòng ốc sạch sẽ, có camera theo dõi nên rất yên tâm khi gửi bé tại đây.',
-    createdDate: '19/05/2025',
-    createdTime: '10:15',
-    status: 'BỊ BÁO CÁO',
-    media: [],
-    extraMediaCount: 0,
-  },
+import { adminReviewApi } from "../../services/adminReviewApi";
 
-  {
-    id: 'RVW-20250518-001243',
-    customer: {
-      name: 'Phạm Thu Thảo',
-      email: 'thuthao.pt@gmail.com',
-      phone: '0987 654 321',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBb9HH2DZNLmWXeLAqyGGD5gBlvoqpWEiB5w27M7-mGSRA06Ok2Q-GJzhJDoRpFqCy-_VC4d2DUw5WMxmJtpG7FyWtJkG0DvXZVabcGDD3Umroi9BiDRsBOcndxCiN9SYfs26STYr62c73P0j5r9WRJc9iOuq1Jg_mkMFkLVDmEzowlQtI7wKhla7k0YMNcsrCcJAsVk__Ia-2I_QtOxrKQa5YJYd2yZWFoOZKqIrc',
-    },
-    facility: {
-      name: 'Mew & Woof House',
-      location: 'Thủ Đức, TP.HCM',
-    },
-    service: 'Spa trị liệu',
-    petType: 'Chó - Corgi',
-    rating: 5,
-    content: 'Bé nhà mình rất thích, sẽ ủng hộ dài dài!',
-    createdDate: '18/05/2025',
-    createdTime: '09:45',
-    status: 'HIỂN THỊ',
-    media: [],
-    extraMediaCount: 0,
-  },
-
-  {
-    id: 'RVW-20250517-001242',
-    customer: {
-      name: 'Nguyễn Đức Duy',
-      email: 'ducduy.nguyen@gmail.com',
-      phone: '0938 111 222',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuC4AvXc_94T1WHZ2DNStExtKqNh9XFzIstnug42qo11rsp66igoKnhUc5nZ4ughCKOZkEhzxPM2hqZSe6iPN3wb7f6gQmYObt7KfUCJ4GwMC9xHsLNDR93JBj-zF4855L-hr86YwTXDQfjK97Gac7rebOpNMBnSm98OfLhWfgqfS9b8oB3Dip9gnT_A73_f4DNqfqkpxi6POSiaSX3AJtyY9VzBhhINLOOOGvLW94M',
-    },
-    facility: {
-      name: 'Happy Paws Spa',
-      location: 'Quận 1, TP.HCM',
-    },
-    service: 'Tắm & Cắt tỉa lông',
-    petType: 'Chó - Poodle',
-    rating: 3,
-    content: 'Chờ khá lâu, nhân viên bận rộn. Cần cải thiện dịch vụ.',
-    createdDate: '17/05/2025',
-    createdTime: '16:20',
-    status: 'ĐÃ ẨN',
-    media: [],
-    extraMediaCount: 0,
-  },
-
-  {
-    id: 'RVW-20250517-001241',
-    customer: {
-      name: 'Võ Kiều My',
-      email: 'kieumy.vo@gmail.com',
-      phone: '0909 333 444',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuAtI5bFcorSlsaGq6n08NzdtuR_TZbbYCyiI2tRfC4lxFx6Ge6wxTXzKbRbCCNTheySshG4klFNUHJwmKDp_-M31anIvY0PZ3hUT9wG7RR-5YfX16LYukHFU9uMbR_1j6fJGGTWmh0dZHlTnyj2PhThMJm8Gn-1LWL6z3FdpcRe1Xq1JYIfF_7o3QjSgV3txNePEVmVtxiAMq9PAd2QB9Q4Mk4NNU25RGuikauAuEw',
-    },
-    facility: {
-      name: 'PetCare Center',
-      location: 'Cầu Giấy, Hà Nội',
-    },
-    service: 'Khách sạn thú cưng',
-    petType: 'Chó - Shiba Inu',
-    rating: 5,
-    content: 'Dịch vụ ổn, sẽ quay lại lần sau.',
-    createdDate: '17/05/2025',
-    createdTime: '11:05',
-    status: 'HIỂN THỊ',
-    media: [],
-    extraMediaCount: 0,
-  },
-
-  {
-    id: 'RVW-20250516-001240',
-    customer: {
-      name: 'Đặng Minh Quân',
-      email: 'minhquan.dang@gmail.com',
-      phone: '0918 555 666',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuA65c_foLaxop5JcxqdnxuimH0gu6dswpho32qOQfLyaH9dwwmIhvwsFoBjwgoxDuz97SnAz_8n9JSCNSgoPyDx6Y7sgZNJp8gzDzv8jJgffosSagGb-xSgGOaMWgSW4wtgojJHCK3l-9Y5U6oxW2CfQsYh3AbVV1wv84_d8w1jfkkTGhOp1u1Yy1wFMNhEdR6Xmosz895M3mPtoN99UEsMCL8mywXOrjLPecE6fRo',
-    },
-    facility: {
-      name: 'Paw Paradise',
-      location: 'Đà Nẵng',
-    },
-    service: 'Huấn luyện cơ bản',
-    petType: 'Chó - Golden',
-    rating: 5,
-    content: 'Huấn luyện viên rất chuyên nghiệp và kiên nhẫn.',
-    createdDate: '16/05/2025',
-    createdTime: '08:30',
-    status: 'HIỂN THỊ',
-    media: [],
-    extraMediaCount: 0,
-  },
-
-  {
-    id: 'RVW-20250515-001239',
-    customer: {
-      name: 'Bùi Thanh Trúc',
-      email: 'thanhtruc.bui@gmail.com',
-      phone: '0977 888 999',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuAdM-WQ_oNb9pKoKbLkn3bDw4JlVFJG-fGQch469iflrvw3uLAQTiyEH7pLe_PmAeUhaiLLeG9l4dxE2O9M99SwgcDxoStLjdjyvV3Cr-R1R5eZh5Z5rPYxQvAHQ9rnR_tV15ek-62AYoCpWHUOIx5A1Xulps4VvN7R6_ddSHPPHt-rVm4Xe22yTEHMZtGEsoE_4awujWf384eMmtnGU8b0nMhFcFGq_v2P50KYqMs',
-    },
-    facility: {
-      name: 'Mew & Woof House',
-      location: 'Thủ Đức, TP.HCM',
-    },
-    service: 'Spa trị liệu',
-    petType: 'Mèo - Munchkin',
-    rating: 3,
-    content: 'Giá hơi cao nhưng chất lượng tốt.',
-    createdDate: '15/05/2025',
-    createdTime: '20:10',
-    status: 'BỊ BÁO CÁO',
-    media: [],
-    extraMediaCount: 0,
-  },
-];
+const EMPTY_FILTERS = {
+  search: "",
+  status: "all",
+  rating: "all",
+  branchId: "all",
+  fromDate: "",
+  toDate: "",
+};
 
 export default function ReviewList() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Tất cả');
-  const [starFilter, setStarFilter] = useState('Tất cả');
-  const [facilityFilter, setFacilityFilter] = useState('Tất cả');
+  // ===============================
+  // 1. INPUT BỘ LỌC
+  // ===============================
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [starFilter, setStarFilter] = useState("all");
+  const [facilityFilter, setFacilityFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
-  const [selectedReviewId, setSelectedReviewId] = useState(
-    'RVW-20250520-001245'
-  );
+  const [appliedFilters, setAppliedFilters] = useState({
+    ...EMPTY_FILTERS,
+  });
+
+  // ===============================
+  // 2. DANH SÁCH
+  // ===============================
+  const [reviews, setReviews] = useState([]);
+  const [facilities, setFacilities] = useState([]);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filterError, setFilterError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ===============================
+  // 3. MODAL CHI TIẾT
+  // ===============================
+  const [selectedReview, setSelectedReview] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const reviews = initialReviews;
+  const detailRequestId = useRef(0);
 
-  const filteredReviews = useMemo(() => {
-    return reviews.filter((item) => {
-      if (statusFilter !== 'Tất cả' && item.status !== statusFilter) {
-        return false;
-      }
+  // ===============================
+  // 4. THÔNG BÁO
+  // ===============================
+  const [successMessage, setSuccessMessage] = useState("");
+  const [actionError, setActionError] = useState("");
 
-      if (starFilter !== 'Tất cả') {
-        const starNum = parseInt(starFilter.split(' ')[0], 10);
+  useEffect(() => {
+    if (!successMessage) return;
 
-        if (item.rating !== starNum) {
-          return false;
+    const timer = setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!actionError) return;
+
+    const timer = setTimeout(() => {
+      setActionError("");
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [actionError]);
+
+  // ===============================
+  // 5. DANH SÁCH CƠ SỞ
+  // ===============================
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFacilities = async () => {
+      try {
+        const response = await adminReviewApi.getFacilities();
+
+        if (cancelled) return;
+
+        if (
+          response?.success === false ||
+          !Array.isArray(response?.data?.facilities)
+        ) {
+          throw new Error(
+            response?.message || "Không thể tải danh sách cơ sở.",
+          );
+        }
+
+        setFacilities(response.data.facilities);
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Get review facilities:", err);
         }
       }
+    };
 
-      if (
-        facilityFilter !== 'Tất cả' &&
-        item.facility.name !== facilityFilter
-      ) {
-        return false;
+    loadFacilities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ===============================
+  // 6. DANH SÁCH ĐÁNH GIÁ
+  // ===============================
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadReviews = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await adminReviewApi.getReviews({
+          ...appliedFilters,
+          page,
+          limit: pageSize,
+        });
+
+        if (cancelled) return;
+
+        if (
+          response?.success === false ||
+          !Array.isArray(response?.data?.reviews)
+        ) {
+          throw new Error(
+            response?.message || "Không thể tải danh sách đánh giá.",
+          );
+        }
+
+        const data = response.data;
+
+        const nextPagination = {
+          page: Number(data.pagination?.page ?? page),
+          limit: Number(data.pagination?.limit ?? pageSize),
+          total: Number(data.pagination?.total ?? 0),
+          totalPages: Number(data.pagination?.totalPages ?? 0),
+        };
+
+        if (page > 1 && page > Math.max(1, nextPagination.totalPages)) {
+          setPage(Math.max(1, nextPagination.totalPages));
+          return;
+        }
+
+        setReviews(data.reviews);
+        setPagination(nextPagination);
+      } catch (err) {
+        if (cancelled) return;
+
+        setReviews([]);
+        setError(err.message || "Không thể tải danh sách đánh giá.");
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
+    };
 
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase();
+    loadReviews();
 
-        const matchCustomer = item.customer.name
-          .toLowerCase()
-          .includes(query);
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters, page, pageSize, refreshKey]);
 
-        const matchFacility = item.facility.name
-          .toLowerCase()
-          .includes(query);
+  // ===============================
+  // 7. BỘ LỌC
+  // ===============================
+  const handleApplyFilters = () => {
+    setFilterError("");
 
-        const matchContent = item.content
-          .toLowerCase()
-          .includes(query);
+    if (fromDate && toDate && fromDate > toDate) {
+      setFilterError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+      return;
+    }
 
-        return matchCustomer || matchFacility || matchContent;
-      }
-
-      return true;
+    setAppliedFilters({
+      search: searchQuery.trim(),
+      status: statusFilter,
+      rating: starFilter,
+      branchId: facilityFilter,
+      fromDate,
+      toDate,
     });
-  }, [reviews, searchQuery, statusFilter, starFilter, facilityFilter]);
 
-  const activeReview = useMemo(() => {
-    return (
-      reviews.find((review) => review.id === selectedReviewId) ||
-      filteredReviews[0] ||
-      reviews[0]
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setStarFilter("all");
+    setFacilityFilter("all");
+    setFromDate("");
+    setToDate("");
+    setFilterError("");
+
+    setAppliedFilters({ ...EMPTY_FILTERS });
+    setPage(1);
+  };
+
+  // ===============================
+  // 8. PHÂN TRANG
+  // ===============================
+  const handlePageChange = (nextPage) => {
+    if (
+      isLoading ||
+      nextPage < 1 ||
+      nextPage > pagination.totalPages ||
+      nextPage === page
+    ) {
+      return;
+    }
+
+    setPage(nextPage);
+  };
+
+  const handlePageSizeChange = (nextSize) => {
+    const size = Number(nextSize);
+
+    if (![10, 20, 50].includes(size)) return;
+
+    setPageSize(size);
+    setPage(1);
+  };
+
+  // ===============================
+  // 9. MỞ CHI TIẾT
+  // ===============================
+  const handleOpenDetail = async (review) => {
+    if (!review?._id) return;
+
+    const requestId = ++detailRequestId.current;
+
+    setSelectedReview(review);
+    setIsDetailOpen(true);
+    setIsDetailLoading(true);
+    setDetailError("");
+
+    try {
+      const response = await adminReviewApi.getReviewDetail(review._id);
+
+      if (requestId !== detailRequestId.current) return;
+
+      if (response?.success === false || !response?.data?.review) {
+        throw new Error(
+          response?.message || "Không thể tải chi tiết đánh giá.",
+        );
+      }
+
+      setSelectedReview(response.data.review);
+    } catch (err) {
+      if (requestId !== detailRequestId.current) return;
+
+      setDetailError(err.message || "Không thể tải chi tiết đánh giá.");
+    } finally {
+      if (requestId === detailRequestId.current) {
+        setIsDetailLoading(false);
+      }
+    }
+  };
+
+  const handleCloseDetail = () => {
+    if (isUpdatingStatus) return;
+
+    ++detailRequestId.current;
+
+    setIsDetailOpen(false);
+    setSelectedReview(null);
+    setDetailError("");
+    setIsDetailLoading(false);
+  };
+
+  // ===============================
+  // 10. ẨN / KHÔI PHỤC
+  // ===============================
+  const handleUpdateStatus = async (nextStatus) => {
+    if (
+      !selectedReview?._id ||
+      isUpdatingStatus ||
+      isDetailLoading ||
+      !["VISIBLE", "HIDDEN"].includes(nextStatus) ||
+      selectedReview.status === nextStatus
+    ) {
+      return;
+    }
+
+    const reviewId = selectedReview._id;
+
+    const confirmed = window.confirm(
+      nextStatus === "HIDDEN"
+        ? "Bạn có chắc muốn ẩn đánh giá này?"
+        : "Bạn có chắc muốn khôi phục đánh giá này?",
     );
-  }, [reviews, selectedReviewId, filteredReviews]);
+
+    if (!confirmed) return;
+
+    setIsUpdatingStatus(true);
+    setActionError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await adminReviewApi.updateReviewStatus(
+        reviewId,
+        nextStatus,
+      );
+
+      if (response?.success === false || !response?.data?.review) {
+        throw new Error(
+          response?.message || "Không thể cập nhật trạng thái đánh giá.",
+        );
+      }
+
+      const updatedStatus = response.data.review.status;
+
+      setSelectedReview((current) =>
+        current?._id === reviewId
+          ? { ...current, status: updatedStatus }
+          : current,
+      );
+
+      setReviews((currentReviews) =>
+        currentReviews.map((item) =>
+          item._id === reviewId ? { ...item, status: updatedStatus } : item,
+        ),
+      );
+
+      setSuccessMessage(
+        response.message ||
+          (updatedStatus === "HIDDEN"
+            ? "Đã ẩn đánh giá thành công."
+            : "Đã khôi phục đánh giá thành công."),
+      );
+
+      // Tải lại danh sách để cập nhật
+      // chính xác kết quả bộ lọc và tổng số.
+      setRefreshKey((value) => value + 1);
+    } catch (err) {
+      setActionError(err.message || "Không thể cập nhật trạng thái đánh giá.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   return (
     <div className="p-8 space-y-6 flex-1">
-      <div className="w-full">
-        <ReviewTable
-          reviews={filteredReviews}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          starFilter={starFilter}
-          setStarFilter={setStarFilter}
-          facilityFilter={facilityFilter}
-          setFacilityFilter={setFacilityFilter}
-          selectedReviewId={selectedReviewId}
-          setSelectedReviewId={setSelectedReviewId}
-          activeReview={activeReview}
-          onOpenDetail={(rev) => {
-            if (rev) setSelectedReviewId(rev.id);
-            setIsDetailOpen(true);
-          }}
-        />
-      </div>
+      {filterError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {filterError}
+        </div>
+      )}
+
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {error}
+
+          <button
+            type="button"
+            className="ml-3 font-semibold underline"
+            onClick={() => setRefreshKey((value) => value + 1)}
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {actionError}
+        </div>
+      )}
+
+      {successMessage && (
+        <div
+          role="status"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700"
+        >
+          {successMessage}
+        </div>
+      )}
+
+      <ReviewTable
+        reviews={reviews}
+        facilities={facilities}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        starFilter={starFilter}
+        setStarFilter={setStarFilter}
+        facilityFilter={facilityFilter}
+        setFacilityFilter={setFacilityFilter}
+        fromDate={fromDate}
+        setFromDate={setFromDate}
+        toDate={toDate}
+        setToDate={setToDate}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        pagination={pagination}
+        isLoading={isLoading}
+        selectedReviewId={isDetailOpen ? selectedReview?._id : null}
+        onOpenDetail={handleOpenDetail}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
 
       <ReviewDetailPanel
-        review={activeReview}
+        review={selectedReview}
         isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
+        isLoading={isDetailLoading}
+        isUpdating={isUpdatingStatus}
+        error={detailError}
+        onClose={handleCloseDetail}
+        onUpdateStatus={handleUpdateStatus}
       />
     </div>
   );

@@ -1,271 +1,734 @@
-import React, { useMemo, useState } from 'react';
-import {
-  PawPrint,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import React, { useEffect, useState } from "react";
 
-import BookingMetrics from '../../components/booking/BookingMetrics';
-import BookingFilter from '../../components/booking/BookingFilter';
-import BookingTable from '../../components/booking/BookingTable';
+import { PawPrint, Calendar, Clock, CheckCircle2, XCircle } from "lucide-react";
+
+import BookingMetrics from "../../components/booking/BookingMetrics";
+import BookingFilter from "../../components/booking/BookingFilter";
+import BookingTable from "../../components/booking/BookingTable";
+
+import { adminBookingApi } from "../../services/adminBookingApi";
+
+// ==============================
+// CẤU HÌNH
+// ==============================
+const EMPTY_FILTERS = {
+  search: "",
+  status: "all",
+  bookingType: "all",
+  fromDate: "",
+  toDate: "",
+};
+
+const STATUS_MAP = {
+  "Tất cả trạng thái": "all",
+  "Chờ xác nhận": "PENDING",
+  "Đã xác nhận": "CONFIRMED",
+  "Đang thực hiện": "IN_PROGRESS",
+  "Hoàn thành": "COMPLETED",
+  "Đã hủy": "CANCELLED",
+};
+
+const BOOKING_STATUS_LABELS = {
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  IN_PROGRESS: "Đang thực hiện",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+};
+
+const PAYMENT_STATUS_LABELS = {
+  PAID: "Đã thanh toán",
+  UNPAID: "Chưa thanh toán",
+};
+
+const TYPE_LABELS = {
+  APPOINTMENT: "Đặt lịch",
+  BOARDING: "Lưu trú",
+};
+
+const INITIAL_METRICS = {
+  totalBookings: 0,
+  pendingBookings: 0,
+  confirmedBookings: 0,
+  inProgressBookings: 0,
+  completedBookings: 0,
+  cancelledBookings: 0,
+};
+
+const formatNumber = (value) => Number(value ?? 0).toLocaleString("vi-VN");
+
+const formatDate = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
+};
+
+const getSchedule = (booking) => {
+  if (booking.bookingType === "APPOINTMENT") {
+    const date = formatDate(booking.bookingDate);
+    const start = booking.startTime || "";
+    const end = booking.endTime || "";
+
+    if (!date) return "";
+
+    const timeRange = start && end ? `${start} - ${end}` : start || end;
+
+    return timeRange ? `${date} | ${timeRange}` : date;
+  }
+
+  if (booking.bookingType === "BOARDING") {
+    const checkIn = formatDate(booking.checkInDate);
+    const checkOut = formatDate(booking.checkOutDate);
+
+    if (!checkIn && !checkOut) return "";
+
+    return `${checkIn} - ${checkOut}`;
+  }
+
+  return "";
+};
+
+// Nếu Backend trả object địa chỉ thì vẫn xử lý an toàn
+const getBranchAddress = (address) => {
+  if (typeof address === "string") {
+    return address;
+  }
+
+  if (address && typeof address === "object") {
+    return [address.detail, address.district, address.province]
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return "";
+};
 
 export default function BookingList() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Tất cả trạng thái');
+  // ==============================
+  // 1. INPUT BỘ LỌC
+  // ==============================
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
   const [bookingTypeFilter, setBookingTypeFilter] = useState(
-    'Tất cả loại booking'
+    "Tất cả loại booking",
   );
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
+
   // ==============================
-  // METRICS DATA
+  // 2. DANH SÁCH
+  // ==============================
+  const [bookings, setBookings] = useState([]);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState("");
+  const [filterError, setFilterError] = useState("");
+
+  // ==============================
+  // 3. THỐNG KÊ
+  // ==============================
+  const [bookingMetrics, setBookingMetrics] = useState(INITIAL_METRICS);
+
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
+  const [metricsError, setMetricsError] = useState("");
+
+  // ==============================
+  // 4. XUẤT EXCEL
+  // ==============================
+  const [isExporting, setIsExporting] = useState(false);
+
+  const [exportMessage, setExportMessage] = useState("");
+
+  const [exportError, setExportError] = useState("");
+
+  // ==============================
+  // 5. GỌI API METRICS
+  // ==============================
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMetrics = async () => {
+      setMetricsLoading(true);
+      setMetricsError("");
+
+      try {
+        const response = await adminBookingApi.getMetrics();
+
+        if (cancelled) return;
+
+        if (response?.success === false || !response?.data) {
+          throw new Error(
+            response?.message || "Không thể tải thống kê booking.",
+          );
+        }
+
+        setBookingMetrics({
+          ...INITIAL_METRICS,
+          ...response.data,
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setMetricsError(error.message || "Không thể tải thống kê booking.");
+        }
+      } finally {
+        if (!cancelled) {
+          setMetricsLoading(false);
+        }
+      }
+    };
+
+    loadMetrics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ==============================
+  // 6. GỌI API DANH SÁCH
+  // ==============================
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBookings = async () => {
+      setListLoading(true);
+      setListError("");
+
+      try {
+        const response = await adminBookingApi.getBookings({
+          ...appliedFilters,
+          page,
+          limit: pageSize,
+        });
+
+        if (cancelled) return;
+
+        if (
+          response?.success === false ||
+          !Array.isArray(response?.data?.bookings)
+        ) {
+          throw new Error(
+            response?.message || "Không thể tải danh sách booking.",
+          );
+        }
+
+        const data = response.data;
+
+        const nextPagination = {
+          page: Number(data.pagination?.page ?? page),
+          limit: Number(data.pagination?.limit ?? pageSize),
+          total: Number(data.pagination?.total ?? 0),
+          totalPages: Number(data.pagination?.totalPages ?? 0),
+        };
+
+        if (page > 1 && page > Math.max(1, nextPagination.totalPages)) {
+          setPage(Math.max(1, nextPagination.totalPages));
+          return;
+        }
+
+        setBookings(data.bookings);
+        setPagination(nextPagination);
+      } catch (error) {
+        if (cancelled) return;
+
+        setBookings([]);
+        setListError(error.message || "Không thể tải danh sách booking.");
+      } finally {
+        if (!cancelled) {
+          setListLoading(false);
+        }
+      }
+    };
+
+    loadBookings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters, page, pageSize, refreshKey]);
+
+  // ==============================
+  // 7. 5 THẺ THỐNG KÊ
   // ==============================
   const metrics = [
     {
-      title: 'Tổng booking',
-      value: '3.892',
+      title: "Tổng booking",
+      value: metricsLoading
+        ? "..."
+        : formatNumber(bookingMetrics.totalBookings),
       icon: Calendar,
-      bg: 'bg-emerald-50 text-emerald-600',
+      bg: "bg-emerald-50 text-emerald-600",
     },
     {
-      title: 'Chờ xác nhận',
-      value: '512',
+      title: "Chờ xác nhận",
+      value: metricsLoading
+        ? "..."
+        : formatNumber(bookingMetrics.pendingBookings),
       icon: Clock,
-      bg: 'bg-amber-50 text-amber-500',
+      bg: "bg-amber-50 text-amber-500",
     },
     {
-      title: 'Đang thực hiện',
-      value: '1.246',
+      title: "Đang thực hiện",
+      value: metricsLoading
+        ? "..."
+        : formatNumber(bookingMetrics.inProgressBookings),
       icon: PawPrint,
-      bg: 'bg-sky-50 text-sky-500',
+      bg: "bg-sky-50 text-sky-500",
     },
     {
-      title: 'Hoàn thành',
-      value: '1.987',
+      title: "Hoàn thành",
+      value: metricsLoading
+        ? "..."
+        : formatNumber(bookingMetrics.completedBookings),
       icon: CheckCircle2,
-      bg: 'bg-teal-50 text-teal-600',
+      bg: "bg-teal-50 text-teal-600",
     },
     {
-      title: 'Đã hủy',
-      value: '147',
+      title: "Đã hủy",
+      value: metricsLoading
+        ? "..."
+        : formatNumber(bookingMetrics.cancelledBookings),
       icon: XCircle,
-      bg: 'bg-rose-50 text-rose-500',
+      bg: "bg-rose-50 text-rose-500",
     },
   ];
 
   // ==============================
-  // BOOKING DATA
+  // 8. LỌC
   // ==============================
-  const [bookings] = useState([
-    {
-      id: 'BIZ250522-0987',
-      customer: {
-        name: 'Nguyễn Minh Anh',
-        phone: '0912 345 678',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAH0yL6DbbkRZLDEktPDhc4zHZvHzJCx1OMdjL5TLclLt81MZllJUI6oK9f9p0zoQhCc0AvQHPoyzQLMYnxLx1XvAGOdbAo1o26KUnuhn2IoRccGGsEl5tZWlof9WGkhgJtDsdSgsG5f3emOry6KRkffsEFcYaQvjn_-zXIaz28T6OGf1HvpuVIETzXD1BWqMN4AzcXzTcjXIG0k42bVwLZTQf19xzF_tK71-uIw6g',
-      },
-      facility: {
-        name: 'Happy Pet Cầu Giấy',
-        address: '123 Nguyễn Khang, Cầu Giấy',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Chờ xác nhận',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0986',
-      customer: {
-        name: 'Trần Hoàng Nam',
-        phone: '0912 345 678',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBh3lAe2vtrQJ9CXIOt_8sMml9o6P0wdj4q3OKU5jDtb_Py2nDJ3-bgq3Y0qBW12BbpxQRwhbqctCofRHb2P-_fpDOYnCCSMTlvh_l8jL0WGbg2CeeEjeWl8KcKeycd3eM9iMMREgnsvBdn51lJH8jB9Ojfqd58wIBrzMpGELlapscjmN9JJsCG6RjKbzY0UaX-JAMBNA9Wo9cv4HAWsaADil1ANwLl0ZwXyRcjG7w',
-      },
-      facility: {
-        name: 'Happy Pet Hà Đông',
-        address: '45 Trần Phú, Hà Đông',
-      },
-      paymentStatus: 'Chưa thanh toán',
-      bookingStatus: 'Đã xác nhận',
-      type: 'BOARDING',
-    },
-    {
-      id: 'BIZ250522-0985',
-      customer: {
-        name: 'Lê Thu Hà',
-        phone: '0909 876 543',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDW-Z2hQMKs4gShach8ZLUng_SmF1fQDpsEYTVsJjJZg4hmV5UJHazXKVPxkOGLMedoTaTEvsEpE4QbveKLWOPNCl_UAvU5QplXgYHO4SwSvDXuHhaVU4DeFBZ7NSTCpePaInWzRLHr6epC5ZLrmhI6JW30sZZaTGtU0cifR_-6MqcSgEegsuK_K-SrRguYG8GTjO3k-QYmzzQoPP-6dxQXupSe84gtqtvGKPdRlPc',
-      },
-      facility: {
-        name: 'Happy Pet Cầu Giấy',
-        address: '123 Nguyễn Khang, Cầu Giấy',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Đang thực hiện',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0984',
-      customer: {
-        name: 'Phạm Quốc Bảo',
-        phone: '0976 543 210',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDGlOmp1K7bihbSDsTECmNihPAyVxx-6qxZ3-2g13nJ27KbzT_1_N4jpDmDPYHytwx1C9-ffrDzFhnLfp5ktlm-JpnNr3vhx-PpPU9YGt122RLmG1ZAjPuBvdKvCWMeona9-khsEWy5lJOyiMjk7I9G9KA9ZbDxPtfXw_EaEeSKbk8mccN2OaWKqaZ7t28cEFGIjfXT7FiBM1NetikQCq7w5pAJ3-qhhzJMhRJzYDo',
-      },
-      facility: {
-        name: 'Happy Pet Hà Đông',
-        address: '45 Trần Phú, Hà Đông',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Hoàn thành',
-      type: 'BOARDING',
-    },
-    {
-      id: 'BIZ250522-0983',
-      customer: {
-        name: 'Vũ Thị Thanh Tâm',
-        phone: '0888 123 456',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDBKABkqmMiAbbT7C8fSyzhNq77nam2--WOq1jXuVgJvPwDUR08zbGy8E1Cy6wX1gbJIAMkT6mrcmm7lxpIK5VzDmvHfegrWz9VxHCDaHqCA_2KebRrZKeMQG6wnX32MLpC7v1c7-femVLLVAqNioIqtoB5MxUR5YI-kg7Obv63syTcBwf3XW6BrSuRXpa4YskOQwzbY3LHY1Ktm3xwJNG_bziDIDt2BA8bngpMFZ8',
-      },
-      facility: {
-        name: 'Happy Pet Cầu Giấy',
-        address: '123 Nguyễn Khang, Cầu Giấy',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Đang thực hiện',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0982',
-      customer: {
-        name: 'Đặng Minh Quân',
-        phone: '0938 765 432',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCg7vMggLkDMAxIjWUEDTFy6enYRZc29mNG2rbgJfhucujppbnYN5U7tN5JV-_Xx4R_j6vHPa9uGE3HoGJt17VqSgwFQ4_qMMHRlNC8xlioJrjEj5TNqzIuum9JtHgCe6AhrGjgcB9tmpJaPyrRyeL6DQqwGeZKzZymw7fZyvaonnd4McYXxh8a7RVUgNS04zgdVrBHOKhtn6UkxtdShBcKk79Hx1t0Kq-yPpZRy54',
-      },
-      facility: {
-        name: 'Happy Pet Hà Đông',
-        address: '45 Trần Phú, Hà Đông',
-      },
-      paymentStatus: 'Chưa thanh toán',
-      bookingStatus: 'Chờ xác nhận',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0981',
-      customer: {
-        name: 'Nguyễn Văn Phúc',
-        phone: '0911 222 333',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBBuGoh3HXsup468dvvXwKvUG9Sb85PdwEzVhkobRtob_x94AIK-y3BHNhAMnXqZODvvGiwKjQONkSSfDC4KbeE8Z-iGjWHK4ENpaWyyjV70P32oGevEI5qDEAYWkcIeWxsptXfjT4rsAsOAolZPBi3BZHDF6-C_SBn_MtkTvJ5tqnbSufPXAZd2erNO1cmRxAtiWjS2L-3TXHrVjcFjlhLz-4tSimehQmqNv2HwlM',
-      },
-      facility: {
-        name: 'Happy Pet Cầu Giấy',
-        address: '123 Nguyễn Khang, Cầu Giấy',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Hoàn thành',
-      type: 'BOARDING',
-    },
-    {
-      id: 'BIZ250522-0980',
-      customer: {
-        name: 'Mai Anh Thư',
-        phone: '0901 234 567',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBIWg6m458h2AJfZLERwvB3c-vdMLQJsUaqVi5KukmzJFNlhnNmSMqSmjUdXxVoxjluOreQwR6n-5LoYNoDLetDcikkzPAjS7ODMBO6V4aM8Nlg7RPP41RTFR2Wok5URxvTr3rrRQjQtHtEEHOcJ9mrxVAugoNSzx98o5biViSqcFs9fB9GASMHTifvUNdZllgt8S-kUB18gCu0LDYdtkB8YtVgvZh_4qhA8v9Fo14',
-      },
-      facility: {
-        name: 'Happy Pet Hà Đông',
-        address: '45 Trần Phú, Hà Đông',
-      },
-      paymentStatus: 'Hoàn tiền',
-      bookingStatus: 'Đã hủy',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0979',
-      customer: {
-        name: 'Hoàng Đức Long',
-        phone: '0912 456 789',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBmZl4zGI06-hqKy12AHn8AaEZfJnRAi3FG_U0JQrPgmdPCi1mC19A2Gf1dInCG0UOPGSnMZQQmNkdgvbYjONkVadb65HZUxo2q_3ZxzBoIDzBtgqjfjhom92x9pmdCI0d-payIdnPrmQSEiiBJ0fgIrVipHpBelyGKMj98WPvOSOHAH3zxzeM4E69AXQhrWNhjoZsq3q6kdsNDxNac4NPEXt7GGE1N9NhiiaE5MtI',
-      },
-      facility: {
-        name: 'Happy Pet Cầu Giấy',
-        address: '123 Nguyễn Khang, Cầu Giấy',
-      },
-      paymentStatus: 'Đã thanh toán',
-      bookingStatus: 'Hoàn thành',
-      type: 'APPOINTMENT',
-    },
-    {
-      id: 'BIZ250522-0978',
-      customer: {
-        name: 'Ngọc Bảo Trân',
-        phone: '0913 678 901',
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuB_VK5AQF2wCzHI2Dd9AUFhhhFxs9Vkv1QdWQWb4RwVLZtCYPk9Pwii3nLMhwVZCS11tWlxPt9DyMmulnfi5PGJ5GAUb5ICHnXepIgAYrerwjHPA1MSUqmnqk2Iedc8OwaZX-5YXjAZmPed6AaIPmk0EfQ84TE-kAYOwTLifsvS85n-Sta1GnCBHtW5mMSmyItd-OOOWXDHWIkRFr1ISGHIQD1pPv_ri6KhxBBfTow',
-      },
-      facility: {
-        name: 'Happy Pet Hà Đông',
-        address: '45 Trần Phú, Hà Đông',
-      },
-      paymentStatus: 'Chưa thanh toán',
-      bookingStatus: 'Chờ xác nhận',
-      type: 'BOARDING',
-    },
-  ]);
+  const handleFilter = () => {
+    setFilterError("");
 
-  // ==============================
-  // FILTER LOGIC
-  // ==============================
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((item) => {
-      if (
-        statusFilter !== 'Tất cả trạng thái' &&
-        item.bookingStatus !== statusFilter
-      ) {
-        return false;
-      }
+    if (fromDate && toDate && fromDate > toDate) {
+      setFilterError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+      return;
+    }
 
-      if (
-        bookingTypeFilter !== 'Tất cả loại booking' &&
-        item.type !== bookingTypeFilter
-      ) {
-        return false;
-      }
-
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase();
-
-        const matchId = item.id.toLowerCase().includes(query);
-        const matchName = item.customer.name.toLowerCase().includes(query);
-        const matchPhone = item.customer.phone.toLowerCase().includes(query);
-
-        return matchId || matchName || matchPhone;
-      }
-
-      return true;
+    setAppliedFilters({
+      search: searchQuery.trim(),
+      status: STATUS_MAP[statusFilter] || "all",
+      bookingType:
+        bookingTypeFilter === "Tất cả loại booking" ? "all" : bookingTypeFilter,
+      fromDate,
+      toDate,
     });
-  }, [bookings, searchQuery, statusFilter, bookingTypeFilter]);
 
-  // ==============================
-  // RESET FILTER
-  // ==============================
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('Tất cả trạng thái');
-    setBookingTypeFilter('Tất cả loại booking');
+    setPage(1);
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("Tất cả trạng thái");
+    setBookingTypeFilter("Tất cả loại booking");
+    setFromDate("");
+    setToDate("");
+    setFilterError("");
+
+    setAppliedFilters({ ...EMPTY_FILTERS });
+    setPage(1);
+  };
+
+  // ==============================
+  // 9. PHÂN TRANG
+  // ==============================
+  const handlePageChange = (nextPage) => {
+    if (
+      listLoading ||
+      nextPage < 1 ||
+      nextPage > pagination.totalPages ||
+      nextPage === page
+    ) {
+      return;
+    }
+
+    setPage(nextPage);
+  };
+
+  const handlePageSizeChange = (nextSize) => {
+    if (listLoading || ![10, 20].includes(nextSize)) {
+      return;
+    }
+
+    setPageSize(nextSize);
+    setPage(1);
+  };
+
+  // ==============================
+  // 10. XUẤT EXCEL
+  // ==============================
+  const handleExportExcel = async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    setExportError("");
+    setExportMessage("");
+
+    try {
+      // Dùng đúng bộ lọc ĐÃ NHẤN "LỌC",
+      // không dùng input chưa áp dụng.
+      const filters = { ...appliedFilters };
+
+      // Chỉ tải ExcelJS khi cần xuất file.
+      const ExcelJSModule = await import("exceljs");
+      const ExcelJS = ExcelJSModule.default || ExcelJSModule;
+
+      const workbook = new ExcelJS.Workbook();
+
+      workbook.creator = "PetCare Booking";
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet("Bao cao Booking");
+
+      // 1. Tiêu đề báo cáo
+      worksheet.mergeCells("A1:O1");
+
+      const titleCell = worksheet.getCell("A1");
+
+      titleCell.value = "BÁO CÁO DANH SÁCH BOOKING - PETCARE BOOKING";
+
+      titleCell.font = {
+        bold: true,
+        size: 16,
+        color: { argb: "FFFFFFFF" },
+      };
+
+      titleCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF047857" },
+      };
+
+      titleCell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+      };
+
+      worksheet.getRow(1).height = 34;
+
+      worksheet.mergeCells("A2:O2");
+
+      worksheet.getCell("A2").value =
+        `Ngày xuất: ${formatDateTime(new Date())}`;
+
+      worksheet.getCell("A2").font = {
+        italic: true,
+        color: { argb: "FF64748B" },
+      };
+
+      worksheet.getRow(2).height = 24;
+
+      // 2. Cấu hình cột
+      worksheet.columns = [
+        { key: "stt", width: 8 },
+        { key: "bookingCode", width: 25 },
+        { key: "customerName", width: 25 },
+        { key: "customerPhone", width: 18 },
+        { key: "petName", width: 20 },
+        { key: "serviceName", width: 32 },
+        { key: "branchName", width: 32 },
+        { key: "branchAddress", width: 48 },
+        { key: "bookingType", width: 18 },
+        { key: "createdAt", width: 24 },
+        { key: "schedule", width: 35 },
+        { key: "totalPrice", width: 20 },
+        { key: "bookingStatus", width: 20 },
+        { key: "paymentStatus", width: 20 },
+        { key: "numberOfDays", width: 16 },
+      ];
+
+      // 3. Header bảng
+      const headerRow = worksheet.getRow(4);
+
+      headerRow.values = [
+        "STT",
+        "Mã booking",
+        "Khách hàng",
+        "Số điện thoại",
+        "Thú cưng",
+        "Dịch vụ",
+        "Chi nhánh",
+        "Địa chỉ chi nhánh",
+        "Loại booking",
+        "Ngày đặt",
+        "Lịch hẹn / Lưu trú",
+        "Tổng tiền (VNĐ)",
+        "Trạng thái booking",
+        "Trạng thái thanh toán",
+        "Số ngày lưu trú",
+      ];
+
+      headerRow.height = 29;
+
+      headerRow.eachCell((cell) => {
+        cell.font = {
+          bold: true,
+          color: { argb: "FFFFFFFF" },
+        };
+
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0F766E" },
+        };
+
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
+
+        cell.border = {
+          bottom: {
+            style: "thin",
+            color: { argb: "FFD1D5DB" },
+          },
+        };
+      });
+
+      worksheet.views = [
+        {
+          state: "frozen",
+          ySplit: 4,
+        },
+      ];
+
+      // 4. Lấy toàn bộ Booking theo bộ lọc
+      const EXPORT_LIMIT = 50;
+
+      const fetchPage = async (pageNumber) => {
+        const response = await adminBookingApi.getBookings({
+          ...filters,
+          page: pageNumber,
+          limit: EXPORT_LIMIT,
+        });
+
+        if (
+          response?.success === false ||
+          !Array.isArray(response?.data?.bookings)
+        ) {
+          throw new Error(
+            response?.message || `Không thể lấy dữ liệu trang ${pageNumber}.`,
+          );
+        }
+
+        return response.data;
+      };
+
+      const firstData = await fetchPage(1);
+
+      const total = Number(firstData.pagination?.total ?? 0);
+
+      const totalPages = Math.ceil(total / EXPORT_LIMIT);
+
+      const allBookings = [...firstData.bookings];
+
+      for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
+        const pageData = await fetchPage(currentPage);
+
+        allBookings.push(...pageData.bookings);
+      }
+
+      if (allBookings.length !== total) {
+        throw new Error(
+          "Số lượng Booking thay đổi trong lúc xuất. " +
+            "Vui lòng thử lại để tránh thiếu hoặc trùng dữ liệu.",
+        );
+      }
+
+      // 5. Đưa dữ liệu vào Excel
+      allBookings.forEach((booking, index) => {
+        const row = worksheet.addRow({
+          stt: index + 1,
+          bookingCode: booking.bookingCode || "",
+          customerName: booking.customer?.fullName || "",
+          customerPhone: booking.customer?.phone || "",
+          petName: booking.pet?.name || "",
+          serviceName: booking.service?.name || "",
+          branchName: booking.branch?.name || "",
+          branchAddress: getBranchAddress(booking.branch?.address),
+          bookingType:
+            TYPE_LABELS[booking.bookingType] || booking.bookingType || "",
+          createdAt: formatDateTime(booking.createdAt),
+          schedule: getSchedule(booking),
+          totalPrice: Number(booking.totalPrice ?? 0),
+          bookingStatus:
+            BOOKING_STATUS_LABELS[booking.status] || booking.status || "",
+          paymentStatus:
+            PAYMENT_STATUS_LABELS[booking.paymentStatus] ||
+            booking.paymentStatus ||
+            "",
+          numberOfDays:
+            booking.bookingType === "BOARDING"
+              ? (booking.numberOfDays ?? "")
+              : "",
+        });
+
+        row.height = 23;
+
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.alignment = {
+            vertical: "middle",
+            wrapText: true,
+          };
+
+          cell.border = {
+            bottom: {
+              style: "hair",
+              color: {
+                argb: "FFE2E8F0",
+              },
+            },
+          };
+
+          if (index % 2 === 1) {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: {
+                argb: "FFF8FAFC",
+              },
+            };
+          }
+        });
+
+        // Giữ số điện thoại dạng text,
+        // tránh mất số 0 ở đầu.
+        row.getCell(4).numFmt = "@";
+
+        // Cột tổng tiền lưu dạng Number
+        // để tính tổng trong Excel được.
+        row.getCell(12).numFmt = '#,##0" ₫"';
+        row.getCell(12).alignment = {
+          horizontal: "right",
+          vertical: "middle",
+        };
+      });
+
+      // 6. Dòng tổng kết
+      const summaryRow = worksheet.addRow({
+        bookingCode: "TỔNG CỘNG",
+        totalPrice: allBookings.reduce(
+          (sum, booking) => sum + Number(booking.totalPrice ?? 0),
+          0,
+        ),
+      });
+
+      summaryRow.height = 28;
+
+      summaryRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: {
+            argb: "FFD1FAE5",
+          },
+        };
+
+        cell.font = {
+          bold: true,
+          color: {
+            argb: "FF065F46",
+          },
+        };
+      });
+
+      summaryRow.getCell(12).numFmt = '#,##0" ₫"';
+
+      // 7. Tạo file XLSX
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      link.href = url;
+      link.download = `BaoCaoBooking_${timestamp}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+
+      setExportMessage(
+        `Đã tạo báo cáo Excel gồm ${allBookings.length} Booking.`,
+      );
+    } catch (error) {
+      console.error("Export Booking Excel:", error);
+
+      setExportError(error.message || "Không thể xuất báo cáo Excel.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ==============================
+  // 11. RENDER
+  // ==============================
   return (
     <div className="p-8 space-y-6 flex-1">
+      {/* METRICS */}
       <BookingMetrics metrics={metrics} />
 
+      {metricsError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {metricsError}
+        </div>
+      )}
+
+      {/* FILTER */}
       <BookingFilter
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -273,10 +736,69 @@ export default function BookingList() {
         setStatusFilter={setStatusFilter}
         bookingTypeFilter={bookingTypeFilter}
         setBookingTypeFilter={setBookingTypeFilter}
+        fromDate={fromDate}
+        setFromDate={setFromDate}
+        toDate={toDate}
+        setToDate={setToDate}
+        onFilter={handleFilter}
         onReset={handleResetFilters}
+        onExport={handleExportExcel}
+        isExporting={isExporting}
       />
 
-      <BookingTable bookings={filteredBookings} />
+      {filterError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {filterError}
+        </div>
+      )}
+
+      {exportError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {exportError}
+        </div>
+      )}
+
+      {exportMessage && (
+        <div
+          role="status"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700"
+        >
+          {exportMessage}
+        </div>
+      )}
+
+      {listError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          {listError}
+
+          <button
+            type="button"
+            onClick={() => setRefreshKey((prev) => prev + 1)}
+            className="ml-3 font-semibold underline"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {/* BOOKING TABLE */}
+      <BookingTable
+        bookings={bookings}
+        pagination={pagination}
+        isLoading={listLoading}
+        hasError={Boolean(listError)}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
     </div>
   );
 }

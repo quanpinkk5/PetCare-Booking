@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Search,
   ChevronDown,
@@ -6,30 +6,47 @@ import {
   Download,
   Filter,
   RotateCcw,
-} from 'lucide-react';
+  UserPlus,
+} from "lucide-react";
 
-export default function UserFilterBar({ onFilter, onReset }) {
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('all');
-  const [status, setStatus] = useState('all');
+export default function UserFilterBar({
+  onFilter,
+  onReset,
+  onCreateOwner,
+  onExport,
+  isExporting = false,
+}) {
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [timeRange, setTimeRange] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const handleFilter = () => {
-    if (onFilter) {
-      onFilter({
-        search: search.trim(),
-        role,
-        status,
-      });
+    if (timeRange === "custom" && startDate && endDate && startDate > endDate) {
+      alert("Ngày bắt đầu không được lớn hơn ngày kết thúc");
+      return;
     }
+
+    onFilter?.({
+      search: search.trim(),
+      role,
+      status,
+      timeRange,
+      startDate: timeRange === "custom" ? startDate : "",
+      endDate: timeRange === "custom" ? endDate : "",
+    });
   };
 
   const handleReset = () => {
-    setSearch('');
-    setRole('all');
-    setStatus('all');
-    if (onReset) {
-      onReset();
-    }
+    setSearch("");
+    setRole("all");
+    setStatus("all");
+    setTimeRange("all");
+    setStartDate("");
+    setEndDate("");
+    onReset?.();
   };
 
   return (
@@ -42,7 +59,7 @@ export default function UserFilterBar({ onFilter, onReset }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 handleFilter();
               }
             }}
@@ -60,9 +77,9 @@ export default function UserFilterBar({ onFilter, onReset }) {
             className="w-full text-xs py-2 pl-3 pr-8 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-slate-600 appearance-none font-medium cursor-pointer"
           >
             <option value="all">Vai trò: Tất cả</option>
-            <option value="Khách hàng">Khách hàng</option>
-            <option value="Chủ cơ sở">Chủ cơ sở</option>
-            <option value="Quản trị viên">Quản trị viên</option>
+            <option value="CUSTOMER">Khách hàng</option>
+            <option value="BUSINESS_OWNER">Chủ cơ sở</option>
+            <option value="ADMIN">Quản trị viên</option>
           </select>
           <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
@@ -75,20 +92,61 @@ export default function UserFilterBar({ onFilter, onReset }) {
             className="w-full text-xs py-2 pl-3 pr-8 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-slate-600 appearance-none font-medium cursor-pointer"
           >
             <option value="all">Trạng thái: Tất cả</option>
-            <option value="Hoạt động">Hoạt động</option>
-            <option value="Đã khóa">Đã khóa</option>
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="LOCKED">Đã khóa</option>
           </select>
           <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
         {/* Time */}
-        <button
-          type="button"
-          className="flex items-center gap-2 text-xs py-2 px-3.5 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-600 font-medium cursor-pointer"
-        >
-          <span>Thời gian: Tất cả</span>
-          <Calendar className="w-4 h-4 text-slate-400" />
-        </button>
+
+        {/* Time Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[165px]">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="w-full text-xs py-2 pl-3 pr-8 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-slate-600 appearance-none cursor-pointer"
+            >
+              <option value="all">Thời gian: Tất cả</option>
+              <option value="today">Hôm nay</option>
+              <option value="7days">7 ngày gần đây</option>
+              <option value="30days">30 ngày gần đây</option>
+              <option value="custom">Chọn khoảng ngày...</option>
+            </select>
+
+            <Calendar
+              size={16}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            />
+          </div>
+
+          {timeRange === "custom" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                Từ
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-emerald-500"
+                />
+              </label>
+
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                Đến
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-emerald-500"
+                />
+              </label>
+            </div>
+          )}
+        </div>
 
         {/* Nút Lọc và Reset cạnh bộ lọc thời gian */}
         <button
@@ -111,11 +169,29 @@ export default function UserFilterBar({ onFilter, onReset }) {
           <span>Reset</span>
         </button>
       </div>
-
+      <button
+        type="button"
+        onClick={onCreateOwner}
+        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm shadow-emerald-500/20 transition-all cursor-pointer"
+      >
+        <UserPlus size={17} />
+        Thêm chủ cơ sở
+      </button>
       {/* Export */}
-      <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm shadow-emerald-500/20 transition-all cursor-pointer">
-        <Download className="w-4 h-4" />
-        <span>Xuất dữ liệu</span>
+      {/* Export */}
+      <button
+        type="button"
+        onClick={onExport}
+        disabled={isExporting}
+        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {isExporting ? (
+          <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+        ) : (
+          <Download className="w-4 h-4" />
+        )}
+
+        <span>{isExporting ? "Đang xuất..." : "Xuất dữ liệu"}</span>
       </button>
     </section>
   );
