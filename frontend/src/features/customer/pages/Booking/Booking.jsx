@@ -1,192 +1,143 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ChevronRight, Home as HomeIcon, PawPrint, Sparkles } from "lucide-react";
-
-import BookingStepper from "../../components/Booking/BookingStepper";
-import BookingPetSelector from "../../components/Booking/BookingPetSelector";
-import BookingBranchSelector from "../../components/Booking/BookingBranchSelector";
-import BookingServiceSelector from "../../components/Booking/BookingServiceSelector";
-import BookingDateTimeSelector from "../../components/Booking/BookingDateTimeSelector";
-import BookingSuggestedServices from "../../components/Booking/BookingSuggestedServices";
-import BookingSummary from "../../components/Booking/BookingSummary";
-
-// Data khởi tạo
-const INITIAL_PETS = [
-  {
-    id: 1,
-    name: "Milo",
-    breed: "Poodle",
-    gender: "Đực",
-    weight: "5kg",
-    image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 2,
-    name: "Mimi",
-    breed: "Mèo Anh lông ngắn",
-    gender: "Cái",
-    weight: "4kg",
-    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 3,
-    name: "Lucky",
-    breed: "Golden Retriever",
-    gender: "Đực",
-    weight: "12kg",
-    image: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&auto=format&fit=crop&q=80",
-  },
-];
-
-const BRANCHES = [
-  {
-    id: 1,
-    name: "Happy Pet Cầu Giấy",
-    address: "Số 12 Dịch Vọng Hậu, Cầu Giấy, Hà Nội",
-    phone: "0912 345 678",
-    rating: 4.9,
-    reviewsCount: 256,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuC3-_PP7VWj5tqP7kr55IKE7l-9zTzySPvB0bUIsr9lhb-O0mNTbo04WCOH4eqolILlmIbZy2Z27u4hNCBzi6pyYP1K20skb1-aRCVCsKU8DT5ooCqg3mBwQ0Bx1OmOENFoEKR-DHzJJ9bMWkV89NfSzPJ3IpUweDQjq7ZWYNy3OHSU7Q-tYzeXzdD46WHgj6bXbbQc2KfQNjL-3yDg3VoOEmrypJkaroaWE4Jqjdxw2Y9jm4fU71gt",
-  },
-  {
-    id: 2,
-    name: "Puppy Love Pet Spa",
-    address: "45 Lê Lợi, Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-    phone: "0908 112 233",
-    rating: 4.8,
-    reviewsCount: 198,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYwU4d5oE_kIZXazzMLp_Kq8KJRAat_ohctJPpZQo2gwGPIGfQlJHofl7jCYPGPCFhMwDD5VxsVbP7-MAmoiwkFJVN0LYp4KUaeBzsP8DkMtNgGTFUzKu3SvwP7332FA7yPUlFjwHn4JEAhhur-if1E4z7m36FulluMzjIaKPumCGeYrS0Fijda8ZgTZNpABaulHz6PIulpANf_4lzU7QDzd-vjGWG6x6T4dkti5Nw5xC8qIOY5oll",
-  },
-];
-
-const SERVICES = [
-  {
-    id: 1,
-    name: "Tắm & vệ sinh",
-    description: "Tắm sạch, sấy tạo phồng, vắt tuyến hôi, vệ sinh tai và cắt mài móng cơ bản.",
-    price: "150.000₫",
-  },
-  {
-    id: 2,
-    name: "Grooming cắt tỉa",
-    description: "Cắt tỉa lông tạo kiểu nghệ thuật, tắm thảo dược khử mùi và xịt dưỡng bóng lông.",
-    price: "250.000₫",
-  },
-  {
-    id: 3,
-    name: "Spa thư giãn cao cấp",
-    description: "Ngâm bồn sục Jacuzzi, ủ bùn khoáng tự nhiên và massage kích thích tuần hoàn.",
-    price: "350.000₫",
-  },
-];
-
-const TIME_SLOTS = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-];
-
-const SUGGESTED_SERVICES = [
-  {
-    id: 4,
-    name: "Cắt & mài móng thẩm mỹ",
-    description: "Vệ sinh kẽ móng, cắt tỉa và mài tròn chống trầy xước",
-    price: "50.000₫",
-  },
-  {
-    id: 5,
-    name: "Vệ sinh tai thảo dược",
-    description: "Nhổ lông tai, nhỏ dung dịch thảo mộc làm sạch ve rận tai",
-    price: "40.000₫",
-  },
-  {
-    id: 6,
-    name: "Chăm sóc & đánh bóng răng",
-    description: "Lấy mảng bám thức ăn, xịt khoáng thơm tho sạch vi khuẩn",
-    price: "60.000₫",
-  },
-];
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { ChevronRight, Home as HomeIcon } from 'lucide-react';
+import { useAuth } from '../../../../context/AuthContext';
+import { bookingApi } from '../../services/bookingApi.js';
+import { businessApi } from '../../services/businessApi.js';
+import { petApi } from '../../services/petApi.js';
+import { boardingDays, bookingPet, eligibleServices, loadBookingBranches, bookingPayload, vietnamToday } from '../../services/bookingFormData.js';
+import BookingStepper from '../../components/Booking/BookingStepper';
+import BookingPetSelector from '../../components/Booking/BookingPetSelector';
+import BookingBranchSelector from '../../components/Booking/BookingBranchSelector';
+import BookingServiceSelector from '../../components/Booking/BookingServiceSelector';
+import BookingDateTimeSelector from '../../components/Booking/BookingDateTimeSelector';
+import BookingSuggestedServices from '../../components/Booking/BookingSuggestedServices';
+import BookingSummary from '../../components/Booking/BookingSummary';
 
 const Booking = () => {
   const navigate = useNavigate();
+  const { user, isAuthLoading } = useAuth();
+  const [params] = useSearchParams();
+  const [requested] = useState(() => ({ petId: params.get('petId'), branchId: params.get('branchId'),
+    offeringId: params.get('branchServiceId'), serviceName: params.get('service') }));
+  const [petsList, setPetsList] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [selectedPet, setSelectedPet] = useState(null);
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState(vietnamToday);
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [offerings, setOfferings] = useState({ branchId: '', data: [], loading: true, error: '' });
+  const [availability, setAvailability] = useState({ key: '', data: [], error: '' });
+  const [slotRetry, setSlotRetry] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const submission = useRef(false);
+  const [manualSelection, setManualSelection] = useState(false);
 
-  const [petsList, setPetsList] = useState(INITIAL_PETS);
-  const [selectedPet, setSelectedPet] = useState(INITIAL_PETS[0]);
-  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
-  const [selectedService, setSelectedService] = useState(SERVICES[0]);
-  const [selectedAddons, setSelectedAddons] = useState([]);
-  const [selectedTime, setSelectedTime] = useState("09:00");
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  });
-  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (isAuthLoading || user?.role !== 'CUSTOMER') return;
+    let active = true;
+    const load = async () => {
+      try {
+        const [pets, branchList, preferred] = await Promise.all([
+          petApi.list(), loadBookingBranches(businessApi),
+          requested.offeringId ? bookingApi.offering(requested.offeringId) : Promise.resolve(null),
+        ]);
+        if (!active) return;
+        const mapped = pets.data.map(bookingPet);
+        setPetsList(mapped);
+        setBranches(branchList);
+        setSelectedPet(mapped.find((pet) => pet.id === requested.petId) || mapped[0] || null);
+        const branchId = preferred?.data.branchId || requested.branchId;
+        setSelectedBranch(branchList.find((branch) => branch.id === branchId) || branchList[0] || null);
+        setSelectedService(null);
+        setSelectedTime('');
+        setError('');
+      } catch (err) { if (active) setError(err.message); }
+      finally { if (active) setLoading(false); }
+    };
+    load();
+    return () => { active = false; };
+  }, [isAuthLoading, user, requested, retry]);
 
-  const handleToggleAddon = (addon) => {
-    setSelectedAddons((prev) => {
-      const exists = prev.some((item) => item.id === addon.id);
-      if (exists) {
-        return prev.filter((item) => item.id !== addon.id);
-      }
-      return [...prev, addon];
+  const branchId = selectedBranch?.id;
+  useEffect(() => {
+    if (!branchId) return;
+    let active = true;
+    businessApi.services(branchId).then((response) => {
+      if (active) setOfferings({ branchId, data: response.data, loading: false, error: '' });
+    }).catch((err) => {
+      if (active) setOfferings({ branchId, data: [], loading: false, error: err.message });
     });
-  };
+    return () => { active = false; };
+  }, [branchId, retry]);
 
-  const handleAddPet = (newPet) => {
-    setPetsList((prev) => [newPet, ...prev]);
-  };
-
-  const handleConfirm = (summaryData = {}) => {
-    const rawPrice = summaryData.finalTotal || (
-      selectedService?.price
-        ? parseInt(selectedService.price.replace(/\D/g, ""), 10)
-        : 250000
-    );
-
-    navigate("/payment", {
-      state: {
-        booking: {
-          bookingCode: "BK" + Date.now().toString().slice(-8),
-          petName: selectedPet?.name || "Milo",
-          petBreed: selectedPet?.breed || "Poodle",
-          serviceName: selectedService?.name || "Grooming cắt tỉa",
-          facilityName: selectedBranch?.name || "Happy Pet Cầu Giấy",
-          bookingDate: selectedDate,
-          bookingTime: selectedTime || "09:00",
-          customerName: "Nguyễn Văn A",
-          customerPhone: "0987 654 321",
-          customerEmail: "nguyenvana@gmail.com",
-          basePrice: summaryData.basePrice || rawPrice,
-          addonsTotal: summaryData.addonsTotal || 0,
-          discountAmount: summaryData.discountAmount || 0,
-          finalTotal: rawPrice,
-          selectedAddons: summaryData.selectedAddons || selectedAddons,
-          platformFee: 15000,
-          note: note,
-        },
-      },
+  const servicesLoading = Boolean(branchId) && (offerings.branchId !== branchId || offerings.loading);
+  const services = eligibleServices(offerings.branchId === branchId ? offerings.data : [], selectedPet);
+  // Resolve a deep-linked service only while the customer has not made a manual choice.
+  const service = selectedService || (!manualSelection && (services.find((item) => item.id === requested.offeringId)
+    || services.find((item) => requested.serviceName && item.name === requested.serviceName))) || null;
+  const slotKey = service?.bookingType === 'APPOINTMENT' ? service.id + ':' + selectedDate : '';
+  const slotsLoading = Boolean(slotKey) && availability.key !== slotKey;
+  const slots = availability.key === slotKey ? availability.data : [];
+  useEffect(() => {
+    if (!slotKey) return;
+    let active = true;
+    const [id, date] = slotKey.split(':');
+    bookingApi.availability(id, date).then((response) => {
+      if (active) setAvailability({ key: slotKey, data: response.data.availableSlots, error: '' });
+    }).catch((err) => {
+      if (active) setAvailability({ key: slotKey, data: [], error: err.message });
     });
-  };
+    return () => { active = false; };
+  }, [slotKey, slotRetry]);
 
-  const currentStep = !selectedPet
-    ? 1
-    : !selectedBranch
-    ? 2
-    : !selectedService
-    ? 3
-    : !selectedTime
-    ? 4
-    : 5;
+  const selectPet = (pet) => {
+    if (pet.id === selectedPet?.id) return;
+    setSelectedPet(pet); setSelectedService(null); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); setManualSelection(true);
+  };
+  const selectBranch = (branch) => {
+    if (branch.id === selectedBranch?.id) return;
+    setSelectedBranch(branch); setSelectedService(null); setSelectedTime(''); setManualSelection(true);
+  };
+  const selectService = (item) => {
+    if (item.id === service?.id) return;
+    setSelectedService(item); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); setError(''); setManualSelection(true);
+  };
+  const handleAddPet = async (pet) => {
+    const response = await petApi.create(pet);
+    const created = bookingPet(response.data);
+    setPetsList((previous) => [created, ...previous]);
+    selectPet(created);
+  };
+  const days = service?.bookingType === 'BOARDING' ? boardingDays(selectedDate, checkOutDate) : 1;
+  const ready = !loading && !servicesLoading && !slotsLoading && selectedPet && selectedBranch && service
+    && selectedDate >= vietnamToday()
+    && (service.bookingType === 'BOARDING' ? days > 0 : slots.some((slot) => slot.startTime === selectedTime && slot.remainingCapacity > 0));
+  const handleConfirm = async () => {
+    if (submission.current || !ready) return;
+    submission.current = true;
+    setSubmitting(true); setError('');
+    try {
+      const payload = bookingPayload({ pet: selectedPet, branch: selectedBranch, service,
+        date: selectedDate, time: selectedTime, checkOutDate, note, slots });
+      const response = await bookingApi.create(payload);
+      navigate('/my-bookings/' + response.data._id);
+    } catch (err) {
+      setError(err.message === 'Failed to fetch' ? 'Mất kết nối khi tạo lịch. Vui lòng kiểm tra Lịch đặt của tôi trước khi đặt lại.' : err.message);
+      setSelectedTime('');
+      setAvailability({ key: '', data: [], error: '' });
+      setSlotRetry((value) => value + 1);
+    } finally { submission.current = false; setSubmitting(false); }
+  };
+  const currentStep = !selectedPet ? 1 : !selectedBranch ? 2 : !service ? 3 : !ready ? 4 : 5;
+  if (isAuthLoading) return <p className="p-8" role="status">Đang kiểm tra phiên đăng nhập...</p>;
+  if (user?.role !== 'CUSTOMER') return <div className="p-8">Vui lòng <Link to="/login" className="text-emerald-700 underline">đăng nhập tài khoản khách hàng</Link> để đặt lịch.</div>;
 
   return (
     <div className="bg-[#fcfdfd] min-h-screen text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-800 pb-16">
@@ -212,6 +163,12 @@ const Booking = () => {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
         <BookingStepper currentStep={currentStep} />
+        {loading && <p role="status" className="mb-4">Đang tải dữ liệu đặt lịch...</p>}
+        {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-700">{error}
+          <button type="button" className="ml-3 underline" disabled={submitting} onClick={() => { setLoading(true); setOfferings({ branchId: '', data: [], loading: true, error: '' }); setRetry((value) => value + 1); }}>Tải lại dữ liệu</button>
+          <Link to="/my-bookings" className="ml-3 underline">Kiểm tra lịch đã đặt</Link>
+        </div>}
+        <fieldset disabled={submitting} className="min-w-0">
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
           {/* Main selection forms */}
@@ -219,36 +176,39 @@ const Booking = () => {
             <BookingPetSelector
               pets={petsList}
               selectedPet={selectedPet}
-              onSelect={setSelectedPet}
+              onSelect={selectPet}
               onAddPet={handleAddPet}
             />
 
             <BookingBranchSelector
-              branches={BRANCHES}
+              branches={branches}
               selectedBranch={selectedBranch}
-              onSelect={setSelectedBranch}
+              onSelect={selectBranch}
             />
 
             <BookingServiceSelector
-              services={SERVICES}
-              selectedService={selectedService}
-              onSelect={setSelectedService}
+              services={services}
+              selectedService={service}
+              onSelect={selectService}
+              onRetry={() => { setLoading(true); setRetry((value) => value + 1); }}
+              loading={servicesLoading} error={offerings.branchId === branchId ? offerings.error : ''}
             />
 
             <BookingDateTimeSelector
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               note={note}
-              timeSlots={TIME_SLOTS}
-              onDateSelect={setSelectedDate}
+              timeSlots={slots.map((slot) => slot.startTime)}
+              loading={slotsLoading} error={availability.key === slotKey ? availability.error : ''}
+              bookingType={service?.bookingType} checkOutDate={checkOutDate} onCheckOutSelect={setCheckOutDate}
+              onRetry={() => { setAvailability({ key: '', data: [], error: '' }); setSlotRetry((value) => value + 1); }}
+              onDateSelect={(date) => { if (date === selectedDate) return; setSelectedDate(date); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); }}
               onTimeSelect={setSelectedTime}
               onNoteChange={setNote}
             />
 
             <BookingSuggestedServices
-              services={SUGGESTED_SERVICES}
-              selectedAddons={selectedAddons}
-              onToggleAddon={handleToggleAddon}
+              services={[]}
             />
           </main>
 
@@ -257,14 +217,16 @@ const Booking = () => {
             <BookingSummary
               selectedPet={selectedPet}
               selectedBranch={selectedBranch}
-              selectedService={selectedService}
+              selectedService={service}
               selectedDate={selectedDate}
               selectedTime={selectedTime}
-              selectedAddons={selectedAddons}
+              disabled={!ready || submitting} submitting={submitting}
+              checkOutDate={checkOutDate} numberOfDays={days}
               onConfirm={handleConfirm}
             />
           </div>
         </div>
+        </fieldset>
       </div>
     </div>
   );

@@ -33,3 +33,10 @@ export const openingHoursText = (hours) => {
   }).filter(Boolean);
   return lines.length ? lines : ['Chưa cập nhật giờ mở cửa'];
 };
+
+export const businessRating = (business) => {
+  const count = Number.isInteger(business.totalReviews) && business.totalReviews > 0 ? business.totalReviews : 0;
+  const rating = business.averageRating;
+  const hasRating = count > 0 && typeof rating === 'number' && Number.isFinite(rating) && rating >= 1 && rating <= 5;
+  return { count, hasRating, label: hasRating ? rating.toFixed(1) : count ? 'Chưa có điểm' : 'Chưa có đánh giá' };
+};

@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
 import { useAuth } from "../../context/AuthContext";
+import CustomerAvatar from "../../features/customer/components/CustomerAvatar.jsx";
 import NotificationDropdown from "../../features/customer/components/Notifications/NotificationDropdown";
 
 const CustomerHeader = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAuthLoading, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -99,7 +100,9 @@ const CustomerHeader = () => {
             </span>
           </Link> */}
 
-          {isAuthenticated && user ? (
+          {isAuthLoading ? (
+            <span role="status" aria-label="Đang tải tài khoản" className="h-10 w-10 rounded-full bg-slate-100 animate-pulse" />
+          ) : isAuthenticated && user ? (
             <>
               {/* Notification Bell & Dropdown */}
               <div className="relative flex items-center" ref={notifRef}>
@@ -137,13 +140,13 @@ const CustomerHeader = () => {
                     setIsDropdownOpen(!isDropdownOpen);
                     setIsNotifDropdownOpen(false);
                   }}
+                  type="button"
+                  aria-label="Mở menu tài khoản"
+                  aria-expanded={isDropdownOpen}
+                  aria-controls="customer-account-menu"
                   className="flex items-center gap-2 pl-1 cursor-pointer focus:outline-none hover:bg-slate-50 p-1 rounded-lg transition-colors"
                 >
-                  <img
-                    src={user.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuDy41SEghjD-Su0C0GIDKStQMA6XwhIz7_0OYuczV-ao5uFnR1gsVRb3EXzhrO95-UaVPo7bZv1SXgIrincJFkxhtbLAaFJOF64Abnq7U6WSP1fm6W20bYukp4qPUonnwxDJPbLdNzuXZCA52IxbGWfQlrgLu_vk9glp5yioJe4V_F9urI-KR1Uc2bmb27r8AODOGs99EaD5FJ5fLMReu4N7bIfg_Zq-1LLG_pnP_homvuDvPdy1dk_"}
-                    alt={user.name || "User Avatar"}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-emerald-100 shadow-sm"
-                  />
+                  <CustomerAvatar user={user} className="w-10 h-10 border-2 border-emerald-100 shadow-sm text-sm" />
                   <ChevronDown
                     size={14}
                     className={`text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
@@ -152,9 +155,9 @@ const CustomerHeader = () => {
 
                 {/* Dropdown Menu Items */}
                 {isDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-in fade-in slide-in-from-top-2">
+                  <div id="customer-account-menu" className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-in fade-in slide-in-from-top-2">
                     <div className="px-4 py-2 border-b border-slate-100">
-                      <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
+                      <p className="text-xs font-bold text-slate-800 truncate">{user.fullName || user.name || "Khách hàng"}</p>
                       <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
                     </div>
 

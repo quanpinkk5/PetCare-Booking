@@ -1,4 +1,4 @@
-import { MapPin, Building2, Check, Star, Clock, Phone, Sparkles } from "lucide-react";
+import { MapPin, Building2, Check, Star, Clock, Phone } from "lucide-react";
 
 const BookingBranchSelector = ({
     branches,
@@ -29,15 +29,12 @@ const BookingBranchSelector = ({
             </div>
 
             <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {branches.map((branch, index) => {
+                {!branches.length && <p className="text-sm text-slate-500">Chưa có chi nhánh nhận đặt lịch.</p>}
+                {branches.map((branch) => {
                     const isSelected = selectedBranch?.id === branch.id;
-                    const defaultImg = index === 0
-                        ? "https://lh3.googleusercontent.com/aida-public/AB6AXuC3-_PP7VWj5tqP7kr55IKE7l-9zTzySPvB0bUIsr9lhb-O0mNTbo04WCOH4eqolILlmIbZy2Z27u4hNCBzi6pyYP1K20skb1-aRCVCsKU8DT5ooCqg3mBwQ0Bx1OmOENFoEKR-DHzJJ9bMWkV89NfSzPJ3IpUweDQjq7ZWYNy3OHSU7Q-tYzeXzdD46WHgj6bXbbQc2KfQNjL-3yDg3VoOEmrypJkaroaWE4Jqjdxw2Y9jm4fU71gt"
-                        : "https://lh3.googleusercontent.com/aida-public/AB6AXuBYwU4d5oE_kIZXazzMLp_Kq8KJRAat_ohctJPpZQo2gwGPIGfQlJHofl7jCYPGPCFhMwDD5VxsVbP7-MAmoiwkFJVN0LYp4KUaeBzsP8DkMtNgGTFUzKu3SvwP7332FA7yPUlFjwHn4JEAhhur-if1E4z7m36FulluMzjIaKPumCGeYrS0Fijda8ZgTZNpABaulHz6PIulpANf_4lzU7QDzd-vjGWG6x6T4dkti5Nw5xC8qIOY5oll";
-                    const branchImg = branch.image || defaultImg;
-                    const rating = branch.rating || (index === 0 ? 4.9 : 4.8);
-                    const reviewsCount = branch.reviewsCount || (index === 0 ? 256 : 180);
-                    const phone = branch.phone || "0912 345 678";
+                    const branchImg = branch.image;
+                    const rating = branch.rating ?? 0;
+                    const phone = branch.phone;
 
                     return (
                         <button
@@ -82,7 +79,7 @@ const BookingBranchSelector = ({
                                         <h3 className="font-bold text-sm text-slate-900 group-hover:text-emerald-700 transition truncate">
                                             {branch.name}
                                         </h3>
-                                        {index === 0 && (
+                                        {branch.isNearest && (
                                             <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold border border-amber-200/80">
                                                 Gần bạn nhất
                                             </span>
@@ -100,7 +97,7 @@ const BookingBranchSelector = ({
                             <div className="mt-3.5 pt-3 border-t border-slate-100/90 flex items-center justify-between text-[11px] text-slate-500">
                                 <span className="flex items-center gap-1">
                                     <Clock size={12} className="text-slate-400" />
-                                    08:00 - 20:00 (Mở cửa)
+                                    Giờ trống theo lịch dịch vụ
                                 </span>
                                 <span className="flex items-center gap-1 font-medium text-slate-600">
                                     <Phone size={11} className="text-slate-400" />

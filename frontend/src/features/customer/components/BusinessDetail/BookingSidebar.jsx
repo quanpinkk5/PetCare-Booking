@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Phone, MapPin } from 'lucide-react';
 import { formatAddress, openingHoursText } from '../../services/businessData.js';
 
@@ -40,6 +41,7 @@ const BookingSidebar = ({ business, branch }) => {
             ))}
           </>
         )}
+        {branch?._id && <Link to={'/booking?branchId=' + encodeURIComponent(branch._id)} className="mt-5 block rounded-xl bg-emerald-600 p-3 text-center text-sm font-semibold text-white">Đặt lịch tại chi nhánh</Link>}
         <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
           Liên hệ chi nhánh để xác nhận lịch trống và tư vấn dịch vụ cho thú cưng của bạn.
         </p>
