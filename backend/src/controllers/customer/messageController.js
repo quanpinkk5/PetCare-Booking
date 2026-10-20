@@ -15,7 +15,18 @@ const sendMessage = async (req, res, next) => {
     const customerId = req.user._id || req.user.id;
 
     // Lấy dữ liệu gửi lên
-    const { businessId, content } = req.body;
+    const { businessId: requestedBusinessId, conversationId, content } = req.body;
+    let conversation;
+    if (conversationId) {
+      if (!mongoose.isValidObjectId(conversationId)) {
+        return res.status(400).json({ success: false, message: "Mã cuộc trò chuyện không hợp lệ" });
+      }
+      conversation = await Conversation.findOne({ _id: conversationId, customerId });
+      if (!conversation) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy cuộc trò chuyện của bạn" });
+      }
+    }
+    const businessId = conversation?.businessId || requestedBusinessId;
 
     // Kiểm tra ID cơ sở kinh doanh
     if (!mongoose.isValidObjectId(businessId)) {
@@ -52,7 +63,7 @@ const sendMessage = async (req, res, next) => {
     }
 
     // Tìm cuộc trò chuyện hiện có
-    let conversation = await Conversation.findOne({
+    conversation = conversation || await Conversation.findOne({
       customerId,
       businessId,
       bookingId: null,
@@ -111,11 +122,18 @@ const getMyConversations = async (req, res, next) => {
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .lean();
 
+    const unreadCounts = await Message.aggregate([
+      { $match: { conversationId: { $in: conversations.map((item) => item._id) },
+        senderId: { $ne: new mongoose.Types.ObjectId(customerId) }, isRead: { $ne: true } } },
+      { $group: { _id: "$conversationId", count: { $sum: 1 } } },
+    ]);
+    const unreadById = new Map(unreadCounts.map((item) => [String(item._id), item.count]));
+
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách cuộc trò chuyện thành công",
       total: conversations.length,
-      data: conversations,
+      data: conversations.map((item) => ({ ...item, unreadCount: unreadById.get(String(item._id)) || 0 })),
     });
   } catch (error) {
     next(error);

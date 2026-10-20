@@ -26,23 +26,19 @@ const io = new Server(server, {
 io.use(socketAuth);
 
 io.on("connection", (socket) => {
-  console.log(
-    `Người dùng ${socket.user._id} đã kết nối: ${socket.id}`
-  );
+  const userId = socket.user._id.toString();
 
-  // Tham gia và rời phòng chat
+  // Mỗi tài khoản có một phòng riêng
+  socket.join(`user:${userId}`);
+
+  console.log(`Người dùng ${userId} đã kết nối: ${socket.id}`);
+
   registerConversationSocket(io, socket);
-
-  // Gửi và nhận tin nhắn realtime
   registerMessageSocket(io, socket);
-
-  // Đánh dấu tin nhắn đã đọc realtime
   registerMessageReadSocket(io, socket);
 
   socket.on("disconnect", (reason) => {
-    console.log(
-      `Người dùng ${socket.user._id} đã ngắt kết nối: ${reason}`
-    );
+    console.log(`Người dùng ${userId} đã ngắt kết nối: ${reason}`);
   });
 });
 

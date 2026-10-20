@@ -100,6 +100,38 @@ const registerMessageSocket = (io, socket) => {
       // Phát tin nhắn mới đến tất cả kết nối trong phòng
       io.to(roomName).emit("message:new", messageData);
 
+      // Lấy thông tin cuộc trò chuyện mới nhất
+      const updatedConversation = await Conversation.findById(conversation._id)
+        .populate("businessId", "name logo phone")
+        .populate("bookingId", "bookingCode status bookingType")
+        .lean();
+
+      // Tạo dữ liệu cập nhật danh sách cuộc trò chuyện
+      const conversationData = {
+        ...updatedConversation,
+        lastMessage: message.content,
+        lastMessageAt: message.createdAt,
+      };
+
+      // Thông báo đến Customer trên mọi thiết bị
+      io.to(`user:${conversation.customerId.toString()}`).emit(
+        "conversation:updated",
+        conversationData,
+      );
+
+      // Tìm chủ sở hữu cơ sở kinh doanh
+      const business = await Business.findById(conversation.businessId).select(
+        "ownerId",
+      );
+
+      if (business?.ownerId) {
+        // Thông báo đến chủ cơ sở trên mọi thiết bị
+        io.to(`user:${business.ownerId.toString()}`).emit(
+          "conversation:updated",
+          conversationData,
+        );
+      }
+
       // Phản hồi cho người gửi
       return callback?.({
         success: true,

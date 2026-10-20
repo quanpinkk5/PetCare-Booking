@@ -92,7 +92,7 @@ const registerConversationSocket = (io, socket) => {
         });
       }
 
-      const roomName = `conversation:${conversation._id.toString()}`;
+      const roomName = `conversation:${conversationId}`;
 
       // Chỉ xử lý phòng mà Socket đang tham gia
       if (!socket.rooms.has(roomName)) {
