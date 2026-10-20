@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Info, MoreHorizontal, Phone, FileText } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
-import { BOOKING_INFO } from "../../data/messagesData";
 
-const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
+const ChatWindow = ({ chat, messages = [], loading = false, sending = false, onSendMessage }) => {
     const navigate = useNavigate();
     const messageEndRef = useRef(null);
 
@@ -21,7 +20,7 @@ const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
         );
     }
 
-    const currentBooking = chat.bookingInfo || BOOKING_INFO;
+    const currentBooking = chat.bookingInfo;
 
     return (
         <section className="col-span-12 flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:col-span-6">
@@ -38,14 +37,14 @@ const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
                         <div className="mt-0.5 flex items-center space-x-1.5">
                             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
                             <span className="text-[11px] text-slate-500">
-                                Đang hoạt động
+                                {chat.phone || "Cơ sở kinh doanh"}
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <div className="ml-2 flex shrink-0 items-center space-x-2">
-                    <button type="button" aria-label="Gọi điện" onClick={() => alert("Đang kết nối cuộc gọi thoại...")} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors">
+                    <button type="button" aria-label="Gọi điện" disabled={!chat.phone} onClick={() => { window.location.href = `tel:${chat.phone}`; }} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors">
                         <Phone size={16} />
                     </button>
                     <button type="button" aria-label="Thông tin" className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors">
@@ -61,19 +60,20 @@ const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
                 <div className="flex min-w-0 items-center space-x-2 truncate font-medium text-slate-700">
                     <FileText size={16} className="shrink-0 text-[#009879]" />
                     <span className="shrink-0 font-bold text-slate-800">
-                        {currentBooking.id}
+                        {currentBooking?.id || "Chưa có lịch đặt liên quan"}
                     </span>
                     <span>•</span>
-                    <span className="truncate">{currentBooking.service}</span>
+                    <span className="truncate">{currentBooking?.service || "Tư vấn dịch vụ"}</span>
                     <span className="hidden sm:inline">•</span>
                     <span className="hidden shrink-0 sm:inline">
-                        {currentBooking.dateTime}
+                        {currentBooking?.dateTime || "—"}
                     </span>
                 </div>
 
                 <button
                     type="button"
-                    onClick={() => navigate(`/my-bookings/${currentBooking.id}`)}
+                    disabled={!currentBooking?.recordId}
+                    onClick={() => navigate(`/my-bookings/${currentBooking.recordId}`)}
                     className="ml-2 shrink-0 rounded-md border border-[#009879] px-2.5 py-1 text-[11px] font-semibold text-[#009879] hover:bg-[#009879] hover:text-white transition-colors cursor-pointer"
                 >
                     Xem chi tiết
@@ -83,10 +83,12 @@ const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
             <div className="custom-scrollbar flex-1 space-y-4 overflow-y-auto bg-slate-50/30 px-5 py-4">
                 <div className="my-2 flex justify-center">
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
-                        Hôm nay
+                        Lịch sử trò chuyện
                     </span>
                 </div>
 
+                {loading && <p role="status" className="text-center text-xs text-slate-400">Đang tải tin nhắn...</p>}
+                {!loading && messages.length === 0 && <p className="text-center text-xs text-slate-400">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện.</p>}
                 {messages.map((message) => (
                     <MessageBubble key={message.id} message={message} />
                 ))}
@@ -94,7 +96,7 @@ const ChatWindow = ({ chat, messages = [], onSendMessage }) => {
                 <div ref={messageEndRef} />
             </div>
 
-            <MessageInput onSend={onSendMessage} />
+            <MessageInput onSend={onSendMessage} disabled={loading || sending} />
         </section>
     );
 };

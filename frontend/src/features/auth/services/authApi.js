@@ -119,4 +119,5 @@ export const authApi = {
     }),
 
   setAccessToken,
+  getAccessToken: () => accessToken,
 };

@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Image as ImageIcon, Paperclip, Send } from "lucide-react";
 
-const MessageInput = ({ onSend }) => {
+const MessageInput = ({ onSend, disabled = false }) => {
     const [text, setText] = useState("");
 
-    const submitMessage = () => {
+    const submitMessage = async () => {
         const value = text.trim();
 
-        if (!value) return;
+        if (!value || disabled) return;
 
-        onSend(value);
-        setText("");
+        if (await onSend(value)) setText("");
     };
 
     const handleKeyDown = (event) => {
@@ -42,6 +41,7 @@ const MessageInput = ({ onSend }) => {
                 <div className="flex-1">
                     <input
                         type="text"
+                        disabled={disabled}
                         value={text}
                         onChange={(event) => setText(event.target.value)}
                         onKeyDown={handleKeyDown}
@@ -53,7 +53,7 @@ const MessageInput = ({ onSend }) => {
                 <button
                     type="button"
                     onClick={submitMessage}
-                    disabled={!text.trim()}
+                    disabled={disabled || !text.trim()}
                     aria-label="Gửi tin nhắn"
                     className="shrink-0 rounded-xl bg-[#009879] p-2.5 text-white hover:bg-[#0f766e] disabled:cursor-not-allowed disabled:opacity-50"
                 >
