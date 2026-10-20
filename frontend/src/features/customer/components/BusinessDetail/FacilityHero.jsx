@@ -1,5 +1,5 @@
-import { PawPrint, Star, Phone, Mail, CheckCircle2, ShieldCheck, MapPin, Sparkles } from 'lucide-react';
-import { imageUrl } from '../../services/businessData.js';
+import { PawPrint, Star, Phone, Mail, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { imageUrl, businessRating } from '../../services/businessData.js';
 
 const FacilityHero = ({ business }) => {
   if (!business) return null;
@@ -7,8 +7,7 @@ const FacilityHero = ({ business }) => {
   const cover = imageUrl(business.images, business.logo);
   const name = business.name || 'Cơ sở thú cưng';
   const logo = imageUrl([business.logo], cover);
-  const rating = business.totalReviews > 0 ? Number(business.averageRating || 0).toFixed(1) : '4.9';
-  const reviewCount = business.totalReviews || 120;
+  const { label: rating, count: reviewCount, hasRating } = businessRating(business);
 
   return (
     <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm">
@@ -43,12 +42,17 @@ const FacilityHero = ({ business }) => {
 
                 {/* Rating Bar */}
                 <div className="flex items-center gap-2 mt-2">
-                  <div className="flex text-amber-400">
+                  <div className="flex gap-0.5" aria-hidden="true">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={15} className="fill-amber-400" />
+                      <span key={i} className="relative block h-[15px] w-[15px]">
+                        <Star size={15} className="text-slate-200" />
+                        <span className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: (hasRating ? Math.max(0, Math.min(1, business.averageRating - i)) * 100 : 0) + '%' }}>
+                          <Star size={15} className="text-amber-400 fill-amber-400" />
+                        </span>
+                      </span>
                     ))}
                   </div>
-                  <span className="text-sm font-extrabold text-slate-800">{rating} / 5.0</span>
+                  <span className="text-sm font-extrabold text-slate-800">{rating}{hasRating ? ' / 5.0' : ''}</span>
                   <span className="text-xs text-slate-400">({reviewCount} đánh giá thực tế)</span>
                 </div>
               </div>

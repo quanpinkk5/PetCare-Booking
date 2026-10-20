@@ -1,4 +1,5 @@
-import { Phone, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Phone, MapPin, MessageCircle } from 'lucide-react';
 import { formatAddress, openingHoursText } from '../../services/businessData.js';
 
 const BookingSidebar = ({ business, branch }) => {
@@ -40,6 +41,11 @@ const BookingSidebar = ({ business, branch }) => {
             ))}
           </>
         )}
+        {branch?._id && <Link to={'/booking?branchId=' + encodeURIComponent(branch._id)} className="mt-5 block rounded-xl bg-emerald-600 p-3 text-center text-sm font-semibold text-white">Đặt lịch tại chi nhánh</Link>}
+        {business?._id && <Link to={'/messages?businessId=' + encodeURIComponent(business._id)} className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-emerald-600 p-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50">
+          <MessageCircle size={16} />
+          Nhắn tin cho cơ sở
+        </Link>}
         <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
           Liên hệ chi nhánh để xác nhận lịch trống và tư vấn dịch vụ cho thú cưng của bạn.
         </p>

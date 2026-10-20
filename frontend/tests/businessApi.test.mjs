@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { businessApi } from '../src/features/customer/services/businessApi.js';
 import { authApi } from '../src/features/auth/services/authApi.js';
-import { formatAddress, imageUrl, openingHoursText, servicePrice } from '../src/features/customer/services/businessData.js';
+import { formatAddress, imageUrl, openingHoursText, servicePrice, businessRating } from '../src/features/customer/services/businessData.js';
 
 test('business list sends encoded filters and server pagination without requiring login', async (t) => {
   authApi.setAccessToken(null);
@@ -72,4 +72,18 @@ test('business review requests use a scoped public endpoint with rating, sorting
     return Response.json({ data: [], summary: { totalReviews: 0 }, pagination: { page: 2 } });
   });
   assert.equal((await businessApi.reviews('business-1', { page: 2, rating: 5, sort: 'highest' })).summary.totalReviews, 0);
+});
+
+test('unreviewed businesses never get a fabricated 4.9 or legacy rating', () => {
+  for (const business of [{}, { averageRating: 4.9, totalReviews: 0 }, { rating: 5, reviewsCount: 100 }, { averageRating: 5, totalReviews: -1 }]) {
+    assert.deepEqual(businessRating(business), { count: 0, hasRating: false, label: 'Chưa có đánh giá' });
+  }
+});
+
+test('business cards display real low and fractional scores and protect invalid averages', () => {
+  assert.deepEqual(businessRating({ averageRating: 2, totalReviews: 3 }), { count: 3, hasRating: true, label: '2.0' });
+  assert.deepEqual(businessRating({ averageRating: 4.3, totalReviews: 10 }), { count: 10, hasRating: true, label: '4.3' });
+  for (const averageRating of [NaN, Infinity, undefined, '4.8', 8]) {
+    assert.equal(businessRating({ averageRating, totalReviews: 1 }).label, 'Chưa có điểm');
+  }
 });

@@ -1,25 +1,26 @@
 import { useState } from "react";
-import { CalendarDays, Calendar, Clock, FileText, Sun, Sunset, Moon, Sparkles, ChevronRight } from "lucide-react";
+import { vietnamToday } from "../../services/bookingFormData.js";
+import { CalendarDays, Calendar, Clock, FileText, Sun, Sunset, Moon, ChevronRight } from "lucide-react";
 
 // Generate next 7 days
 const getUpcomingDays = () => {
     const days = [];
-    const today = new Date();
+    const today = new Date(vietnamToday() + 'T12:00:00Z');
     const dayNames = ["CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7"];
 
     for (let i = 0; i < 7; i++) {
         const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
+        d.setUTCDate(today.getUTCDate() + i);
+        const yyyy = d.getUTCFullYear();
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(d.getUTCDate()).padStart(2, "0");
         const dateString = `${yyyy}-${mm}-${dd}`;
 
         days.push({
             dateString,
-            dayName: i === 0 ? "Hôm nay" : i === 1 ? "Ngày mai" : dayNames[d.getDay()],
-            dayNumber: d.getDate(),
-            month: `Thg ${d.getMonth() + 1}`,
+            dayName: i === 0 ? "Hôm nay" : i === 1 ? "Ngày mai" : dayNames[d.getUTCDay()],
+            dayNumber: d.getUTCDate(),
+            month: `Thg ${d.getUTCMonth() + 1}`,
         });
     }
     return days;
@@ -29,17 +30,14 @@ const SHIFTS = {
     morning: {
         title: "Buổi sáng",
         icon: Sun,
-        slots: ["08:00", "09:00", "10:00", "11:00"],
     },
     afternoon: {
         title: "Buổi chiều",
         icon: Sunset,
-        slots: ["13:00", "14:00", "15:00", "16:00"],
     },
     evening: {
         title: "Buổi tối",
         icon: Moon,
-        slots: ["17:00", "18:00", "19:00"],
     },
 };
 
@@ -56,6 +54,12 @@ const BookingDateTimeSelector = ({
     selectedTime,
     note,
     timeSlots = [],
+    loading = false,
+    error = '',
+    bookingType,
+    checkOutDate,
+    onCheckOutSelect,
+    onRetry,
     onDateSelect,
     onTimeSelect,
     onNoteChange,
@@ -157,7 +161,7 @@ const BookingDateTimeSelector = ({
                             Chọn ngày trên lịch:
                         </label>
                         <input
-                            type="date"
+                            type="date" min={vietnamToday()}
                             value={selectedDate}
                             onChange={(e) => onDateSelect && onDateSelect(e.target.value)}
                             className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 outline-none"
@@ -166,16 +170,28 @@ const BookingDateTimeSelector = ({
                 )}
             </div>
 
+            {bookingType === 'BOARDING' && <div className="mt-5 rounded-xl border border-slate-200 p-4">
+                <label className="block text-xs font-bold text-slate-700">Ngày trả thú cưng (sau ngày nhận, tối đa 90 ngày)
+                    <input type="date" min={selectedDate} value={checkOutDate} onChange={(e) => onCheckOutSelect(e.target.value)} className="mt-2 block rounded-xl border p-2" />
+                </label>
+                <p className="mt-2 text-xs text-slate-500">Ngày đã chọn ở trên là ngày nhận. Số chỗ lưu trú được kiểm tra khi xác nhận.</p>
+            </div>}
             {/* Time Slot Shifts */}
+            {bookingType !== 'BOARDING' && <>
             <div className="mt-6 pt-5 border-t border-slate-100">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider mb-4">
                     <Clock size={14} className="text-emerald-600" />
                     <span>Khung giờ khả dụng</span>
                 </label>
 
+                {loading && <p role="status" className="text-xs text-slate-500">Đang kiểm tra giờ trống...</p>}
+                {error && <p role="alert" className="text-xs text-red-600">{error} <button type="button" onClick={onRetry} className="underline">Thử lại</button></p>}
+                {!loading && !error && !timeSlots.length && <p className="text-xs text-slate-500">Chưa có giờ trống. Hãy chọn dịch vụ hoặc ngày khác.</p>}
                 <div className="space-y-4">
                     {Object.entries(SHIFTS).map(([key, shift]) => {
                         const ShiftIcon = shift.icon;
+                        const available = loading ? [] : timeSlots.filter((time) => key === 'morning' ? time < '12:00' : key === 'afternoon' ? time >= '12:00' && time < '17:00' : time >= '17:00');
+                        if (!available.length) return null;
                         return (
                             <div key={key} className="bg-slate-50/70 rounded-2xl p-3.5 border border-slate-200/60">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2.5">
@@ -184,7 +200,7 @@ const BookingDateTimeSelector = ({
                                 </div>
 
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                    {shift.slots.map((time) => {
+                                    {available.map((time) => {
                                         const isSelected = selectedTime === time;
                                         return (
                                             <button
@@ -208,6 +224,7 @@ const BookingDateTimeSelector = ({
                 </div>
             </div>
 
+            </>}
             {/* Note & Suggestions */}
             <div className="mt-6 pt-5 border-t border-slate-100">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider mb-2">

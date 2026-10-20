@@ -1,5 +1,4 @@
 import {
-    Calendar,
     Check,
     Clock,
     ShieldCheck,
@@ -7,10 +6,6 @@ import {
     HeartHandshake,
     Star,
     Users,
-    ChevronDown,
-    MapPin,
-    Search,
-    Cat,
     Sparkles,
     ArrowRight,
     Award,
@@ -18,16 +13,17 @@ import {
     PhoneCall,
 } from "lucide-react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import HowItWorks from "../../components/Home/HowItWorks";
 import ReviewCard from "../../components/BusinessDetail/ReviewCard";
 import BusinessCard from "../../components/BusinessList/BusinessCard";
 import { useEffect, useState } from "react";
 import { businessApi } from "../../services/businessApi.js";
+import { reviewApi } from '../../services/reviewApi.js';
+import { homeReviewData } from '../../services/homeReviewData.js';
 import { mockBusinesses } from "../../services/mockBusinesses";
 
 const Home = () => {
-    const navigate = useNavigate();
     const [businesses, setBusinesses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -68,35 +64,19 @@ const Home = () => {
         { name: "Khám & Tiêm phòng", icon: "🩺", desc: "Bác sĩ tận tâm", link: "/services" },
     ];
 
-    const reviews = [
-        {
-            name: "Nguyễn Minh Khoa",
-            service: "Grooming & Tắm Spa",
-            rating: 5,
-            date: "2 ngày trước",
-            review:
-                "Dịch vụ trên cả tuyệt vời! Bé cún Golden nhà mình sau khi cắt tỉa và tắm sấy trông siêu bảnh bao và thơm tho cả tuần. Nhân viên rất nhẹ nhàng với thú cưng.",
-            img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-        },
-        {
-            name: "Trần Thùy Linh",
-            service: "Lưu trú Khách sạn",
-            rating: 5,
-            date: "1 tuần trước",
-            review:
-                "Đặt lịch nhanh chóng, không gian cơ sở sạch sẽ tinh tươm. Mình gửi bé Mèo 3 ngày đi công tác mà ngày nào spa cũng gửi video bé chơi ngoan, cực kỳ an tâm!",
-            img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-        },
-        {
-            name: "Phạm Quốc Bảo",
-            service: "Cắt móng & Vệ sinh tai",
-            rating: 5,
-            date: "2 tuần trước",
-            review:
-                "Bé Corgi nhà mình rất nhát nước và sợ cắt móng, nhưng các bạn kỹ thuật viên ở đây dỗ dành rất khéo. Bảng giá minh bạch đúng như trên app, chắc chắn sẽ ủng hộ dài dài!",
-            img: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80",
-        },
-    ];
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(true);
+    const [reviewsError, setReviewsError] = useState('');
+    const [reviewAttempt, setReviewAttempt] = useState(0);
+    useEffect(() => {
+        let cancelled = false;
+        reviewApi.featured().then((response) => {
+            if (!cancelled) setReviews(response.data.map(homeReviewData));
+        }).catch((error) => {
+            if (!cancelled) setReviewsError(error.message || 'Không thể tải đánh giá.');
+        }).finally(() => { if (!cancelled) setReviewsLoading(false); });
+        return () => { cancelled = true; };
+    }, [reviewAttempt]);
 
     const displayBusinesses = businesses.length > 0 ? businesses : mockBusinesses.slice(0, 3);
 
@@ -413,14 +393,20 @@ const Home = () => {
                             Khách hàng nói gì về PetCare
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                            Hơn 100.000 chủ thú cưng đã tin tưởng đặt lịch và có những trải nghiệm hài lòng
+                            Những đánh giá công khai mới nhất từ khách hàng đã hoàn thành lịch chăm sóc thú cưng
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {reviews.map((review, index) => (
+                        {reviewsLoading ? <p role="status" className="col-span-full py-8 text-center text-sm text-slate-500">Đang tải đánh giá...</p>
+                        : reviewsError ? <div role="alert" className="col-span-full rounded-xl bg-red-50 p-4 text-sm text-red-700">
+                            <p>{reviewsError}</p>
+                            <button type="button" className="mt-2 underline" onClick={() => { setReviewsError(''); setReviewsLoading(true); setReviewAttempt((value) => value + 1); }}>Thử lại</button>
+                        </div>
+                        : !reviews.length ? <p className="col-span-full py-8 text-center text-sm text-slate-500">Chưa có đánh giá công khai từ lịch đặt đã hoàn thành.</p>
+                        : reviews.map((review) => (
                             <ReviewCard
-                                key={index}
+                                key={review.id}
                                 {...review}
                             />
                         ))}

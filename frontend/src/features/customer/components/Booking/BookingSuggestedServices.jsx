@@ -1,4 +1,4 @@
-import { Sparkles, Check, Plus, HeartHandshake } from "lucide-react";
+import { Sparkles, Check, Plus } from "lucide-react";
 
 const BookingSuggestedServices = ({
     services = [],
@@ -18,17 +18,18 @@ const BookingSuggestedServices = ({
                                 Dịch vụ bổ sung đề xuất (Add-on)
                             </h2>
                             <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200/80">
-                                Ưu đãi đi kèm
+                                Tùy dịch vụ
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Chăm sóc chu đáo hơn cho bé cưng với chi phí tiết kiệm
+                            Mỗi lịch đặt áp dụng cho một dịch vụ tại chi nhánh
                         </p>
                     </div>
                 </div>
             </div>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {!services.length && <p className="col-span-full text-xs text-slate-500">Chưa hỗ trợ đặt kèm dịch vụ bổ sung. Bạn có thể tạo lịch riêng cho dịch vụ khác.</p>}
                 {services.map((addon) => {
                     const isChecked = selectedAddons.some((item) => item.id === addon.id);
                     const addonPrice = addon.price || "50.000₫";

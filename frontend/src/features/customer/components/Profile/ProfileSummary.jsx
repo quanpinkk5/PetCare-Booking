@@ -1,3 +1,4 @@
+import CustomerAvatar from '../CustomerAvatar.jsx';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -46,11 +47,7 @@ const ProfileSummary = ({
         {/* Avatar with Upload button */}
         <div className="relative w-24 h-24 mx-auto mb-3 group">
           <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-emerald-400 to-teal-200 shadow-sm overflow-hidden">
-            <img
-              alt={user?.fullName || user?.name || 'User'}
-              src={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200'}
-              className="w-full h-full rounded-full object-cover"
-            />
+            <CustomerAvatar user={user} className="w-full h-full text-2xl" />
           </div>
           <button
             type="button"
