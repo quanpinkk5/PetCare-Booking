@@ -77,9 +77,6 @@ const sendRequestToRefresh = () => {
 
   return refreshPromise;
 };
-
-export { request as apiRequest };
-
 export const authApi = {
   register: (payload) =>
     request("/auth/register", {
