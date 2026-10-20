@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom';
 import {
     PawPrint,
-    CalendarDays,
     Home,
-    ShieldHalf,
     Heart,
 } from 'lucide-react';
 
-const MyPetsHero = ({ totalPets = 6 }) => {
+const MyPetsHero = ({ totalPets = 0, dogCount = 0, catCount = 0 }) => {
     const stats = [
         {
             icon: PawPrint,
@@ -17,25 +15,18 @@ const MyPetsHero = ({ totalPets = 6 }) => {
             value: String(totalPets),
         },
         {
-            icon: CalendarDays,
+            icon: PawPrint,
             color: 'text-teal-600',
             bg: 'bg-teal-100',
-            label: 'Lịch sắp tới',
-            value: '2',
+            label: 'Chó',
+            value: String(dogCount),
         },
         {
             icon: Home,
             color: 'text-cyan-600',
             bg: 'bg-cyan-100',
-            label: 'Đang lưu trú',
-            value: '1',
-        },
-        {
-            icon: ShieldHalf,
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-100',
-            label: 'Hồ sơ hoàn chỉnh',
-            value: '100%',
+            label: 'Mèo',
+            value: String(catCount),
         },
     ];
 
@@ -71,7 +62,7 @@ const MyPetsHero = ({ totalPets = 6 }) => {
                         Quản lý hồ sơ thú cưng và đặt dịch vụ dễ dàng, nhanh chóng hơn.
                     </p>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         {stats.map((stat, index) => {
                             const Icon = stat.icon;
 

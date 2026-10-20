@@ -1,7 +1,7 @@
-import React from "react";
-import { AlertTriangle, Trash2, X } from "lucide-react";
 
-const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, reviewItem }) => {
+import { AlertTriangle, Trash2 } from "lucide-react";
+
+const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, reviewItem, busy = false }) => {
   if (!isOpen || !reviewItem) return null;
 
   return (
@@ -26,6 +26,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, reviewItem }) => {
           <button
             type="button"
             onClick={onClose}
+            disabled={busy}
             className="flex-1 px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             Hủy bỏ
@@ -33,10 +34,11 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, reviewItem }) => {
           <button
             type="button"
             onClick={onConfirm}
+            disabled={busy}
             className="flex-1 px-4 py-2 text-xs font-bold rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-600/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
             <Trash2 size={14} />
-            <span>Xác nhận xóa</span>
+            <span>{busy ? "Đang xóa..." : "Xác nhận xóa"}</span>
           </button>
         </div>
       </div>

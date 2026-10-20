@@ -56,6 +56,9 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    gender: { type: String, enum: ["", "Nam", "Nữ", "Khác"], default: "" },
+    birthday: { type: String, default: "" },
+    bio: { type: String, trim: true, maxlength: 1000, default: "" },
     resetPasswordTokenHash: {
       type: String,
       default: null,

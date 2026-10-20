@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Link, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -12,13 +12,13 @@ import {
   MessageCircle,
   ExternalLink,
   Sparkles,
-  Check,
   Scissors
 } from "lucide-react";
 
 const ReviewItemCard = ({
   review,
   onLikeToggle,
+  helpfulBusy = false,
   onEdit,
   onDelete,
   onOpenLightbox
@@ -93,7 +93,7 @@ const ReviewItemCard = ({
           </div>
 
           <Link
-            to={`/my-bookings/${review.bookingId}`}
+            to={`/my-bookings/${review.bookingRecordId || review.bookingId}`}
             className="text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-full transition-colors"
             title="Xem chi tiết đơn đặt"
           >
@@ -247,6 +247,7 @@ const ReviewItemCard = ({
         <button
           type="button"
           onClick={() => onLikeToggle(review.id)}
+          disabled={helpfulBusy}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
             review.isLiked
               ? "bg-teal-50 text-teal-700 border-teal-300 shadow-2xs"

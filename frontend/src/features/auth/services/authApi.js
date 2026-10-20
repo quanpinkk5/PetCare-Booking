@@ -23,7 +23,7 @@ const request = async (path, options = {}) => {
   let response = await sendRequest(accessToken);
 
   // Nếu access token hết hạn, thử làm mới phiên
-  if (response.status === 401 && path === "/auth/me") {
+  if (response.status === 401 && (path === "/auth/me" || path.startsWith("/customer/"))) {
     const refreshResponse = await sendRequestToRefresh();
 
     if (refreshResponse) {
@@ -31,7 +31,7 @@ const request = async (path, options = {}) => {
     }
   }
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.message || "Có lỗi xảy ra");
@@ -72,6 +72,8 @@ const sendRequestToRefresh = () => {
   return refreshPromise;
 };
 
+export { request as apiRequest };
+
 export const authApi = {
   register: (payload) =>
     request("/auth/register", {
@@ -102,6 +104,12 @@ export const authApi = {
     }),
 
   getMe: () => request("/auth/me"),
+
+  updateProfile: (payload) =>
+    request("/customer/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
 
   refresh: sendRequestToRefresh,
 

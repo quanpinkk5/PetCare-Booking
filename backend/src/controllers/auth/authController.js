@@ -27,6 +27,9 @@ const formatUser = (user) => ({
   role: user.role,
   status: user.status,
   address: user.address,
+  gender: user.gender || "",
+  birthday: user.birthday || "",
+  bio: user.bio || "",
 });
 
 // Lấy refresh token từ cookie

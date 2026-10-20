@@ -1,10 +1,10 @@
-import React from "react";
+
 import { BookOpen, Heart, Sparkles, CheckCircle2, Clock } from "lucide-react";
 
 const CareJournal = ({ booking }) => {
-    const isUnderway =
+    const isUnderway = booking?.hasCareJournal && (
         booking?.statusType === "in-progress" ||
-        booking?.statusType === "completed";
+        booking?.statusType === "completed");
 
     return (
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
@@ -41,7 +41,7 @@ const CareJournal = ({ booking }) => {
                         <span>
                             {isUnderway
                                 ? `Bé ${booking?.pet?.name || "thú cưng"} đang được chăm sóc tận tâm`
-                                : "Nhật ký sẽ được cập nhật khi bắt đầu dịch vụ"}
+                                : "Chưa có dữ liệu nhật ký chăm sóc"}
                         </span>
                         {isUnderway && <Sparkles size={12} className="text-amber-500" />}
                     </h4>

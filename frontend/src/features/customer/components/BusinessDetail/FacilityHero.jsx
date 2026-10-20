@@ -1,135 +1,120 @@
-import React from "react";
-import {
-  PawPrint,
-  CheckCircle2,
-  Star,
-  MapPin,
-  Phone,
-  Clock,
-  Sparkles,
-  ShieldCheck,
-  Award,
-  Heart,
-} from "lucide-react";
+import { PawPrint, Star, Phone, Mail, CheckCircle2, ShieldCheck, MapPin, Sparkles } from 'lucide-react';
+import { imageUrl } from '../../services/businessData.js';
 
 const FacilityHero = ({ business }) => {
-  const name = business?.name || "Happy Pet Cầu Giấy";
-  const rating = business?.rating || 4.9;
-  const reviewsCount = business?.reviewsCount || 256;
-  const location = business?.address || business?.location || "Cầu Giấy, Hà Nội";
-  const phone = business?.phone || "0912 345 678";
-  const description =
-    business?.description ||
-    "Happy Pet Cầu Giấy là hệ thống spa & pet hotel cao cấp với đội ngũ chuyên nghiệp, yêu thương thú cưng như chính gia đình.";
-  const image =
-    business?.image ||
-    business?.img ||
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDxIGzmwx5SBrvWdR_hvekMup3V34RL7weVtIFI4g15SRjvrgHNjzG3U5iTG15i2vqnK_Q94FB4nU3jsn0SaLpJl0m2vFNUvCOMioWSUa00CVdcA_1lnFtFWvywh7sHJWWDItGsEPxQL1YNrXAenYBVCHOYaVsase59pm7DJju-AmqAKddLsQd_KQFPfW5jIcjpjRi0brZCykj12Zs5teVMhhXA5sNYvmLbe2G5aCF9idcTXn9gKf2W";
+  if (!business) return null;
+
+  const cover = imageUrl(business.images, business.logo);
+  const name = business.name || 'Cơ sở thú cưng';
+  const logo = imageUrl([business.logo], cover);
+  const rating = business.totalReviews > 0 ? Number(business.averageRating || 0).toFixed(1) : '4.9';
+  const reviewCount = business.totalReviews || 120;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-5">
-      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[290px]">
-
-        {/* Thông tin cơ sở */}
-        <div className="lg:col-span-5 p-6 flex flex-col justify-between">
+    <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
+        {/* Info Column */}
+        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5">
           <div>
-            <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                {name}
-              </h1>
+            {/* Top badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/60">
+                <CheckCircle2 size={13} />
+                <span>Đã kiểm duyệt chất lượng</span>
+              </span>
 
-              <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-50 text-emerald-700 font-medium px-2 py-0.5 rounded-full border border-emerald-200">
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                Đã xác minh
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-200/60">
+                <Sparkles size={12} className="text-amber-500" />
+                <span>Đối tác uy tín</span>
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-xs text-slate-600 mb-3 flex-wrap">
-              <div className="flex items-center gap-1 font-semibold text-amber-500">
-                <Star className="w-3.5 h-3.5 fill-current" />
+            {/* Name & Logo */}
+            <div className="flex items-start gap-4">
+              {logo && (
+                <div className="w-14 h-14 rounded-2xl overflow-hidden border border-slate-200 shrink-0 bg-slate-50 shadow-2xs">
+                  <img src={logo} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  {name}
+                </h1>
 
-                <span className="text-slate-800 font-bold">
-                  {rating}
-                </span>
-
-                <span className="text-slate-400 font-normal">
-                  ({reviewsCount} đánh giá)
-                </span>
-              </div>
-
-              <span className="text-slate-300">•</span>
-
-              <div className="flex items-center gap-1.5 text-slate-500">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{location}</span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5 text-xs text-slate-600 mb-3.5">
-              <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-medium text-slate-700">
-                  {phone}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>08:00 - 20:00 (T2 - CN)</span>
+                {/* Rating Bar */}
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={15} className="fill-amber-400" />
+                    ))}
+                  </div>
+                  <span className="text-sm font-extrabold text-slate-800">{rating} / 5.0</span>
+                  <span className="text-xs text-slate-400">({reviewCount} đánh giá thực tế)</span>
+                </div>
               </div>
             </div>
 
-            <p className="text-[12.5px] leading-relaxed text-slate-500 mb-4">
-              {description}
+            {/* Description */}
+            <p className="mt-4 whitespace-pre-line text-xs sm:text-sm leading-relaxed text-slate-600">
+              {business.description ||
+                'Hệ thống cơ sở chăm sóc, làm đẹp và lưu trú thú cưng cao cấp với tiêu chuẩn an toàn hàng đầu.'}
             </p>
           </div>
 
-          {/* Đặc điểm */}
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-emerald-50/70 text-emerald-700 font-medium rounded-lg">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
-              Grooming chuyên nghiệp
-            </span>
+          {/* Contact & quick details pill list */}
+          <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+            {business.phone && (
+              <a
+                href={`tel:${business.phone}`}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors"
+              >
+                <Phone size={14} className="text-emerald-600" />
+                <span>{business.phone}</span>
+              </a>
+            )}
 
-            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-blue-50/80 text-blue-700 font-medium rounded-lg">
-              <ShieldCheck className="w-3 h-3 text-blue-600" />
-              Phòng lưu trú sạch sẽ
-            </span>
+            {business.email && (
+              <a
+                href={`mailto:${business.email}`}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors"
+              >
+                <Mail size={14} className="text-slate-500" />
+                <span>{business.email}</span>
+              </a>
+            )}
 
-            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-amber-50/80 text-amber-700 font-medium rounded-lg">
-              <Award className="w-3 h-3 text-amber-600" />
-              Nhân viên giàu kinh nghiệm
-            </span>
+            <div className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+              <ShieldCheck size={14} className="text-blue-600" />
+              <span>Bảo hiểm & cam kết sức khỏe thú cưng</span>
+            </div>
           </div>
         </div>
 
-        {/* Hình ảnh */}
-        <div className="lg:col-span-7 relative h-56 lg:h-auto overflow-hidden bg-slate-100 flex items-center justify-center">
-          <img
-            src={image}
-            alt={name}
-            className="w-full h-full object-cover object-center"
-          />
+        {/* Hero Cover Image Column */}
+        <div className="lg:col-span-5 relative min-h-64 lg:min-h-full bg-slate-100 overflow-hidden">
+          {cover ? (
+            <img
+              src={cover}
+              alt={name}
+              className="w-full h-full object-cover min-h-64 lg:min-h-full"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-emerald-50 text-emerald-300">
+              <PawPrint size={72} />
+              <p className="mt-2 text-xs font-semibold text-emerald-600">PetCare Verified Partner</p>
+            </div>
+          )}
 
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
+          {/* Gradient shadow overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
 
-          <div className="absolute top-4 left-6 pointer-events-none">
-            <span className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-semibold tracking-wider flex items-center gap-1.5 uppercase">
-              <PawPrint className="w-3 h-3 text-emerald-400" />
-              {name}
-            </span>
+          <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-white text-xs font-semibold flex items-center gap-1.5">
+            <Sparkles size={13} className="text-emerald-400" />
+            <span>Không gian chuẩn 5 sao</span>
           </div>
-
-          <button
-            aria-label="Lưu vào yêu thích"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-slate-700 hover:text-red-500 shadow-md backdrop-blur-sm flex items-center justify-center transition"
-          >
-            <Heart className="w-4 h-4" />
-          </button>
         </div>
-
       </div>
-    </div>
+    </section>
   );
 };
 

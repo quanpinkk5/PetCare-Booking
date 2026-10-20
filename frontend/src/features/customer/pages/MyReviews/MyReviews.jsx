@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, Link, Navigate } from "react-router-dom";
 import {
   MessageSquareQuote,
   Sparkles,
@@ -18,11 +18,9 @@ import ReviewModal from "../../components/MyReviews/ReviewModal";
 import ImageLightboxModal from "../../components/MyReviews/ImageLightboxModal";
 import DeleteConfirmModal from "../../components/MyReviews/DeleteConfirmModal";
 
-import {
-  INITIAL_REVIEWS,
-  INITIAL_PENDING_REVIEWS
-} from "../../data/reviewsData";
-import { getBookingById } from "../../services/mockBookings";
+import { reviewApi } from '../../services/reviewApi.js';
+import { reviewData, pendingReviewData, reviewPayload } from '../../services/reviewData.js';
+import { useAuth } from '../../../../context/AuthContext';
 
 const ITEMS_PER_PAGE = 4;
 
@@ -39,8 +37,8 @@ const MyReviews = () => {
       : "reviewed";
 
   // Main state
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
-  const [pendingReviews, setPendingReviews] = useState(INITIAL_PENDING_REVIEWS);
+  const [reviews, setReviews] = useState([]);
+  const [pendingReviews, setPendingReviews] = useState([]);
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Filters & Search
@@ -51,43 +49,8 @@ const MyReviews = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Modal target initialized from URL if action=write
-  const [modalTargetItem, setModalTargetItem] = useState(() => {
-    if (!paramBookingId || paramAction !== "write") return null;
-    const pendingMatch = INITIAL_PENDING_REVIEWS.find(
-      (p) => p.bookingId.toLowerCase() === paramBookingId.toLowerCase()
-    );
-    if (pendingMatch) return pendingMatch;
-    const booking = getBookingById(paramBookingId);
-    if (booking) {
-      return {
-        id: `PENDING-${booking.id}`,
-        bookingId: booking.id,
-        businessId: 1,
-        businessName: booking.location,
-        businessAddress: booking.location,
-        businessAvatar:
-          "https://lh3.googleusercontent.com/aida-public/AB6AXuC3-_PP7VWj5tqP7kr55IKE7l-9zTzySPvB0bUIsr9lhb-O0mNTbo04WCOH4eqolILlmIbZy2Z27u4hNCBzi6pyYP1K20skb1-aRCVCsKU8DT5ooCqg3mBwQ0Bx1OmOENFoEKR-DHzJJ9bMWkV89NfSzPJ3IpUweDQjq7ZWYNy3OHSU7Q-tYzeXzdD46WHgj6bXbbQc2KfQNjL-3yDg3VoOEmrypJkaroaWE4Jqjdxw2Y9jm4fU71gt",
-        petName: booking.petName,
-        petBreed: booking.breed,
-        petGender: booking.gender,
-        petImg: booking.img,
-        serviceName: booking.service,
-        serviceDesc: booking.serviceDesc,
-        serviceDate: booking.date,
-        servicePrice: booking.price,
-        completedDate: booking.date,
-        rewardPoints: 50,
-        voucherPromo: "Tặng voucher giảm 10% cho lần đặt tiếp theo",
-        deadlineDays: 30
-      };
-    }
-    return null;
-  });
-
-  const [reviewModalOpen, setReviewModalOpen] = useState(() => {
-    return Boolean(paramBookingId && paramAction === "write");
-  });
+  const [modalTargetItem, setModalTargetItem] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -107,6 +70,34 @@ const MyReviews = () => {
     }, 4500);
   };
 
+  const { user, isAuthLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [likingId, setLikingId] = useState(null);
+  const liking = useRef(new Set());
+  const handledRequest = useRef(null);
+  useEffect(() => {
+    if (isAuthLoading || !user || user.role !== 'CUSTOMER') return;
+    let cancelled = false;
+    Promise.all([reviewApi.list(), reviewApi.pending()]).then(([reviewRes, pendingRes]) => {
+      if (cancelled) return;
+      const list = reviewRes.data.map(reviewData);
+      const pending = pendingRes.data.map(pendingReviewData);
+      setReviews(list); setPendingReviews(pending);
+      if (paramBookingId && paramAction === 'write' && handledRequest.current !== paramBookingId) {
+        handledRequest.current = paramBookingId;
+        const target = pending.find((item) => item.bookingRecordId === paramBookingId || item.bookingId === paramBookingId);
+        if (target) { setModalTargetItem(target); setIsEditMode(false); setReviewModalOpen(true); setActiveTab('pending'); }
+        else setToast({ message: 'Lịch đặt này chưa hoàn thành hoặc đã được đánh giá.', type: 'error' });
+      }
+    }).catch((error) => { if (!cancelled) setLoadError(error.message || 'Không thể tải đánh giá.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [user, isAuthLoading, refreshKey, paramBookingId, paramAction]);
+  const reload = () => { setLoading(true); setLoadError(''); setRefreshKey((value) => value + 1); };
+
   // Scroll to top on first mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -118,7 +109,7 @@ const MyReviews = () => {
     const avgScore =
       totalReviews > 0
         ? (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
-        : "5.0";
+        : "—";
     const pendingCount = pendingReviews.length;
     const repliedCount = reviews.filter((r) => Boolean(r.businessReply)).length;
 
@@ -236,21 +227,16 @@ const MyReviews = () => {
     }
   };
 
-  // Like Toggle
-  const handleLikeToggle = (reviewId) => {
-    setReviews((prev) =>
-      prev.map((r) => {
-        if (r.id === reviewId) {
-          const newLiked = !r.isLiked;
-          return {
-            ...r,
-            isLiked: newLiked,
-            likesCount: newLiked ? r.likesCount + 1 : Math.max(0, r.likesCount - 1)
-          };
-        }
-        return r;
-      })
-    );
+  // Persist the existing helpful action; retries set a desired value instead of toggling twice.
+  const handleLikeToggle = async (reviewId) => {
+    if (liking.current.has(reviewId)) return;
+    const review = reviews.find((item) => item.id === reviewId);
+    liking.current.add(reviewId); setLikingId(reviewId);
+    try {
+      const response = await reviewApi.helpful(reviewId, !review.isLiked);
+      setReviews((current) => current.map((item) => item.id === reviewId ? { ...item, ...response.data, id: reviewId } : item));
+    } catch (error) { showToast(error.message || 'Không thể lưu trạng thái hữu ích.', 'error'); }
+    finally { liking.current.delete(reviewId); setLikingId(null); }
   };
 
   // Open Lightbox
@@ -274,69 +260,13 @@ const MyReviews = () => {
     setReviewModalOpen(true);
   };
 
-  // Submit Review (Create or Edit)
-  const handleSubmitReview = (payload, isEdit) => {
-    if (isEdit) {
-      setReviews((prev) =>
-        prev.map((r) => (r.id === payload.id ? { ...r, ...payload } : r))
-      );
-      showToast("Cập nhật đánh giá thành công!");
-    } else {
-      // Create new review
-      const newReview = {
-        id: `REV-${Date.now()}`,
-        bookingId: payload.bookingId,
-        businessId: payload.businessId || 1,
-        businessName: payload.businessName,
-        businessAddress: payload.businessAddress,
-        businessAvatar: payload.businessAvatar,
-        petName: payload.petName,
-        petBreed: payload.petBreed,
-        petGender: payload.petGender || "♂",
-        petImg: payload.petImg,
-        serviceName: payload.serviceName,
-        serviceDate: payload.serviceDate || new Date().toLocaleDateString("vi-VN"),
-        servicePrice: payload.servicePrice || "300.000đ",
-        rating: payload.rating,
-        ratingLabel: payload.ratingLabel,
-        subRatings: payload.subRatings,
-        tags: payload.tags,
-        comment: payload.comment,
-        images: payload.images,
-        createdAt:
-          new Date().toLocaleDateString("vi-VN") +
-          " " +
-          new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-        updatedAt: null,
-        likesCount: 1,
-        isLiked: true,
-        isAnonymous: payload.isAnonymous,
-        businessReply: {
-          id: `REP-${Date.now()}`,
-          staffName: `Quản lý ${payload.businessName}`,
-          staffRole: "Chăm sóc khách hàng",
-          repliedAt: "Vừa xong",
-          content: `Cảm ơn bạn và bé ${payload.petName} đã tin tưởng dịch vụ! Chúc bạn và bé luôn ngập tràn niềm vui!`
-        }
-      };
-
-      setReviews((prev) => [newReview, ...prev]);
-      // Remove from pending
-      setPendingReviews((prev) =>
-        prev.filter((p) => p.bookingId !== payload.bookingId)
-      );
-
-      // Switch to reviewed tab to let user see their newly posted review
-      setActiveTab("reviewed");
-      setCurrentPage(1);
-
-      showToast(
-        `Đăng đánh giá thành công! Bạn nhận được +50 điểm thưởng PetPoint và voucher giảm 10%!`,
-        "reward"
-      );
-    }
-
-    setReviewModalOpen(false);
+  const handleSubmitReview = async (payload, isEdit) => {
+    const data = reviewPayload(payload, !isEdit);
+    if (isEdit) await reviewApi.update(payload.id, data);
+    else await reviewApi.create(data);
+    setReviewModalOpen(false); setActiveTab('reviewed'); setCurrentPage(1);
+    showToast(isEdit ? 'Cập nhật đánh giá thành công!' : 'Đăng đánh giá thành công!');
+    reload();
   };
 
   // Delete Review
@@ -345,14 +275,18 @@ const MyReviews = () => {
     setDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteTargetItem) {
-      setReviews((prev) => prev.filter((r) => r.id !== deleteTargetItem.id));
-      showToast("Đã xóa đánh giá thành công.", "info");
-      setDeleteModalOpen(false);
-      setDeleteTargetItem(null);
-    }
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetItem || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await reviewApi.remove(deleteTargetItem.id);
+      setDeleteModalOpen(false); setDeleteTargetItem(null); setCurrentPage(1);
+      showToast('Đã xóa đánh giá.', 'info'); reload();
+    } catch (error) { showToast(error.message || 'Không thể xóa đánh giá.', 'error'); }
+    finally { setIsDeleting(false); }
   };
+  if (!isAuthLoading && !user) return <Navigate to="/login" replace />;
+  if (user && user.role !== 'CUSTOMER') return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 antialiased pb-16">
@@ -361,7 +295,7 @@ const MyReviews = () => {
         <div className="fixed top-24 right-5 z-50 animate-in slide-in-from-top-4 duration-300">
           <div
             className={`px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3 text-xs sm:text-sm font-semibold ${
-              toast.type === "reward"
+              toast.type === "error" ? "bg-red-50 border-red-200 text-red-800" : toast.type === "reward"
                 ? "bg-amber-50 border-amber-200 text-amber-900"
                 : toast.type === "info"
                 ? "bg-slate-800 border-slate-700 text-white"
@@ -379,7 +313,7 @@ const MyReviews = () => {
       )}
 
       {/* 1. Hero Section */}
-      <ReviewsHero stats={stats} />
+      <ReviewsHero stats={loading ? { totalReviews: "—", averageRating: "—", pendingCount: "—", repliedCount: "—" } : stats} />
 
       {/* 2. Main Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -423,12 +357,13 @@ const MyReviews = () => {
 
         {/* 3. Cards List */}
         <div id="reviews-list-container" className="space-y-4">
-          {paginatedList.length > 0 ? (
+          {!loading && !loadError && paginatedList.length > 0 ? (
             activeTab === "reviewed" ? (
               paginatedList.map((review) => (
                 <ReviewItemCard
                   key={review.id}
                   review={review}
+                  helpfulBusy={likingId === review.id}
                   onLikeToggle={handleLikeToggle}
                   onEdit={handleOpenEditReview}
                   onDelete={handleOpenDeleteReview}
@@ -446,33 +381,33 @@ const MyReviews = () => {
             )
           ) : (
             /* Empty State */
-            <div className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-xs text-center space-y-3">
+            <div role={loadError ? "alert" : loading ? "status" : undefined} className="bg-white rounded-3xl p-12 border border-slate-200/80 shadow-xs text-center space-y-3">
               <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 mx-auto flex items-center justify-center">
                 <MessageSquareQuote size={32} />
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                {activeTab === "reviewed"
+                {loading ? "Đang tải đánh giá..." : loadError || (activeTab === "reviewed"
                   ? isFiltered
                     ? "Không tìm thấy đánh giá nào phù hợp"
                     : "Bạn chưa có đánh giá nào"
-                  : "Không có dịch vụ nào đang chờ đánh giá"}
+                  : "Không có dịch vụ nào đang chờ đánh giá")}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                {activeTab === "reviewed"
+                {loading ? "Vui lòng chờ trong giây lát." : loadError ? "Vui lòng thử tải lại danh sách." : activeTab === "reviewed"
                   ? isFiltered
                     ? "Thử thay đổi từ khóa tìm kiếm hoặc bấm đặt lại các bộ lọc bên trên."
-                    : "Sau khi sử dụng dịch vụ spa, grooming hoặc thú y, bạn có thể gửi đánh giá để nhận xu thưởng và giúp đỡ cộng đồng."
+                    : "Sau khi sử dụng dịch vụ spa, grooming hoặc thú y, bạn có thể gửi đánh giá và chia sẻ trải nghiệm với cộng đồng."
                   : "Tất cả các dịch vụ đã hoàn thành của bạn đều đã được đánh giá đầy đủ. Cảm ơn bạn!"}
               </p>
 
-              {isFiltered && activeTab === "reviewed" && (
+              {(loadError || (isFiltered && activeTab === "reviewed")) && (
                 <button
                   type="button"
-                  onClick={handleResetFilters}
+                  onClick={loadError ? reload : handleResetFilters}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   <RotateCcw size={14} />
-                  <span>Xem tất cả đánh giá</span>
+                  <span>{loadError ? "Thử lại" : "Xem tất cả đánh giá"}</span>
                 </button>
               )}
 
@@ -490,7 +425,7 @@ const MyReviews = () => {
         </div>
 
         {/* 4. Pagination */}
-        {activeList.length > 0 && totalPages > 1 && (
+        {!loading && !loadError && activeList.length > 0 && totalPages > 1 && (
           <div className="space-y-3 pt-4">
             <div className="flex items-center justify-between text-xs text-slate-500 px-1">
               <span>
@@ -556,6 +491,7 @@ const MyReviews = () => {
 
       {/* 5. Modals */}
       <ReviewModal
+        key={`${modalTargetItem?.id}:${isEditMode}:${reviewModalOpen}`}
         isOpen={reviewModalOpen}
         onClose={() => setReviewModalOpen(false)}
         targetItem={modalTargetItem}
@@ -568,6 +504,7 @@ const MyReviews = () => {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         reviewItem={deleteTargetItem}
+        busy={isDeleting}
       />
 
       <ImageLightboxModal

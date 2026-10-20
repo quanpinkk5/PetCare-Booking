@@ -1,16 +1,12 @@
-import React from "react";
+
 import { Link } from "react-router-dom";
 import {
-  Calendar,
   Clock,
   MapPin,
   Star,
   Eye,
-  Gift,
   Coins,
   ShieldCheck,
-  ChevronRight,
-  Sparkles
 } from "lucide-react";
 
 const PendingReviewCard = ({ pendingItem, onWriteReview }) => {
@@ -45,7 +41,7 @@ const PendingReviewCard = ({ pendingItem, onWriteReview }) => {
           </span>
 
           <Link
-            to={`/my-bookings/${pendingItem.bookingId}`}
+            to={`/my-bookings/${pendingItem.bookingRecordId || pendingItem.bookingId}`}
             className="text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-full transition-colors"
           >
             Mã: {pendingItem.bookingId}
@@ -94,13 +90,13 @@ const PendingReviewCard = ({ pendingItem, onWriteReview }) => {
         <div className="md:col-span-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl p-3 text-xs space-y-1.5">
           <div className="flex items-center gap-1.5 text-amber-800 font-bold">
             <Coins size={15} className="text-amber-500 fill-amber-400" />
-            <span>Phần thưởng đánh giá:</span>
+            <span>Chia sẻ trải nghiệm:</span>
           </div>
           <p className="text-[11px] text-amber-900 leading-snug">
-            +{pendingItem.rewardPoints || 50} PetPoint tích lũy & {pendingItem.voucherPromo || "Voucher giảm 10%"}
+            Đánh giá của bạn giúp khách hàng lựa chọn dịch vụ phù hợp.
           </p>
           <div className="text-[10px] text-amber-700/80 font-medium pt-0.5">
-            ⏳ Còn {pendingItem.deadlineDays || 30} ngày để nhận thưởng
+            Chỉ áp dụng cho lịch đặt đã hoàn thành.
           </div>
         </div>
       </div>

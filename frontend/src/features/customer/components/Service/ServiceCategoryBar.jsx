@@ -1,70 +1,88 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import {
+  PawPrint,
+  Bath,
+  Scissors,
+  Sparkles,
+  Home,
+  HeartHandshake,
+  HeartPulse,
+  LayoutGrid
+} from 'lucide-react';
 
-const CATEGORIES = [
-  {
-    id: 1,
-    icon: "🛁",
-    label: "Tắm & vệ sinh",
-    bg: "bg-sky-50",
-  },
-  {
-    id: 2,
-    icon: "✂️",
-    label: "Grooming",
-    bg: "bg-amber-50",
-  },
-  {
-    id: 3,
-    icon: "💆",
-    label: "Spa thư giãn",
-    bg: "bg-rose-50",
-  },
-  {
-    id: 4,
-    icon: "🏠",
-    label: "Lưu trú qua đêm",
-    bg: "bg-emerald-50",
-  },
-  {
-    id: 5,
-    icon: "🐾",
-    label: "Trông thú cưng",
-    bg: "bg-indigo-50",
-  },
-  {
-    id: 6,
-    icon: "💅",
-    label: "Cắt móng & vệ sinh",
-    bg: "bg-purple-50",
-  },
-];
+const getCategoryIcon = (category) => {
+  if (!category) return LayoutGrid;
+  const key = `${category.name || ''} ${category.code || ''}`.toLowerCase();
+  if (key.includes('tắm') || key.includes('vệ sinh') || key.includes('bath')) return Bath;
+  if (key.includes('groom') || key.includes('cắt') || key.includes('tỉa')) return Scissors;
+  if (key.includes('spa') || key.includes('massage') || key.includes('thư giãn')) return Sparkles;
+  if (key.includes('lưu trú') || key.includes('khách sạn') || key.includes('hotel') || key.includes('stay')) return Home;
+  if (key.includes('trông') || key.includes('sitting')) return HeartHandshake;
+  if (key.includes('y tế') || key.includes('sức khỏe') || key.includes('care')) return HeartPulse;
+  return PawPrint;
+};
 
-const ServiceCategoryBar = () => {
+const ServiceCategoryBar = ({ categories = [], selectedId = '', onChange }) => {
   return (
-    <section className="space-y-4">
-      <h2 className="text-base font-bold text-slate-800">
-        Danh mục dịch vụ nổi bật
-      </h2>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {CATEGORIES.map((category) => (
-          <Link
-            key={category.id}
-            to="/services"
-            className="bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all group"
+    <section className="space-y-3" aria-label="Danh mục dịch vụ">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 text-xs">
+            🐾
+          </span>
+          Khám phá theo danh mục
+        </h2>
+        {selectedId && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
           >
-            <div
-              className={`w-14 h-14 rounded-full ${category.bg} flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform`}
-            >
-              {category.icon}
-            </div>
+            Xem tất cả
+          </button>
+        )}
+      </div>
 
-            <span className="text-xs font-semibold text-slate-700 group-hover:text-emerald-600">
-              {category.label}
-            </span>
-          </Link>
-        ))}
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        {/* All Categories Button */}
+        <button
+          type="button"
+          aria-pressed={!selectedId}
+          onClick={() => onChange('')}
+          className={`group flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
+            !selectedId
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-600 ring-offset-2'
+              : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 shadow-2xs'
+          }`}
+        >
+          <LayoutGrid size={16} className={!selectedId ? 'text-emerald-100' : 'text-slate-400 group-hover:text-emerald-600'} />
+          <span>Tất cả dịch vụ</span>
+        </button>
+
+        {/* Dynamic Category Buttons */}
+        {categories.map((category) => {
+          const Icon = getCategoryIcon(category);
+          const isSelected = selectedId === category._id;
+
+          return (
+            <button
+              type="button"
+              key={category._id}
+              aria-pressed={isSelected}
+              onClick={() => onChange(category._id)}
+              className={`group flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-600 ring-offset-2'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700 shadow-2xs'
+              }`}
+            >
+              <Icon
+                size={16}
+                className={isSelected ? 'text-emerald-100' : 'text-emerald-600 group-hover:scale-110 transition-transform'}
+              />
+              <span>{category.name}</span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

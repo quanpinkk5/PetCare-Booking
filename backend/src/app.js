@@ -24,6 +24,28 @@ const schedulesRoutes = require("./routes/businessOwner/schedulesRoutes");
 
 // Schedule Exceptions
 const scheduleExceptionsRoutes = require("./routes/businessOwner/scheduleExceptionsRoutes");
+
+//Customer
+const customerBusinessesRoutes = require(
+  "./routes/customer/businessesRoutes"
+);
+const customerBranchesRoutes = require(
+  "./routes/customer/branchesRoutes"
+);
+const customerBranchServicesRoutes = require(
+  "./routes/customer/branchServicesRoutes"
+);
+const customerServicesRoutes = require('./routes/customer/servicesRoutes');
+const customerAvailableSlotsRoutes = require(
+  "./routes/customer/availableSlotsRoutes"
+);
+// Booking
+const customerBookingRoutes = require(
+  "./routes/customer/bookingRoutes"
+);
+// Review
+const customerReviewRoutes = require("./routes/customer/reviewRoutes");
+const publicReviewRoutes = require("./routes/public/reviewRoutes");
 const app = express();
 
 // Cho phép frontend React gọi API và gửi cookie
@@ -35,7 +57,7 @@ app.use(
 );
 
 // Đọc request body dạng JSON
-app.use(express.json());
+app.use(express.json({ limit: "512kb" }));
 
 // API kiểm tra backend
 app.get("/api/health", (req, res) => {
@@ -73,3 +95,18 @@ app.use("/api/businessOwner", schedulesRoutes);
 
 // Schedule Exceptions API
 app.use("/api/businessOwner", scheduleExceptionsRoutes);
+
+// Phân dành cho customer- Public API
+  // Businesses API
+  app.use("/api/customer", customerBusinessesRoutes);
+  // Branches API
+  app.use("/api/customer", customerBranchesRoutes);
+  // branch services API
+  app.use("/api/customer", customerBranchServicesRoutes);
+  app.use('/api/customer', customerServicesRoutes);
+  app.use("/api/customer", customerAvailableSlotsRoutes);
+// API - Booking
+app.use("/api/customer", customerBookingRoutes);
+// API - Review
+app.use("/api/customer", customerReviewRoutes);
+app.use("/api", publicReviewRoutes);

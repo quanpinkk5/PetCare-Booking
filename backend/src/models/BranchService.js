@@ -10,6 +10,8 @@ const branchServiceSchema = new mongoose.Schema(
     capacity: Number,
     petTypes: { type: [{ type: String, enum: ["DOG", "CAT"] }], default: undefined },
     status: { type: String, enum: ["ACTIVE", "INACTIVE"] },
+    // Serialize capacity checks for concurrent bookings in a transaction.
+    bookingRevision: { type: Number, default: 0, select: false },
   },
   { timestamps: true, collection: "branchServices", versionKey: false },
 );

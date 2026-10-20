@@ -9,9 +9,19 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-  Plus,
-  Trash2
 } from 'lucide-react';
+
+const getFormData = (user) => ({
+  name: user?.fullName || user?.name || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  gender: user?.gender || '',
+  birthday: user?.birthday || '',
+  address: typeof user?.address === 'string'
+    ? { province: '', district: '', ward: '', detail: user.address }
+    : { province: '', district: '', ward: '', detail: '', ...user?.address },
+  bio: user?.bio || ''
+});
 
 const ProfileForms = ({
   user,
@@ -19,16 +29,17 @@ const ProfileForms = ({
   setActiveTab = () => {},
   onSaveUser = () => {}
 }) => {
-  // Personal Info Form State
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    gender: user?.gender || 'Nam',
-    birthday: user?.birthday || '1998-05-15',
-    address: user?.address || '',
-    bio: user?.bio || ''
-  });
+  const [formData, setFormData] = useState(() => getFormData(user));
+  const [addressData, setAddressData] = useState(() => getFormData(user).address);
+  const [savedUser, setSavedUser] = useState(user);
+  if (savedUser !== user) {
+    setSavedUser(user);
+    // Avatar updates must not erase an unfinished form.
+    if (JSON.stringify(getFormData(savedUser)) !== JSON.stringify(getFormData(user))) {
+      setFormData(getFormData(user));
+      setAddressData(getFormData(user).address);
+    }
+  }
 
   // Password Form State
   const [passwordData, setPasswordData] = useState({
@@ -42,22 +53,6 @@ const ProfileForms = ({
     confirm: false
   });
 
-  // Saved Addresses State
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: 'Nhà riêng',
-      detail: 'Số 123 Đường Cầu Giấy, Phường Quan Hoa, Quận Cầu Giấy, Hà Nội',
-      isDefault: true
-    },
-    {
-      id: 2,
-      type: 'Cơ quan',
-      detail: 'Tòa nhà FPT, Phố Duy Tân, Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội',
-      isDefault: false
-    }
-  ]);
-
   // Notifications State
   const [notifications, setNotifications] = useState({
     emailBooking: true,
@@ -67,6 +62,7 @@ const ProfileForms = ({
   });
 
   const [toastMessage, setToastMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const showToast = (msg) => {
@@ -81,14 +77,33 @@ const ProfileForms = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const saveProfile = async (payload, message) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setToastMessage('');
+    setErrorMessage('');
+    try {
+      const result = await onSaveUser(payload);
+      if (!result?.success) throw new Error(result?.error || 'Không thể lưu thông tin.');
+      showToast(message);
+    } catch (error) {
+      setErrorMessage(error.message || 'Không thể lưu thông tin. Vui lòng thử lại.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleInfoSubmit = (e) => {
     e.preventDefault();
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      onSaveUser(formData);
-      showToast('Cập nhật thông tin cá nhân thành công!');
-    }, 600);
+    if (!formData.name.trim()) {
+      setErrorMessage('Họ tên không được để trống.');
+      return;
+    }
+    return saveProfile({
+      fullName: formData.name.trim(), phone: formData.phone.trim(),
+      gender: formData.gender, birthday: formData.birthday,
+      bio: formData.bio, address: formData.address
+    }, 'Cập nhật thông tin cá nhân thành công!');
   };
 
   const handlePasswordSubmit = (e) => {
@@ -101,16 +116,11 @@ const ProfileForms = ({
       alert('Mật khẩu xác nhận không khớp!');
       return;
     }
-    if (passwordData.newPassword.length < 6) {
-      alert('Mật khẩu mới phải có tối thiểu 6 ký tự!');
+    if (passwordData.newPassword.length < 8) {
+      alert('Mật khẩu mới phải có tối thiểu 8 ký tự!');
       return;
     }
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      showToast('Đổi mật khẩu thành công!');
-    }, 600);
+    setErrorMessage('Chức năng đổi mật khẩu chưa được hỗ trợ. Vui lòng dùng Quên mật khẩu tại trang đăng nhập.');
   };
 
   const tabs = [
@@ -146,11 +156,16 @@ const ProfileForms = ({
         })}
       </div>
 
+      {errorMessage && (
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-xs">
+          {errorMessage}
+        </div>
+      )}
       {/* Success Toast Alert */}
       {toastMessage && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-top-1">
           <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-          <span className="font-medium">{toastMessage}</span>
+          <span role="status" className="font-medium">{toastMessage}</span>
         </div>
       )}
 
@@ -167,6 +182,7 @@ const ProfileForms = ({
           </div>
 
           <form onSubmit={handleInfoSubmit} className="space-y-4">
+            <fieldset disabled={isSaving} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -208,6 +224,8 @@ const ProfileForms = ({
                   type="email"
                   name="email"
                   value={formData.email}
+                  readOnly
+                  title="Email đăng nhập không thể thay đổi tại đây"
                   onChange={handleInfoChange}
                   required
                   placeholder="example@gmail.com"
@@ -234,7 +252,7 @@ const ProfileForms = ({
                 Giới tính
               </label>
               <div className="flex items-center gap-6 text-xs text-slate-700">
-                {['Nam', 'Nữ', 'Khác'].map((g) => (
+                {['', 'Nam', 'Nữ', 'Khác'].map((g) => (
                   <label key={g} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -244,24 +262,21 @@ const ProfileForms = ({
                       onChange={handleInfoChange}
                       className="text-emerald-500 focus:ring-emerald-400"
                     />
-                    <span>{g}</span>
+                    <span>{g || 'Chưa cập nhật'}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Địa chỉ liên hệ
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInfoChange}
-                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.entries({ province: 'Tỉnh / Thành phố', district: 'Quận / Huyện', ward: 'Phường / Xã', detail: 'Số nhà, tên đường' }).map(([field, label]) => (
+                <label key={field} className="block text-xs font-semibold text-slate-700">
+                  {label}
+                  <input type="text" value={formData.address[field]}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, address: { ...prev.address, [field]: e.target.value } }))}
+                    className="mt-1 w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500" />
+                </label>
+              ))}
             </div>
 
             <div>
@@ -271,6 +286,7 @@ const ProfileForms = ({
               <textarea
                 name="bio"
                 rows={3}
+                maxLength={1000}
                 value={formData.bio}
                 onChange={handleInfoChange}
                 placeholder="Ví dụ: Tôi thường bận vào các buổi sáng trong tuần, ưu tiên đặt lịch vào cuối tuần..."
@@ -281,15 +297,7 @@ const ProfileForms = ({
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setFormData({
-                  name: user?.name || '',
-                  email: user?.email || '',
-                  phone: user?.phone || '',
-                  gender: user?.gender || 'Nam',
-                  birthday: user?.birthday || '1998-05-15',
-                  address: user?.address || '',
-                  bio: user?.bio || ''
-                })}
+                onClick={() => setFormData(getFormData(user))}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <RotateCcw size={13} />
@@ -305,6 +313,7 @@ const ProfileForms = ({
                 <span>{isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
               </button>
             </div>
+          </fieldset>
           </form>
         </div>
       )}
@@ -319,6 +328,7 @@ const ProfileForms = ({
             <p className="text-xs text-slate-400 mt-0.5">
               Đảm bảo tài khoản an toàn bằng mật khẩu có độ bảo mật cao
             </p>
+            <p className="text-xs text-amber-700 mt-2">Chức năng này chưa được hỗ trợ. Bạn có thể dùng Quên mật khẩu tại trang đăng nhập.</p>
           </div>
 
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -393,7 +403,7 @@ const ProfileForms = ({
 
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 space-y-1">
               <p className="font-semibold text-slate-700">Mẹo tạo mật khẩu an toàn:</p>
-              <p>• Dài ít nhất 6-8 ký tự</p>
+              <p>• Dài ít nhất 8 ký tự</p>
               <p>• Kết hợp chữ cái in hoa, chữ thường và chữ số</p>
             </div>
 
@@ -411,95 +421,28 @@ const ProfileForms = ({
         </div>
       )}
 
-      {/* Tab 3: Saved Addresses */}
       {activeTab === 'address' && (
         <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800">
-                Sổ địa chỉ của bạn
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Quản lý các địa chỉ đưa đón thú cưng thuận tiện
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                const newDetail = prompt('Nhập địa chỉ mới của bạn:');
-                if (newDetail) {
-                  setAddresses((prev) => [
-                    ...prev,
-                    { id: Date.now(), type: 'Địa chỉ phụ', detail: newDetail, isDefault: false }
-                  ]);
-                  showToast('Đã thêm địa chỉ mới!');
-                }
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
-            >
-              <Plus size={13} />
-              <span>Thêm mới</span>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {addresses.map((addr) => (
-              <div
-                key={addr.id}
-                className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors flex items-start justify-between gap-3"
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin size={15} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-800">{addr.type}</span>
-                      {addr.isDefault && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                          Mặc định
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-snug">
-                      {addr.detail}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {!addr.isDefault && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddresses((prev) =>
-                          prev.map((a) => ({ ...a, isDefault: a.id === addr.id }))
-                        );
-                        showToast('Đã đặt làm địa chỉ mặc định!');
-                      }}
-                      className="text-[11px] text-slate-400 hover:text-emerald-600 font-medium px-2 py-1 rounded hover:bg-white"
-                    >
-                      Đặt mặc định
-                    </button>
-                  )}
-                  {addresses.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddresses((prev) => prev.filter((a) => a.id !== addr.id));
-                        showToast('Đã xóa địa chỉ!');
-                      }}
-                      className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-white"
-                      title="Xóa"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
+          <h3 className="text-sm font-bold text-slate-800 mb-2">Địa chỉ liên hệ</h3>
+          <p className="text-xs text-slate-400 mb-5">Địa chỉ dùng cho hồ sơ và liên hệ của bạn.</p>
+          <form onSubmit={(e) => { e.preventDefault(); saveProfile({ address: addressData }, 'Đã lưu địa chỉ!'); }}>
+            <fieldset disabled={isSaving} className="space-y-4">
+              {Object.entries({ province: 'Tỉnh / Thành phố', district: 'Quận / Huyện', ward: 'Phường / Xã', detail: 'Số nhà, tên đường' }).map(([field, label]) => (
+                <label key={field} className="block text-xs font-semibold text-slate-700">
+                  {label}
+                  <input type="text" value={addressData[field]}
+                    onChange={(e) => setAddressData((prev) => ({ ...prev, [field]: e.target.value }))}
+                    className="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500" />
+                </label>
+              ))}
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setAddressData(getFormData(user).address)} className="text-xs px-4 py-2">Hoàn tác</button>
+                <button type="submit" className="text-xs bg-emerald-500 text-white rounded-xl px-5 py-2.5 disabled:opacity-50">
+                  {isSaving ? 'Đang lưu...' : 'Lưu địa chỉ'}
+                </button>
               </div>
-            ))}
-          </div>
+            </fieldset>
+          </form>
         </div>
       )}
 
@@ -513,6 +456,7 @@ const ProfileForms = ({
             <p className="text-xs text-slate-400 mt-0.5">
               Chọn các hình thức nhận thông báo về dịch vụ và thú cưng
             </p>
+            <p className="text-xs text-amber-700 mt-2">Chức năng lưu cài đặt thông báo đang được phát triển.</p>
           </div>
 
           <div className="space-y-4">
@@ -579,7 +523,7 @@ const ProfileForms = ({
             <div className="pt-3 border-t border-slate-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => showToast('Đã lưu cấu hình thông báo!')}
+                onClick={() => setErrorMessage('Cài đặt thông báo chưa được hỗ trợ lưu.')}
                 className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
               >
                 <Save size={13} />
