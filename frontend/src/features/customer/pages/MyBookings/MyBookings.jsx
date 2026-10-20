@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, Navigate } from "react-router-dom";
 
 import {
     PawPrint,
@@ -8,10 +8,7 @@ import {
     Clock,
     CheckCircle2,
     Scissors,
-    Bath,
     Home,
-    Eye,
-    Star,
     RotateCcw,
     ChevronLeft,
     ChevronRight,
@@ -21,7 +18,9 @@ import BookingStats from "../../components/MyBookings/BookingStats";
 import BookingFilterBar from "../../components/MyBookings/BookingFilterBar";
 import BookingCard from "../../components/MyBookings/BookingCard";
 // import BookingSidebar from "../../components/MyBookings/BookingSidebar";
-import { BOOKINGS } from "../../services/mockBookings";
+import { bookingApi } from "../../services/bookingApi.js";
+import { bookingCardData, apiBookingStatus } from "../../services/bookingData.js";
+import { useAuth } from "../../../../context/AuthContext";
 
 
 // =========================
@@ -202,76 +201,48 @@ const MyBookings = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 4;
 
-    // Filter bookings based on tab, status, time, and search
-    const filteredBookings = useMemo(() => {
-        return BOOKINGS.filter((booking) => {
-            // Tab filter
-            if (activeTab !== "all" && booking.statusType !== activeTab) {
-                return false;
-            }
-
-            // Status dropdown filter
-            if (statusFilter !== "all" && booking.statusType !== statusFilter) {
-                return false;
-            }
-
-            // Time filter
-            if (timeFilter === "today" && booking.timeCategory !== "today") {
-                return false;
-            }
-            if (
-                timeFilter === "week" &&
-                booking.timeCategory !== "today" &&
-                booking.timeCategory !== "week"
-            ) {
-                return false;
-            }
-            if (timeFilter === "month" && booking.timeCategory === "older") {
-                return false;
-            }
-
-            // Search query
-            if (searchQuery.trim()) {
-                const q = searchQuery.toLowerCase().trim();
-                const matchId = booking.id.toLowerCase().includes(q);
-                const matchPet = booking.petName.toLowerCase().includes(q);
-                const matchLocation = booking.location.toLowerCase().includes(q);
-                const matchService = booking.service.toLowerCase().includes(q);
-                const matchBreed = booking.breed.toLowerCase().includes(q);
-                return matchId || matchPet || matchLocation || matchService || matchBreed;
-            }
-
-            return true;
-        });
-    }, [activeTab, statusFilter, timeFilter, searchQuery]);
-
-    // Total pages
-    const totalPages = Math.max(1, Math.ceil(filteredBookings.length / itemsPerPage));
-
-    // Sliced bookings for current page
+    const { user, isAuthLoading } = useAuth();
+    const [result, setResult] = useState({ data: [], total: 0, totalPages: 0, summary: null });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [attempt, setAttempt] = useState(0);
+    useEffect(() => {
+        if (isAuthLoading || !user || user.role !== 'CUSTOMER') return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            bookingApi.list({ status: apiBookingStatus(statusFilter), search: searchQuery.trim(), time: timeFilter, page: currentPage, limit: itemsPerPage })
+                .then((response) => { if (!cancelled) setResult(response); })
+                .catch((err) => { if (!cancelled) setError(err.message || 'Không thể tải lịch đặt.'); })
+                .finally(() => { if (!cancelled) setLoading(false); });
+        }, 250);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [user, isAuthLoading, statusFilter, searchQuery, timeFilter, currentPage, attempt]);
+    const paginatedBookings = useMemo(() => result.data.map((item) => ({ ...bookingCardData(item), serviceIcon: item.bookingType === 'BOARDING' ? Home : Scissors, timeIcon: Clock })), [result.data]);
+    const totalPages = Math.max(1, result.totalPages);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedBookings = filteredBookings.slice(
-        startIndex,
-        startIndex + itemsPerPage
-    );
+    const beginLoad = () => { setLoading(true); setError(''); setAttempt((value) => value + 1); };
 
     const handleTabChange = (tabId) => {
+        beginLoad();
         setActiveTab(tabId);
         setStatusFilter(tabId);
         setCurrentPage(1);
     };
 
     const handleSearchChange = (val) => {
+        beginLoad();
         setSearchQuery(val);
         setCurrentPage(1);
     };
 
     const handleTimeChange = (val) => {
+        beginLoad();
         setTimeFilter(val);
         setCurrentPage(1);
     };
 
     const handleStatusChange = (val) => {
+        beginLoad();
         setStatusFilter(val);
         setActiveTab(val);
         setCurrentPage(1);
@@ -279,6 +250,7 @@ const MyBookings = () => {
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+            beginLoad();
             setCurrentPage(newPage);
             const element = document.getElementById("booking-list-container");
             if (element) {
@@ -300,34 +272,11 @@ const MyBookings = () => {
         return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages];
     };
 
-    // Compute tabs with dynamic counts
-    const dynamicTabs = useMemo(() => {
-        return TABS.map((tab) => {
-            if (tab.id === "all") {
-                return { ...tab, count: BOOKINGS.length };
-            }
-            return {
-                ...tab,
-                count: BOOKINGS.filter((b) => b.statusType === tab.id).length,
-            };
-        });
-    }, []);
-
-    // Compute stats with dynamic counts
-    const dynamicStats = useMemo(() => {
-        const pendingCount = BOOKINGS.filter((b) => b.statusType === "pending").length;
-        const upcomingCount = BOOKINGS.filter(
-            (b) => b.statusType === "confirmed" || b.statusType === "in-progress"
-        ).length;
-        const completedCount = BOOKINGS.filter((b) => b.statusType === "completed").length;
-
-        return [
-            { ...STATS[0], value: BOOKINGS.length },
-            { ...STATS[1], value: pendingCount },
-            { ...STATS[2], value: upcomingCount },
-            { ...STATS[3], value: completedCount },
-        ];
-    }, []);
+    const dynamicTabs = TABS.map((tab) => ({ ...tab, count: result.summary ? tab.id === 'all' ? result.summary.total : result.summary.statusCounts[apiBookingStatus(tab.id)] || 0 : null }));
+    const values = result.summary ? [result.summary.total, result.summary.statusCounts.PENDING, result.summary.upcoming, result.summary.statusCounts.COMPLETED] : ['—', '—', '—', '—'];
+    const dynamicStats = STATS.map((stat, index) => ({ ...stat, value: values[index] }));
+    if (!isAuthLoading && !user) return <Navigate to="/login" replace />;
+    if (user && user.role !== 'CUSTOMER') return <Navigate to="/" replace />;
 
     return (
         <div>
@@ -348,23 +297,25 @@ const MyBookings = () => {
                     />
 
                     <div id="booking-list-container" className="space-y-4">
-                        {paginatedBookings.length > 0 ? (
+                        {!loading && !error && paginatedBookings.length > 0 ? (
                             paginatedBookings.map((booking) => (
-                                <BookingCard key={booking.id} booking={booking} />
+                                <BookingCard key={booking.recordId} booking={booking} />
                             ))
                         ) : (
-                            <div className="bg-white rounded-2xl p-10 border border-slate-200/80 shadow-sm text-center space-y-3">
+                            <div role={error ? 'alert' : loading ? 'status' : undefined} className="bg-white rounded-2xl p-10 border border-slate-200/80 shadow-sm text-center space-y-3">
                                 <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 mx-auto flex items-center justify-center">
                                     <CalendarDays size={28} />
                                 </div>
                                 <h3 className="text-base font-bold text-slate-800">
-                                    Không tìm thấy lịch đặt nào
+                                    {loading || isAuthLoading ? 'Đang tải lịch đặt...' : error || 'Không tìm thấy lịch đặt nào'}
                                 </h3>
                                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                    Không có lịch đặt nào phù hợp với bộ lọc hiện tại. Thử chọn danh mục khác hoặc đặt lại bộ lọc.
+                                    {loading ? 'Vui lòng chờ trong giây lát.' : error ? 'Vui lòng thử tải lại danh sách.' : 'Không có lịch đặt nào phù hợp với bộ lọc hiện tại. Thử chọn danh mục khác hoặc đặt lại bộ lọc.'}
                                 </p>
                                 <button
+                                    disabled={loading}
                                     onClick={() => {
+                                        if (error) { beginLoad(); return; }
                                         handleTabChange("all");
                                         setSearchQuery("");
                                         setTimeFilter("all");
@@ -372,23 +323,23 @@ const MyBookings = () => {
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                                 >
                                     <RotateCcw size={14} />
-                                    <span>Xem tất cả lịch đặt</span>
+                                    <span>{loading ? 'Đang tải...' : error ? 'Thử lại' : 'Xem tất cả lịch đặt'}</span>
                                 </button>
                             </div>
                         )}
                     </div>
 
                     {/* Pagination & Summary */}
-                    {filteredBookings.length > 0 && (
+                    {!loading && !error && result.total > 0 && (
                         <div className="space-y-3 pt-2">
                             <div className="flex items-center justify-between text-xs text-slate-500 px-1">
                                 <span>
                                     Hiển thị{" "}
                                     <strong className="text-slate-800 font-bold">
-                                        {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredBookings.length)}
+                                        {startIndex + 1} - {Math.min(startIndex + itemsPerPage, result.total)}
                                     </strong>{" "}
                                     trong tổng số{" "}
-                                    <strong className="text-teal-700 font-bold">{filteredBookings.length}</strong> lịch đặt
+                                    <strong className="text-teal-700 font-bold">{result.total}</strong> lịch đặt
                                 </span>
                                 <span>
                                     Trang <strong className="text-slate-800 font-bold">{currentPage}</strong> / {totalPages}

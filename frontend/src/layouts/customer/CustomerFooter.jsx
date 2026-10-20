@@ -14,7 +14,7 @@ import {
 const CustomerFooter = () => {
   return (
     <footer className="bg-[#f7faf8] border-t border-slate-200/80 pt-12 pb-8 mt-12">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12">
 

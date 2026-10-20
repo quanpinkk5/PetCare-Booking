@@ -1,474 +1,511 @@
-import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import {
-  Bath,
-  Scissors,
-  Flower2,
-  Building2,
-  Calendar,
-  Star,
-  Dog,
-  Cat,
+  MapPin,
   PawPrint,
-} from "lucide-react";
+  CheckCircle2,
+  Clock,
+  Phone,
+  ArrowRight,
+  ChevronRight,
+  Building2,
+  Images,
+  Scissors,
+} from 'lucide-react';
+import FacilityHero from '../../components/BusinessDetail/FacilityHero';
+import InPageTabs from '../../components/BusinessDetail/InPageTabs';
+import BookingSidebar from '../../components/BusinessDetail/BookingSidebar';
+import { businessApi } from '../../services/businessApi.js';
+import { formatAddress, imageUrl, servicePrice, openingHoursText } from '../../services/businessData.js';
+import BusinessReviews from '../../components/BusinessDetail/BusinessReviews';
 
-import FacilityHero from "../../components/BusinessDetail/FacilityHero";
-import InPageTabs from "../../components/BusinessDetail/InPageTabs";
-import BookingSidebar from "../../components/BusinessDetail/BookingSidebar";
-import { getBusinessById } from "../../services/mockBusinesses";
 
-const BusinessDetail = () => {
-  const { id } = useParams();
-  const business = getBusinessById(id);
+const VALID_TABS = ['tong-quan', 'chi-nhanh', 'dich-vu', 'danh-gia'];
+
+const BranchServices = ({ branch }) => {
+  const [result, setResult] = useState({ loading: true, services: [], error: '' });
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    businessApi
+      .services(branch._id)
+      .then((response) => {
+        if (!cancelled) {
+          const list = response.data;
+          setResult({ loading: false, services: list, error: '' });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setResult({ loading: false, services: [], error: error.message || 'Không thể tải dịch vụ.' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [branch._id, attempt]);
 
   return (
-    <div className="font-sans text-slate-800 antialiased relative">
-
-      {/* Background Paw */}
-      <div className="fixed top-24 left-4 text-emerald-800 opacity-[0.035] pointer-events-none -z-10 select-none">
-        <PawPrint size={100} />
-      </div>
-
-      <div className="fixed bottom-16 right-6 text-emerald-800 opacity-[0.035] pointer-events-none -z-10 select-none">
-        <PawPrint size={150} />
-      </div>
-
-      <main className="max-w-[1240px] mx-auto px-4 sm:px-6 py-4 w-full">
-
-        {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-2 text-xs text-slate-400 mb-3 font-medium"
-        >
-          <Link
-            to="/"
-            className="hover:text-emerald-600 transition"
-          >
-            Trang chủ
-          </Link>
-
-          <span className="text-slate-300">/</span>
-
-          <Link
-            to="/businesses"
-            className="hover:text-emerald-600 transition"
-          >
-            Cơ sở
-          </Link>
-
-          <span className="text-slate-300">/</span>
-
-          <span className="text-slate-600 font-semibold">
-            {business?.name || "Happy Pet Cầu Giấy"}
-          </span>
-        </nav>
-
-        {/* Hero */}
-        <FacilityHero business={business} />
-
-        {/* Tabs */}
-        <InPageTabs />
-
-        {/* Nội dung */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-          {/* Left */}
-          <div className="lg:col-span-8 space-y-6">
-
-            <IntroductionSection business={business} />
-
-            <FeaturedServices />
-
-            <AvailableSlots />
-
-            <Reviews />
-
-          </div>
-
-          {/* Right */}
-          <BookingSidebar business={business} />
-
+    <div className="space-y-4">
+      {result.loading ? (
+        <div role="status" className="p-8 text-center text-sm text-slate-500">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mb-2" />
+          <p>Đang tải danh sách dịch vụ...</p>
         </div>
-      </main>
+      ) : result.error ? (
+        <div role="alert" className="rounded-xl bg-red-50 p-5 text-sm text-red-700">
+          <p>{result.error}</p>
+          <button type="button" onClick={() => { setResult({ loading: true, services: [], error: '' }); setAttempt((value) => value + 1); }} className="mt-2 underline">Thử lại</button>
+        </div>
+      ) : result.services.length ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {result.services.map((item) => {
+            const svc = item.service || item;
+            const image = imageUrl(svc.images);
+            const name = svc.name || 'Dịch vụ chăm sóc';
+            const desc = svc.description || 'Chưa có mô tả chi tiết cho dịch vụ này.';
+
+            return (
+              <article
+                key={item._id}
+                className="group rounded-2xl border border-slate-200 bg-white p-4.5 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div>
+                  {image ? (
+                    <div className="relative mb-3 h-36 w-full overflow-hidden rounded-xl bg-slate-100">
+                      <img
+                        src={image}
+                        alt={name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {item.durationMinutes > 0 && (
+                        <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[11px] font-medium text-white">
+                          {item.durationMinutes} phút
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                      {name}
+                    </h3>
+                  </div>
+
+                  <p className="mt-1 text-base font-extrabold text-emerald-700">
+                    {servicePrice(item)}
+                  </p>
+
+                  {item.petTypes?.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.petTypes.map((type) => (
+                        <span
+                          key={type}
+                          className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                        >
+                          {type === 'DOG' ? 'Dành cho Chó' : type === 'CAT' ? 'Dành cho Mèo' : type}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="mt-2.5 line-clamp-3 text-xs leading-relaxed text-slate-500">
+                    {desc}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 text-[11px]">Giá theo chi nhánh</span>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('quick-book')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                  >
+                    Liên hệ tư vấn <ArrowRight size={13} />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="p-8 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <PawPrint size={32} className="mx-auto text-slate-300 mb-2" />
+          <p className="font-semibold text-slate-700">Chi nhánh chưa có dịch vụ nào được công bố</p>
+          <p className="text-xs text-slate-400 mt-1">Vui lòng chọn chi nhánh khác hoặc liên hệ hotline để được hỗ trợ.</p>
+        </div>
+      )}
     </div>
   );
 };
 
-/* =========================
-   GIỚI THIỆU
-========================= */
+const BusinessDetailContent = ({ id, initialBranchId }) => {
+  const [result, setResult] = useState({ loading: true, business: null, branches: [], error: '' });
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const [attempt, setAttempt] = useState(0);
 
-const IntroductionSection = ({ business }) => {
-  const images = [
-    {
-      label: "Không gian spa",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4P6l0Yxim_ax0Dfst6-CXH7Xoshfxunv3EE1Uekd0jzZu4u0cAPz40v7YQIRrggcw--j20E6SDMKl-n5x6s-tfQhlW8CS9aBQUL7zWtoSpxbX_1EwzvQeGXOwDMFYHCglZU-YPdtIYbgRCbEENLdm8W7Xrsj-YVPIw1HDAQr-KK4A-VtYTX1nGhPAyfwOQOiC7um2Wy4jjUa1cLRv1rWG5G8xmtiLS_61ypJeMlKlSPElLiXdd2AK",
-    },
-    {
-      label: "Khu grooming",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBacuK5g7qSESwVEU4Qao4zbHkC0hytgMfS35n09QvfY97G1cRGwdN3z18i9FGdHl1nMwOuy6BaBfk918Ce77gRRP7SJjm4oD6p25w9KkdV_zdceUtywlpyXlF7wSUyfoB8rIXN0kOYKS_KOez11wt9yoGzOerCv2GEwcl_9HrkfCKqB9mFRnGmUWEehMoCQeLB2UoNvfyhQAujmvnDv3KJZQcuXMKYPmjN_M0wzAzbPvIz4UM3qQSs",
-    },
-    {
-      label: "Phòng lưu trú",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB2x-oYrvl4mW1v6NNzTnsV0MGMSgHT1DJgBwHz9Aws5t-83Y5agMyyB0oRlErskVYpEsLH4Tgn4mDtTO6Yoq5ZFg0g2rcnnnmX8yM7TSKmLjX8yVP60rL_D6CswUKBGczRAmqrRCMW7PW5pDrU7MP2eL79O3sIe8G7xEPNLTaHgE2x9-Rl2MRwLQLkg1NiUNYtvKmUUb7lVtiS8VwZEAvpzYW4e_AIChclEMSZKZt1D6jd_Rh2FC6u",
-    },
-    {
-      label: "Nhân viên chăm sóc",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAQOc89tQ84M3Kglug3j8ZUDeHKZ3_YM5jAvykPeajeMGYKc0veUHp1d2v4QCljRNOkLzYanQ6pq8WlAGL50h2xigyVLUOPv30xjxrR7i0SWzBxdl047hXdBOP9uQCIosdD7KsV9juDLjt7fmhv_VXk00LBNiBxzsRNmh4pkmcsuEaPM47P-bZjvCT-i7IyFvPs2x-EExRC1oUC9cJG32pJ7FJhkcw-j3P-l7iGRZP_xiQdcjKbxZln",
-    },
-  ];
+  const selectedBranch = searchParams.get('branch') || initialBranchId;
+  const tabParam = searchParams.get('tab') || location.hash.replace('#', '');
+  const activeTab = VALID_TABS.includes(tabParam) ? tabParam : 'tong-quan';
+  const handleTabChange = (newTab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', newTab);
+    setSearchParams(next);
+  };
+  const handleBranchChange = (branchId, tab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('branch', branchId);
+    next.set('tab', tab || activeTab);
+    setSearchParams(next);
+  };
 
-  return (
-    <section
-      id="tong-quan"
-      className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs"
-    >
-      <h2 className="text-sm font-bold text-slate-900 mb-2">
-        Giới thiệu về {business?.name || "Happy Pet Cầu Giấy"}
-      </h2>
+  useEffect(() => {
+    let cancelled = false;
 
-      <p className="text-xs text-slate-500 leading-relaxed mb-4">
-        {business?.description ||
-          "Chúng tôi cung cấp các dịch vụ chăm sóc thú cưng toàn diện từ tắm & vệ sinh, grooming, spa thư giãn đến lưu trú qua đêm. Không gian hiện đại, thiết bị tiêu chuẩn quốc tế cùng đội ngũ nhân viên tận tâm sẽ mang lại trải nghiệm tốt nhất cho các bé cưng."}
-      </p>
+    Promise.all([businessApi.detail(id), businessApi.branches(id)])
+      .then(([businessRes, branchesRes]) => {
+        if (!cancelled) {
+          const biz = businessRes?.data;
+          const branchList = branchesRes?.data || [];
+          setResult({ loading: false, business: biz, branches: branchList, error: '' });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setResult({ loading: false, business: null, branches: [], error: error.message || 'Không thể tải thông tin cơ sở.' });
+      });
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {images.map((item) => (
-          <div
-            key={item.label}
-            className="group cursor-pointer"
-          >
-            <div className="h-24 rounded-lg overflow-hidden bg-slate-100 mb-1.5 border border-slate-100">
-              <img
-                src={item.img}
-                alt={item.label}
-                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-              />
-            </div>
+    return () => {
+      cancelled = true;
+    };
+  }, [id, attempt]);
 
-            <span className="block text-[11px] font-medium text-slate-600 text-center">
-              {item.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-};
+  const { business, branches, loading, error } = result;
+  const branch = branches.find((item) => item._id === selectedBranch) || branches[0];
 
-/* =========================
-   DỊCH VỤ
-========================= */
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-emerald-600 border-t-transparent mb-3" />
+        <p className="text-sm font-medium">Đang tải thông tin cơ sở...</p>
+      </main>
+    );
+  }
 
-const FeaturedServices = () => {
-  const navigate = useNavigate();
-  const services = [
-    {
-      icon: Bath,
-      iconColor: "text-blue-500",
-      title: "Tắm & vệ sinh",
-      price: "150.000đ",
-      time: "60 phút",
-      tags: ["Cơ bản", "Phổ biến"],
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDOlxaLQ9WvGMIc-DaffDmbBqa0SoJ8DUeXxG9-KRoBGcYrkNZ-LXlPcg-JBrwaiuZSJwreKXQwmjxMoUYrWJAE4RinYIT6VYcTeSein01MRib4C-7ETsMmygUfKiHHYh0Dd5xhWSpmRgW7Mm5NB9VZH5cUOnMXvFpM22mOn44pofFBanJ-JKWhQ40QaeOa5bZH3tXGc4w1-5_u-NwYAckbtfSmgrU2U4ySW7ruFoRsucekwGpXB6Oo",
-    },
-    {
-      icon: Scissors,
-      iconColor: "text-red-500",
-      title: "Premium Grooming",
-      price: "200.000đ",
-      time: "90 phút",
-      tags: ["Cao cấp", "Phổ biến"],
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCJtr6H0Mu0xriiLIaq9fu8RAh3RyhyEYAJRn5MUedeyip8gVFX04FI1dzR2zL91xQ9NG44Uwyj3yP6GEACVzpuiqSnUg81Z9GaCHUMFbOY-5uE9PV6A0vG2H_MmS192Ua96Roghm4YezBq_jTrmRveeexMfxOFMwa8sGpSti_iDY-z9XTX78835Lk6ZAQdI0SfDM1lNHx6iLL8FnRA-Na46Hg7tmaq4H-ozzzihqLvc3E5_BzRtPs1",
-    },
-    {
-      icon: Flower2,
-      iconColor: "text-emerald-500",
-      title: "Spa thư giãn",
-      price: "250.000đ",
-      time: "75 phút",
-      tags: ["Thư giãn", "Yêu thích"],
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDmxYbcr5pty_iNqg1rH415dspynf7YXvsI0_GnIp5ZFiAvWHh2Js6kuVRS1aznciQbyXvu9J9dvsA_D-xWxmPHlPsyaJJCOL03dSKt7SizLtgjYVctv3jVWzW0RdXsTs7WjeZkdkHzBAcTO8eGsx4aILW9VH-HkLVZE917cja4KY_Hh1TUYZa-Yk-GpUANpyTDWRYS8fNPUqyWbRsxByQa9rtCc6aArCo7KnrnsMhoP3MKFavtbsny",
-    },
-    {
-      icon: Building2,
-      iconColor: "text-amber-500",
-      title: "Lưu trú qua đêm",
-      price: "280.000đ/ngày",
-      time: "Ngày",
-      tags: ["Lưu trú", "An toàn"],
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuA7k_DL_-ed7wkRfrlHTkI6xn1iu7llkkHhg7WIRbO6zNfYMfATohV8ZTqtkM7n0I-ZSxyOpruy2UmEp-g2adWeC8DOgSyDOdGrOuEQziAG0nH32WAAu8cpyrwkkZEEHLdAmW1W6o_9rqIBUHdjr_jIgQPggj8-vQl7_riYwXhnsyBwYxL7X-dfRdNV9hY4OU4dU6Vp74TZLS0hI6zjxz_sQi4QTPd26PqBSb44zgtBShk12oesFBhj",
-    },
-  ];
-
-  return (
-    <section
-      id="dich-vu"
-      className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs"
-    >
-      <h2 className="text-sm font-bold text-slate-900 mb-4">
-        Dịch vụ nổi bật
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {services.map((service) => {
-          const Icon = service.icon;
-
-          return (
-            <div
-              key={service.title}
-              className="border border-slate-200/90 rounded-xl p-3 flex flex-col justify-between hover:border-emerald-300 transition-colors"
+  if (error || !business) {
+    return (
+      <main className="mx-auto max-w-3xl p-12 text-center">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+          <p className="text-sm font-semibold text-red-700">{error || 'Không tìm thấy cơ sở.'}</p>
+          <div className="mt-4 flex justify-center gap-4 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setResult({ loading: true, business: null, branches: [], error: '' });
+                setAttempt((v) => v + 1);
+              }}
+              className="text-emerald-700 hover:underline cursor-pointer"
             >
-              <div className="flex items-start gap-3">
+              Thử lại
+            </button>
+            <Link to="/businesses" className="text-emerald-700 hover:underline">
+              Về danh sách cơ sở
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
-                <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-50 relative">
-                  <img
-                    src={service.img}
-                    alt={service.title}
-                    className="w-full h-full object-cover"
-                  />
+  const totalReviewsCount = reviewSummary?.totalReviews ?? business.totalReviews ?? 0;
+  const displayBusiness = reviewSummary ? { ...business, ...reviewSummary } : business;
 
-                  <span
-                    className={`absolute top-1 left-1 bg-white/90 p-0.5 rounded text-[10px] ${service.iconColor} font-bold leading-none`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 text-slate-800">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-xs text-slate-400 font-medium">
+        <Link to="/" className="hover:text-emerald-600 transition-colors">
+          Trang chủ
+        </Link>
+        <span className="text-slate-300">/</span>
+        <Link to="/businesses" className="hover:text-emerald-600 transition-colors">
+          Cơ sở
+        </Link>
+        <span className="text-slate-300">/</span>
+        <span className="text-slate-700 font-semibold">{business.name}</span>
+      </nav>
+
+      {/* Facility Hero */}
+      <FacilityHero business={displayBusiness} />
+
+      {/* In-Page Tabs */}
+      <InPageTabs
+        activeTab={activeTab}
+        onChange={handleTabChange}
+        branchesCount={branches.length}
+        reviewsCount={totalReviewsCount}
+      />
+
+      {/* Main Grid: Left tab content, Right booking sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} className="lg:col-span-8 space-y-5">
+
+          {/* ==================== TAB 1: TỔNG QUAN ==================== */}
+          {activeTab === 'tong-quan' && (
+            <div className="space-y-5">
+              {/* Giới thiệu */}
+              <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                  <h2 className="text-base font-bold text-slate-900">Giới thiệu về {business.name}</h2>
+                  <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                    Đã kiểm duyệt
                   </span>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-bold text-slate-800 truncate">
-                    {service.title}
-                  </h3>
+                <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-slate-600">
+                  {business.description ||
+                    'Cơ sở chưa cập nhật phần giới thiệu.'}
+                </p>
 
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Từ{" "}
-                    <span className="text-emerald-700 font-semibold">
-                      {service.price}
-                    </span>
-                    {" • "}
-                    {service.time}
-                  </p>
-
-                  <div className="flex gap-1.5 mt-1.5">
-                    <span className="text-[9.5px] px-1.5 py-0.5 bg-slate-100 text-slate-600 font-medium rounded">
-                      {service.tags[0]}
-                    </span>
-
-                    <span className="text-[9.5px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 font-medium rounded">
-                      {service.tags[1]}
-                    </span>
-                  </div>
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3"><p className="text-xs text-slate-500">Chi nhánh hoạt động</p><p className="mt-1 text-lg font-bold text-emerald-700">{branches.length}</p></div>
+                  <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs text-slate-500">Đánh giá khách hàng</p><p className="mt-1 text-lg font-bold text-slate-800">{totalReviewsCount}</p></div>
                 </div>
-              </div>
+              </section>
 
-              <button
-                type="button"
-                onClick={() => navigate("/booking")}
-                className="mt-2.5 w-full py-1.5 rounded-lg border border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-[11px] font-semibold transition"
-              >
-                Chọn dịch vụ
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-};
+              {/* Hình ảnh */}
+              <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Images className="w-4 h-4 text-emerald-600" />
+                    <h2 className="text-base font-bold text-slate-900">Hình ảnh cơ sở</h2>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {business.images?.length || 0} hình ảnh
+                  </span>
+                </div>
 
-/* =========================
-   LỊCH TRỐNG
-========================= */
-
-const AvailableSlots = () => {
-  const navigate = useNavigate();
-  const slots = [
-    { time: "09:00", status: "Còn trống", available: true },
-    { time: "10:30", status: "Còn trống", available: true },
-    { time: "12:00", status: "Đã kín", available: false },
-    { time: "14:00", status: "Còn trống", available: true },
-    { time: "15:30", status: "Còn trống", available: true },
-    { time: "17:00", status: "Còn trống", available: true },
-  ];
-
-  return (
-    <section
-      id="lich-trong"
-      className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs"
-    >
-      <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
-        <h2 className="text-sm font-bold text-slate-900">
-          Lịch trống hôm nay
-        </h2>
-
-        <button
-          type="button"
-          onClick={() => navigate("/booking")}
-          className="text-xs text-slate-600 hover:text-emerald-600 font-medium flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1 transition"
-        >
-          <Calendar className="w-3 h-3" />
-          <span>Xem lịch đầy đủ</span>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {slots.map((slot) => (
-          <button
-            key={slot.time}
-            type="button"
-            disabled={!slot.available}
-            onClick={() => slot.available && navigate("/booking")}
-            className={`rounded-xl p-2 text-center transition ${slot.available
-              ? "border border-emerald-400 bg-emerald-50/40 hover:bg-emerald-100 text-slate-800 cursor-pointer"
-              : "border border-slate-200 bg-slate-50/80 cursor-not-allowed opacity-60 text-slate-400"
-              }`}
-          >
-            <span className="block text-xs font-bold">
-              {slot.time}
-            </span>
-
-            <span
-              className={`block text-[10px] mt-0.5 ${slot.available
-                ? "text-emerald-700 font-medium"
-                : ""
-                }`}
-            >
-              {slot.status}
-            </span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-/* =========================
-   ĐÁNH GIÁ
-========================= */
-
-const Reviews = () => {
-  const reviews = [
-    {
-      name: "Minh Anh",
-      time: "2 tuần trước",
-      comment:
-        "Dịch vụ rất tốt, bé nhà mình đi spa về thơm tho và sạch sẽ. Nhân viên nhiệt tình, chu đáo!",
-      pet: "Bé Momo",
-      type: Dog,
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuD4A6fhVwO7mG_nRf3uNa9g7jFgHRkeFw8SSDJHgep9Q1jaAmphzDAKojkD_M-QLwks-KETsp-TDxozwbDZbQfa5N3teuTIYRlGp8CDrAC9cnKuNaY4_AhDrktRgtFutEx3-LH6DAlezrJAilDWsFFRe4qcIykV7yD6kBTFm9r59cgd0uWX98fsmbd50EmFMAGAPiIV35nMKj9gRo6N3VOcvtBE7ofM-ifL1YOAyfRyvqS0A6jUB1-k",
-    },
-    {
-      name: "Quốc Bảo",
-      time: "1 tháng trước",
-      comment:
-        "Phòng lưu trú sạch sẽ, bé được chăm sóc rất kỹ. Mình rất yên tâm khi gửi bé ở đây.",
-      pet: "Bé Bơ",
-      type: Cat,
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCDpJFEMPIXBrr1cSmAM9oKLVbQG5bKrFzMWk8qtu2GkI8Cg-mjSSFV-oVKUxpTIe5EzhvJlJmEXATXp7mIKjlqiETvRHv1umMB755CDtjDfTt2A0SZYc9kOnGqvjNELEIQswamaXHPy3GHbYdzFDjTucKxAaNXmv0dkEuL3E8VkrlBZCEiPwNYMiQTA2rsltfu7RJ1fwsp3kdFK1EOQdQn-VSgHPdmegR2L5wlijshhP9DewHmyE_Q",
-    },
-    {
-      name: "Thu Trang",
-      time: "1 tháng trước",
-      comment:
-        "Grooming đẹp xuất sắc! Bé nhà mình trông rất xinh sau khi được tỉa lông.",
-      pet: "Bé Nâu",
-      type: Dog,
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCTza-zj8htWTXQlD881YcrNmCXbbYOfsmIz2o25oYMoZ2KZDCuWjGqcU0OzcUEsHh9KTo4sgmqng56lWf8zFasafgBW0tN0PTXS67n8KuLDs3jSCCzF4CSwcPnH4Db5t1N9FDTIHmxBSM_D3p2X8o5LX2dQR2HQohiVt7OociHwS0zwbhaQ-bQTSHk4fVG_7wtvB-ObuC8t2nv1Bi8t0YSX9tle5cZDw3z5P6vIno8n9jlJ-_vOS2i",
-    },
-  ];
-
-  return (
-    <section
-      id="danh-gia"
-      className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs"
-    >
-      <h2 className="text-sm font-bold text-slate-900 mb-4">
-        Đánh giá khách hàng
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center mb-5 pb-5 border-b border-slate-100">
-
-        <div className="md:col-span-3 text-center md:text-left md:border-r md:border-slate-100 pr-4">
-          <div className="text-3xl font-extrabold text-slate-800">
-            4.9
-            <span className="text-base text-slate-400 font-medium">
-              /5
-            </span>
-          </div>
-
-          <div className="flex justify-center md:justify-start text-amber-400 text-xs my-1">
-            {[...Array(5)].map((_, index) => (
-              <Star
-                key={index}
-                className="w-3.5 h-3.5 fill-current"
-              />
-            ))}
-          </div>
-
-          <p className="text-[11px] text-slate-400">
-            Dựa trên 256 đánh giá
-          </p>
-        </div>
-
-        <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {reviews.map((review) => {
-            const PetIcon = review.type;
-
-            return (
-              <div
-                key={review.name}
-                className="bg-slate-50/70 p-3 rounded-xl border border-slate-100 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <img
-                      src={review.img}
-                      alt={review.name}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-
-                    <div>
-                      <h4 className="text-[11px] font-bold text-slate-800 leading-tight">
-                        {review.name}
-                      </h4>
-
-                      <div className="flex text-amber-400">
-                        {[...Array(5)].map((_, index) => (
-                          <Star
-                            key={index}
-                            className="w-2.5 h-2.5 fill-current"
+                {business.images?.length ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {business.images.map((item, index) => {
+                      const url = imageUrl([item]);
+                      return url ? (
+                        <div key={index} className="group relative h-32 sm:h-36 overflow-hidden rounded-xl bg-slate-100 border border-slate-200">
+                          <img
+                            src={url}
+                            alt={`${business.name} - ${index + 1}`}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                        ))}
-                      </div>
-                    </div>
-
-                    <span className="ml-auto text-[9px] text-slate-400">
-                      {review.time}
-                    </span>
+                        </div>
+                      ) : null;
+                    })}
                   </div>
+                ) : (
+                  <p className="text-xs text-slate-500 py-4 text-center">Cơ sở chưa cập nhật thêm hình ảnh giới thiệu.</p>
+                )}
+              </section>
 
-                  <p className="text-[10.5px] text-slate-600 leading-normal line-clamp-2">
-                    {review.comment}
+              {/* Liên kết điều hướng nhanh đến Chi nhánh & Dịch vụ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('chi-nhanh')}
+                  className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30 transition-all text-left flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Building2 size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-700">
+                        Xem chi nhánh ({branches.length})
+                      </h4>
+                      <p className="text-[11px] text-slate-500">Khám phá địa chỉ gần bạn nhất</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('dich-vu')}
+                  className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30 transition-all text-left flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Scissors size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-700">
+                        Bảng giá dịch vụ
+                      </h4>
+                      <p className="text-[11px] text-slate-500">Tắm, Spa, Grooming & Lưu trú</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== TAB 2: CHI NHÁNH ==================== */}
+          {activeTab === 'chi-nhanh' && (
+            <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Chi nhánh đang hoạt động ({branches.length})
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Chọn chi nhánh để xem danh sách dịch vụ và thông tin đặt lịch
                   </p>
                 </div>
+              </div>
 
-                <div className="mt-2 text-[9.5px] text-slate-500 flex items-center gap-1">
-                  <PetIcon className="w-3 h-3 text-slate-400" />
-                  {review.pet}
+              {branches.length ? (
+                <div className="space-y-3.5">
+                  {branches.map((item) => {
+                    const isSelected = branch?._id === item._id;
+                    return (
+                      <div
+                        key={item._id}
+                        className={`rounded-2xl border p-4.5 transition-all ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50/40 ring-1 ring-emerald-500'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-sm font-bold text-slate-900">{item.name}</h3>
+                              {isSelected && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                                  <CheckCircle2 size={11} /> Đang chọn
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="flex items-start gap-1.5 text-xs text-slate-600">
+                              <MapPin size={14} className="text-emerald-600 mt-0.5 shrink-0" />
+                              <span>{formatAddress(item.address) || 'Chưa cập nhật địa chỉ'}</span>
+                            </p>
+
+                            {item.phone && (
+                              <p className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <Phone size={14} className="text-emerald-600 shrink-0" />
+                                <span>{item.phone}</span>
+                              </p>
+                            )}
+
+                            {item.openingHours && (
+                              <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                <Clock size={14} className="text-slate-400 shrink-0" />
+                                <span>{openingHoursText(item.openingHours).join(' • ')}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            {!isSelected ? (
+                              <button
+                                type="button"
+                                onClick={() => handleBranchChange(item._id)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer"
+                              >
+                                Chọn chi nhánh
+                              </button>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleBranchChange(item._id, 'dich-vu');
+                              }}
+                              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <span>Xem dịch vụ</span>
+                              <ArrowRight size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <Building2 size={32} className="mx-auto text-slate-300 mb-2" />
+                  <p className="font-semibold text-slate-700">Cơ sở chưa có chi nhánh đang hoạt động</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ==================== TAB 3: DỊCH VỤ ==================== */}
+          {activeTab === 'dich-vu' && (
+            <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+              {/* Branch Selector Switcher */}
+              <div className="mb-5 pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                      Bảng giá dịch vụ
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Dịch vụ cung cấp tại chi nhánh: <span className="font-semibold text-slate-800">{branch?.name || 'Chi nhánh mặc định'}</span>
+                    </p>
+                  </div>
+
+                  {branches.length > 1 && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-500 font-medium">Đổi chi nhánh:</span>
+                      <select
+                        value={branch?._id || ''}
+                        onChange={(e) => handleBranchChange(e.target.value)}
+                        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                      >
+                        {branches.map((b) => (
+                          <option key={b._id} value={b._id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      <div className="text-center">
-        <button className="inline-flex items-center justify-center border border-emerald-500 text-emerald-700 bg-white hover:bg-emerald-50 px-5 py-2 rounded-lg text-xs font-semibold transition">
-          Xem tất cả 256 đánh giá
-        </button>
+              {branch ? (
+                <BranchServices key={branch._id} branch={branch} />
+              ) : (
+                <div className="p-8 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <PawPrint size={32} className="mx-auto text-slate-300 mb-2" />
+                  <p>Vui lòng chọn một chi nhánh để xem danh sách dịch vụ.</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ==================== TAB 4: ĐÁNH GIÁ ==================== */}
+          {activeTab === 'danh-gia' && (
+            <BusinessReviews businessId={id} onSummary={setReviewSummary} />
+          )}
+
+        </div>
+
+        {/* Right column: Sticky BookingSidebar */}
+        <BookingSidebar business={business} branch={branch} />
       </div>
-    </section>
+    </main>
   );
+};
+
+const BusinessDetail = () => {
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branch') || '';
+  return <BusinessDetailContent key={id} id={id} initialBranchId={branchId} />;
 };
 
 export default BusinessDetail;

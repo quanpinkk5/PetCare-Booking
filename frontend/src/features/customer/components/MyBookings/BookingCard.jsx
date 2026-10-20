@@ -14,11 +14,12 @@ import {
 
 const BookingCard = ({ booking }) => {
     const navigate = useNavigate();
+    const bookingId = booking.recordId || booking.id;
     const ServiceIcon = booking.serviceIcon;
     const TimeIcon = booking.timeIcon;
 
     const handleViewDetail = () => {
-        navigate(`/my-bookings/${booking.id}`);
+        navigate(`/my-bookings/${bookingId}`);
     };
 
     const renderActionButtons = () => {
@@ -54,11 +55,12 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
-                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
                             className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                             <CreditCard size={14} className="shrink-0" />
-                            <span>Thanh toán ngay</span>
+                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
                         </button>
                     </div>
                 );
@@ -69,12 +71,13 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
-                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
                             
                             className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                             <CreditCard size={14} className="shrink-0" />
-                            <span>Thanh toán ngay</span>
+                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
                         </button>
                     </div>
                 );
@@ -100,7 +103,7 @@ const BookingCard = ({ booking }) => {
                         {viewDetailButton}
                         <button
                             type="button"
-                            onClick={() => navigate(`/billing?bookingId=${booking.id}`)}
+                            onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
                             className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap"
                             title="Xem hóa đơn điện tử"
                         >
@@ -109,7 +112,7 @@ const BookingCard = ({ booking }) => {
                         </button>
                         <button
                             type="button"
-                            onClick={() => navigate(`/reviews?bookingId=${booking.id}&action=write`)}
+                            onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
                             className="flex-1 px-2 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
                         >
                             <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
@@ -152,7 +155,7 @@ const BookingCard = ({ booking }) => {
                 <div className="flex items-start gap-3.5 shrink-0">
                     <img
                         alt={booking.petName}
-                        src={booking.img}
+                        src={booking.img || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%23f1f5f9'/%3E%3C/svg%3E"}
                         onClick={handleViewDetail}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-slate-100 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                     />

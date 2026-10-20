@@ -14,8 +14,9 @@ import {
     X,
 } from "lucide-react";
 
-const BookingOverview = ({ booking }) => {
+const BookingOverview = ({ booking, onCancel }) => {
     const navigate = useNavigate();
+    const bookingId = booking.recordId || booking.id;
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState("busy");
     const [isCancelling, setIsCancelling] = useState(false);
@@ -34,14 +35,16 @@ const BookingOverview = ({ booking }) => {
             ? "cancelled"
             : "pending");
 
-    const confirmCancel = () => {
+    const confirmCancel = async () => {
+        if (isCancelling) return;
         setIsCancelling(true);
-        setTimeout(() => {
-            setIsCancelling(false);
+        try {
+            await onCancel(cancelReason);
             setIsCancelModalOpen(false);
-            alert("Đã gửi yêu cầu hủy lịch hẹn thành công!");
-            navigate("/my-bookings");
-        }, 500);
+            navigate('/my-bookings');
+        } catch (error) {
+            alert(error.message || 'Không thể hủy lịch đặt. Vui lòng thử lại.');
+        } finally { setIsCancelling(false); }
     };
 
     const renderActionButtons = () => {
@@ -51,11 +54,12 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2.5 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <CreditCard size={15} />
-                            <span>Thanh toán ngay</span>
+                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
                         </button>
 
                         <button
@@ -69,6 +73,8 @@ const BookingOverview = ({ booking }) => {
 
                         <button
                             type="button"
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            title={booking.paymentStatus !== "UNPAID" ? "Lịch đã thanh toán cần được xử lý hoàn tiền trước khi hủy" : undefined}
                             onClick={() => setIsCancelModalOpen(true)}
                             className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
                         >
@@ -83,11 +89,12 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2.5 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate(`/payment/${booking.id}`, { state: { booking } })}
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <CreditCard size={15} />
-                            <span>Thanh toán ngay</span>
+                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
                         </button>
 
                         <button
@@ -101,6 +108,8 @@ const BookingOverview = ({ booking }) => {
 
                         <button
                             type="button"
+                            disabled={booking.paymentStatus !== "UNPAID"}
+                            title={booking.paymentStatus !== "UNPAID" ? "Lịch đã thanh toán cần được xử lý hoàn tiền trước khi hủy" : undefined}
                             onClick={() => setIsCancelModalOpen(true)}
                             className="w-full bg-slate-50/70 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-xs cursor-pointer group"
                         >
@@ -132,7 +141,7 @@ const BookingOverview = ({ booking }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate(`/reviews?bookingId=${booking.id}&action=write`)}
+                            onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
                             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
                         >
                             <Star size={15} className="fill-white" />
@@ -141,7 +150,7 @@ const BookingOverview = ({ booking }) => {
 
                         <button
                             type="button"
-                            onClick={() => navigate(`/billing?bookingId=${booking.id}`)}
+                            onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
                             className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
                         >
                             <Receipt size={14} />
@@ -329,7 +338,7 @@ const BookingOverview = ({ booking }) => {
                                 </p>
                                 <span>
                                     {statusType === "confirmed"
-                                        ? "Đơn hàng đã được cơ sở tiếp nhận. Khi hủy trước 24 giờ hẹn, bạn sẽ được hoàn trả 100% chi phí theo quy chuẩn của PetCare."
+                                        ? "Bạn có thể hủy lịch chưa thanh toán. Lịch đã thanh toán cần liên hệ cơ sở để được hỗ trợ xử lý."
                                         : "Đơn hàng đang chờ cơ sở duyệt. Bạn có thể hủy miễn phí ngay bây giờ."}
                                 </span>
                             </div>

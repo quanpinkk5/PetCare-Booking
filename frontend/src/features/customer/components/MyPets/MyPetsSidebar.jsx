@@ -3,35 +3,10 @@ import {
   PawPrint,
   CheckCircle2,
   Bell,
-  CalendarDays,
   ChevronRight,
   MessageCircle,
   Heart,
 } from 'lucide-react';
-
-const REMINDERS = [
-  {
-    id: 1,
-    petName: 'Milo',
-    type: 'Tiêm định kỳ',
-    date: '18/05/2024',
-    remaining: 'Còn 15 ngày',
-  },
-  {
-    id: 2,
-    petName: 'Mimi',
-    type: 'Grooming lông',
-    date: '22/05/2024',
-    remaining: 'Còn 19 ngày',
-  },
-  {
-    id: 3,
-    petName: 'Bella',
-    type: 'Tắm & vệ sinh',
-    date: '25/05/2024',
-    remaining: 'Còn 22 ngày',
-  },
-];
 
 const MyPetsSidebar = () => {
   return (
@@ -83,49 +58,14 @@ const MyPetsSidebar = () => {
         </div>
 
         <div className="space-y-3">
-          {REMINDERS.map((reminder, index) => (
-            <div
-              key={reminder.id}
-              className={`flex items-center justify-between text-xs ${
-                index < 2
-                  ? 'pb-2 border-b border-slate-100'
-                  : ''
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  <CalendarDays size={12} />
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-slate-800 text-xs">
-                    {reminder.petName}
-                  </h4>
-
-                  <p className="text-[11px] text-slate-500">
-                    {reminder.type}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="text-[11px] font-semibold text-slate-700 block">
-                  {reminder.date}
-                </span>
-
-                <span className="text-[10px] text-emerald-600 font-medium">
-                  {reminder.remaining}
-                </span>
-              </div>
-            </div>
-          ))}
+          <p className="text-xs text-slate-500">Chưa có dữ liệu lịch nhắc để hiển thị.</p>
         </div>
 
         <Link
           to="/booking"
           className="mt-4 flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-slate-100 text-emerald-700 text-xs font-semibold rounded-xl border border-slate-200 transition"
         >
-          Xem tất cả lịch nhắc
+          Đặt lịch chăm sóc
           <ChevronRight size={12} />
         </Link>
       </div>
@@ -159,10 +99,10 @@ const MyPetsSidebar = () => {
           </div>
         </div>
 
-        <button className="mt-4 w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-2 transition">
+        <Link to="/messages" className="mt-4 w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-2 transition">
           <MessageCircle size={14} />
           <span>Chat với chúng tôi</span>
-        </button>
+        </Link>
       </div>
     </aside>
   );

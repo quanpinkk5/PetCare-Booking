@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
     Scissors,
     Clock,
@@ -60,7 +60,7 @@ const BookingDetails = ({ booking }) => {
                             <div className="flex items-center justify-between py-1 border-b border-slate-50">
                                 <span className="text-slate-400">Giới tính:</span>
                                 <span className="font-semibold text-slate-700">
-                                    {booking.pet?.gender === "♂" ? "Đực" : "Cái"}
+                                    {booking.pet?.gender === "♂" ? "Đực" : booking.pet?.gender === "♀" ? "Cái" : "Chưa cập nhật"}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between py-1 border-b border-slate-50">

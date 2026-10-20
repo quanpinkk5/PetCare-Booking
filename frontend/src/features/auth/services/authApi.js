@@ -23,7 +23,13 @@ const request = async (path, options = {}) => {
   let response = await sendRequest(accessToken);
 
   // Nếu access token hết hạn, thử làm mới phiên
-  if (response.status === 401 && (path === "/auth/me" || path.startsWith("/admin/"))) {
+
+  if (
+    response.status === 401 &&
+    (path === "/auth/me" ||
+      path.startsWith("/admin/") ||
+      path.startsWith("/customer/"))
+  ) {
     const refreshResponse = await sendRequestToRefresh();
 
     if (refreshResponse) {
@@ -31,7 +37,7 @@ const request = async (path, options = {}) => {
     }
   }
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.message || "Có lỗi xảy ra");
@@ -72,6 +78,8 @@ const sendRequestToRefresh = () => {
   return refreshPromise;
 };
 
+export { request as apiRequest };
+
 export const authApi = {
   register: (payload) =>
     request("/auth/register", {
@@ -89,11 +97,11 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
-//   googleLogin: (idToken) =>
-//     request("/auth/google", {
-//       method: "POST",
-//       body: JSON.stringify({ idToken }),
-//     }),
+  //   googleLogin: (idToken) =>
+  //     request("/auth/google", {
+  //       method: "POST",
+  //       body: JSON.stringify({ idToken }),
+  //     }),
 
   resetPassword: ({ token, newPassword }) =>
     request("/auth/reset-password", {
@@ -102,6 +110,12 @@ export const authApi = {
     }),
 
   getMe: () => request("/auth/me"),
+
+  updateProfile: (payload) =>
+    request("/customer/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
 
   refresh: sendRequestToRefresh,
 

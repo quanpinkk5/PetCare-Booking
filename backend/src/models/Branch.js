@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const branchSchema = new mongoose.Schema(
@@ -54,7 +53,7 @@ const branchSchema = new mongoose.Schema(
   {
     timestamps: true,
     collection: "branches",
-  }
+  },
 );
 
 // Lấy danh sách chi nhánh thuộc một cơ sở

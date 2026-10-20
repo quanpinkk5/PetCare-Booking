@@ -152,16 +152,15 @@ export const AuthProvider = ({ children }) => {
     error: "Đăng nhập mạng xã hội đang được phát triển",
   });
 
-  // Tạm thời chỉ cập nhật state giao diện.
-  // Chưa lưu xuống MongoDB.
-  const updateUser = () => {
-    console.warn(
-      "Cần triển khai API cập nhật hồ sơ trước khi sử dụng updateUser"
-    );
-    return {
-      success: false,
-      error: "Chức năng cập nhật hồ sơ chưa được kết nối backend",
-    };
+  const updateUser = async (payload) => {
+    try {
+      const response = await authApi.updateProfile(payload);
+      const updated = response.data.user;
+      setUser((current) => ({ ...current, ...updated, name: updated.fullName }));
+      return { success: true, user: updated };
+    } catch (error) {
+      return { success: false, error: error.message || "Cập nhật hồ sơ thất bại" };
+    }
   };
 
   const value = {
