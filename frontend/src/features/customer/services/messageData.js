@@ -21,6 +21,11 @@ export const conversationData = (conversation) => {
   };
 };
 
+export const businessMessageChats = (chats, business) => {
+  if (!business || chats.some((chat) => chat.businessId === recordId(business) && !chat.bookingId)) return chats;
+  return [{ ...conversationData({ _id: `new:${recordId(business)}`, businessId: business }), isDraft: true }, ...chats];
+};
+
 export const messageData = (message, customerId, avatar) => ({
   id: recordId(message), sender: recordId(message.senderId) === recordId(customerId) ? 'user' : 'business',
   text: message.content || '', time: timeLabel(message.createdAt),

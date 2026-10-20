@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { authApi } from '../src/features/auth/services/authApi.js';
 import { messageApi } from '../src/features/customer/services/messageApi.js';
-import { conversationData, conversationBookingData, messageData, mergeMessages } from '../src/features/customer/services/messageData.js';
+import { businessMessageChats, conversationData, conversationBookingData, messageData, mergeMessages } from '../src/features/customer/services/messageData.js';
 
 test('customer messaging requests use authentication and preserve conversation identity', async (t) => {
   authApi.setAccessToken('customer-token');
@@ -31,6 +31,33 @@ test('conversation adapter preserves Mongo IDs, unread counts and booking associ
   assert.equal(chat.unread, 3);
   assert.equal(chat.avatarText, 'PS');
   assert.equal(conversationData({ _id: 'deleted', businessId: null }).bookingId, '');
+});
+
+test('business contact opens a draft until its first saved message and then reuses the conversation', () => {
+  const business = { _id: 'business-id', name: 'Pet Spa', phone: '0901' };
+  const otherChat = conversationData({ _id: 'other-chat', businessId: { _id: 'other-business' } });
+  const draftList = businessMessageChats([otherChat], business);
+  assert.equal(draftList[0].isDraft, true);
+  assert.equal(draftList[0].businessId, business._id);
+  assert.equal(draftList[0].name, business.name);
+  assert.equal(draftList[0].bookingId, '');
+  const saved = conversationData({ _id: 'saved-chat', businessId: business });
+  const savedList = businessMessageChats([saved, otherChat], business);
+  assert.equal(savedList.length, 2);
+  assert.equal(savedList[0].id, 'saved-chat');
+  assert.equal(savedList.some((chat) => chat.isDraft), false);
+  const bookingChat = { ...saved, bookingId: 'booking-id' };
+  assert.equal(businessMessageChats([bookingChat], business)[0].isDraft, true);
+  assert.deepEqual(businessMessageChats([otherChat], null), [otherChat]);
+});
+
+test('first contact sends the business ID to the backend and propagates rejection', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(new URL(url).pathname, '/api/customer/messages');
+    assert.deepEqual(JSON.parse(options.body), { businessId: 'business-id', content: 'Xin chào' });
+    return Response.json({ message: 'Cơ sở kinh doanh hiện không thể nhận tin nhắn' }, { status: 400 });
+  });
+  await assert.rejects(messageApi.send({ businessId: 'business-id', content: 'Xin chào' }), /không thể nhận tin nhắn/);
 });
 
 test('socket acknowledgments and history merge without duplicates or regressing read receipts', () => {

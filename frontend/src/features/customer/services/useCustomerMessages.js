@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 import { authApi } from '../../auth/services/authApi.js';
 import { messageApi } from './messageApi.js';
 import { bookingApi } from './bookingApi.js';
-import { conversationBookingData, conversationData, mergeMessages, messageData } from './messageData.js';
+import { businessApi } from './businessApi.js';
+import { businessMessageChats, conversationBookingData, conversationData, mergeMessages, messageData } from './messageData.js';
 
 const emitWithAck = (socket, event, payload) => new Promise((resolve, reject) => {
   socket.timeout(10000).emit(event, payload, (error, response) => {
@@ -13,8 +14,9 @@ const emitWithAck = (socket, event, payload) => new Promise((resolve, reject) =>
   });
 });
 
-export const useCustomerMessages = (customerId, targetId) => {
+export const useCustomerMessages = (customerId, targetId, targetBusinessId) => {
   const [chats, setChats] = useState([]);
+  const [targetBusiness, setTargetBusiness] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [allMessages, setAllMessages] = useState({});
   const [details, setDetails] = useState({});
@@ -25,10 +27,22 @@ export const useCustomerMessages = (customerId, targetId) => {
   const [syncError, setSyncError] = useState('');
   const socketRef = useRef(null);
   const sendLock = useRef(false);
-  const selectedChat = chats.find((chat) => chat.id === (selectedId || targetId)) || chats[0];
-  const conversationId = selectedChat?.id;
+  const visibleChats = businessMessageChats(chats, targetBusiness);
+  const selectedChat = visibleChats.find((chat) => chat.id === (selectedId || targetId))
+    || (targetBusinessId ? visibleChats.find((chat) => chat.businessId === targetBusinessId && !chat.bookingId) : visibleChats[0]);
+  const conversationId = selectedChat?.isDraft ? undefined : selectedChat?.id;
+  const draftBusinessId = selectedChat?.isDraft ? selectedChat.businessId : null;
   const bookingId = selectedChat?.bookingId;
   const avatar = selectedChat?.avatarText;
+
+  useEffect(() => {
+    if (!customerId || !targetBusinessId) return;
+    let active = true;
+    businessApi.detail(targetBusinessId).then((response) => {
+      if (active) setTargetBusiness(response.data);
+    }).catch((error) => { if (active) setError(error.message); });
+    return () => { active = false; };
+  }, [customerId, targetBusinessId]);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -52,7 +66,11 @@ export const useCustomerMessages = (customerId, targetId) => {
       if (active) {
         const list = response.data.map(conversationData);
         setChats(list);
-        setSelectedId((previous) => previous || (list.some((chat) => chat.id === targetId) ? targetId : list[0]?.id));
+        setSelectedId((previous) => {
+          if (previous && list.some((chat) => chat.id === previous)) return previous;
+          if (targetBusinessId) return list.find((chat) => chat.businessId === targetBusinessId && !chat.bookingId)?.id;
+          return list.some((chat) => chat.id === targetId) ? targetId : list[0]?.id;
+        });
         setLoading(false);
       }
     };
@@ -116,28 +134,35 @@ export const useCustomerMessages = (customerId, targetId) => {
       socket.disconnect();
       if (socketRef.current === socket) socketRef.current = null;
     };
-  }, [customerId, conversationId, avatar, targetId]);
+  }, [customerId, conversationId, avatar, targetId, targetBusinessId]);
 
   const sendMessage = useCallback(async (text) => {
-    if (!text.trim() || !conversationId || sendLock.current) return false;
+    if (!text.trim() || (!conversationId && !draftBusinessId) || sendLock.current) return false;
     sendLock.current = true;
     setSending(true);
     setError('');
     try {
       const socket = socketRef.current;
       let message;
-      if (socket?.connected) {
+      if (socket?.connected && conversationId) {
         await emitWithAck(socket, 'conversation:join', { conversationId });
         const response = await emitWithAck(socket, 'message:send', { conversationId, content: text.trim() });
         message = response.data;
       } else {
-        const response = await messageApi.send({ conversationId, content: text.trim() });
+        const response = await messageApi.send({ ...(conversationId ? { conversationId } : { businessId: draftBusinessId }), content: text.trim() });
         message = response.data.message;
       }
+      const savedConversationId = String(message.conversationId);
       setAllMessages((previous) => ({ ...previous,
-        [conversationId]: mergeMessages(previous[conversationId] || [], [messageData(message, customerId, avatar)]),
+        [savedConversationId]: mergeMessages(previous[savedConversationId] || [], [messageData(message, customerId, avatar)]),
       }));
-      setChats((previous) => previous.map((chat) => chat.id === conversationId
+      if (draftBusinessId) {
+        const chat = conversationData({ _id: savedConversationId, businessId: targetBusiness,
+          lastMessage: message.content, lastMessageAt: message.createdAt });
+        setChats((previous) => [chat, ...previous.filter((item) => item.id !== savedConversationId)]);
+        setSelectedId(savedConversationId);
+        setLoadedId(savedConversationId);
+      } else setChats((previous) => previous.map((chat) => chat.id === conversationId
         ? { ...chat, lastMessage: message.content, time: conversationData({ lastMessageAt: message.createdAt }).time, updatedAt: message.createdAt }
         : chat).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)));
       return true;
@@ -148,10 +173,10 @@ export const useCustomerMessages = (customerId, targetId) => {
       sendLock.current = false;
       setSending(false);
     }
-  }, [conversationId, customerId, avatar]);
+  }, [conversationId, customerId, avatar, draftBusinessId, targetBusiness]);
 
   return {
-    chats, selectedChat: selectedChat ? { ...selectedChat, ...details[bookingId] } : null,
+    chats: visibleChats, selectedChat: selectedChat ? { ...selectedChat, ...details[bookingId] } : null,
     messages: allMessages[conversationId] || [], loading,
     loadingMessages: Boolean(conversationId && loadedId !== conversationId),
     sending, error: error || syncError, selectChat: (chat) => { setSelectedId(chat.id); setError(''); }, sendMessage,

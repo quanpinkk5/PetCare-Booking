@@ -6,8 +6,8 @@ import ChatWindow from "../../components/Messages/ChatWindow";
 import RightInfoPanel from "../../components/Messages/RightInfoPanel";
 import { useCustomerMessages } from "../../services/useCustomerMessages";
 
-const CustomerMessages = ({ customerId, targetId, isAuthLoading }) => {
-  const { chats, selectedChat, messages, loading, loadingMessages, sending, error, selectChat, sendMessage } = useCustomerMessages(customerId, targetId);
+const CustomerMessages = ({ customerId, targetId, businessId, isAuthLoading }) => {
+  const { chats, selectedChat, messages, loading, loadingMessages, sending, error, selectChat, sendMessage } = useCustomerMessages(customerId, targetId, businessId);
   return (
     <div className="min-h-screen bg-slate-50 pb-10 text-slate-800 antialiased">
       <HeroBanner />
@@ -29,8 +29,9 @@ const Messages = () => {
   const [searchParams] = useSearchParams();
   const { user, isAuthLoading } = useAuth();
   const targetId = id || searchParams.get('id');
+  const businessId = searchParams.get('businessId');
   const customerId = String(user?._id || user?.id || '');
-  return <CustomerMessages key={`${customerId}:${targetId || ''}`} customerId={customerId} targetId={targetId} isAuthLoading={isAuthLoading} />;
+  return <CustomerMessages key={`${customerId}:${targetId || ''}:${businessId || ''}`} customerId={customerId} targetId={targetId} businessId={businessId} isAuthLoading={isAuthLoading} />;
 };
 
 export default Messages;
