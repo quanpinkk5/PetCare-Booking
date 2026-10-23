@@ -21,6 +21,10 @@ router.get(
   businessesController.getAllBusinesses
 );
 
+// Hồ sơ thương hiệu thuộc tài khoản đang đăng nhập.
+router.get("/businesses/profile", authenticate, businessesController.getBusinessProfile);
+router.patch("/businesses/:id", authenticate, businessesController.updateBusiness);
+
 // GET - Lấy Businesses theo ID
 router.get(
   "/businesses/:id",

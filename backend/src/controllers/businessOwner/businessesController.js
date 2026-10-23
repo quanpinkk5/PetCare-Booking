@@ -1,4 +1,93 @@
+const mongoose = require("mongoose");
 const Business = require("../../models/Business");
+const Branch = require("../../models/Branch");
+const Service = require("../../models/Service");
+const Review = require("../../models/Review");
+
+const getBusinessProfile = async (req, res, next) => {
+  try {
+    if (req.user.role !== "BUSINESS_OWNER") {
+      return res.status(403).json({ success: false, message: "Bạn không có quyền xem hồ sơ cơ sở" });
+    }
+    const business = await Business.findOne({ ownerId: req.user._id || req.user.id }).lean();
+    if (!business) {
+      return res.status(200).json({ success: true, data: { business: null, branches: [], stats: null } });
+    }
+    const [branches, services, ratings] = await Promise.all([
+      Branch.find({ businessId: business._id }).select("name address status").sort({ createdAt: 1 }).lean(),
+      Service.countDocuments({ businessId: business._id, status: "ACTIVE" }),
+      Review.aggregate([
+        { $match: { businessId: business._id, status: "VISIBLE" } },
+        { $group: { _id: null, averageRating: { $avg: "$rating" }, totalReviews: { $sum: 1 } } },
+      ]),
+    ]);
+    return res.status(200).json({ success: true, data: {
+      business, branches,
+      stats: { branches: branches.length, activeBranches: branches.filter((item) => item.status === "ACTIVE").length,
+        services, averageRating: ratings[0]?.averageRating || 0, totalReviews: ratings[0]?.totalReviews || 0 },
+      owner: { fullName: req.user.fullName, email: req.user.email, avatar: req.user.avatar },
+    } });
+  } catch (error) { next(error); }
+};
+
+const updateBusiness = async (req, res, next) => {
+  try {
+    if (req.user.role !== "BUSINESS_OWNER") {
+      return res.status(403).json({ success: false, message: "Bạn không có quyền cập nhật hồ sơ cơ sở" });
+    }
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: "ID doanh nghiệp không hợp lệ" });
+    }
+    const strings = ["name", "description", "logo", "phone", "email", "businessType", "licenseNumber", "website", "socialUrl", "note"];
+    const allowed = [...strings, "address", "openingHours", "images", "policies"];
+    const body = req.body;
+    const invalid = (message) => res.status(400).json({ success: false, message });
+    if (!body || typeof body !== "object" || Array.isArray(body) || !Object.keys(body).length || Object.keys(body).some((key) => !allowed.includes(key))) {
+      return invalid("Dữ liệu cập nhật hồ sơ không hợp lệ");
+    }
+    const updates = {};
+    for (const field of strings) {
+      if (body[field] === undefined) continue;
+      if (typeof body[field] !== "string" || body[field].length > 5000 || (field === "name" && !body[field].trim())) {
+        return invalid(`${field} không hợp lệ (tối đa 5000 ký tự)`);
+      }
+      updates[field] = body[field].trim();
+    }
+    for (const field of ["logo", "website", "socialUrl"]) {
+      if (updates[field] && !/^https?:\/\/[^\s]+$/i.test(updates[field])) return invalid("Đường dẫn phải bắt đầu bằng http:// hoặc https://");
+    }
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) return invalid("Email không hợp lệ");
+    for (const field of ["images", "policies"]) {
+      if (body[field] === undefined) continue;
+      if (!Array.isArray(body[field]) || body[field].length > 100 || !body[field].every((item) => typeof item === "string" && item.length <= 5000)) {
+        return invalid(`${field} phải là mảng tối đa 100 chuỗi`);
+      }
+      updates[field] = body[field].map((item) => item.trim()).filter(Boolean);
+    }
+    if (updates.images?.some((url) => !/^https?:\/\/[^\s]+$/i.test(url))) return invalid("Hình ảnh phải là đường dẫn HTTP/HTTPS");
+    if (body.address !== undefined) {
+      if (!body.address || typeof body.address !== "object" || Array.isArray(body.address) ||
+        Object.entries(body.address).some(([key, value]) => !["detail", "street", "ward", "district", "province", "city"].includes(key) || typeof value !== "string" || value.length > 1000)) {
+        return invalid("Địa chỉ không hợp lệ");
+      }
+      for (const [key, value] of Object.entries(body.address)) updates[`address.${key}`] = value.trim();
+    }
+    if (body.openingHours !== undefined) {
+      if (!Array.isArray(body.openingHours) || body.openingHours.length > 100 || !body.openingHours.every((item) => item &&
+        typeof item.day === "string" && item.day.trim() && item.day.length <= 100 && typeof item.time === "string" && item.time.trim() && item.time.length <= 100)) {
+        return invalid("Giờ hoạt động cần có ngày và khung giờ hợp lệ");
+      }
+      updates.openingHours = body.openingHours.map(({ day, time }) => ({ day: day.trim(), time: time.trim() }));
+    }
+    if (!Object.keys(updates).length) return invalid("Chưa có thông tin cần cập nhật");
+    const business = await Business.findOneAndUpdate(
+      { _id: req.params.id, ownerId: req.user._id || req.user.id },
+      { $set: updates }, { new: true, runValidators: true },
+    );
+    if (!business) return res.status(404).json({ success: false, message: "Không tìm thấy cơ sở thuộc tài khoản của bạn" });
+    return res.status(200).json({ success: true, message: "Cập nhật hồ sơ cơ sở thành công", data: business });
+  } catch (error) { next(error); }
+};
 
 // ==============================
 // POST - Tạo Business
@@ -214,6 +303,8 @@ const getBusinessesById = async (req, res, next) => {
   }
 };
 module.exports = {
+  getBusinessProfile,
+  updateBusiness,
   createBusiness,
   getAllBusinesses,
   getBusinessesById,
