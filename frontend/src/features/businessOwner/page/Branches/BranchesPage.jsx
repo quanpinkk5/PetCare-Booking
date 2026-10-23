@@ -1,66 +1,47 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
 import BranchMetricCards from "../../components/branches/BranchMetricCards";
 import BranchList from "../../components/branches/BranchList";
-import AttentionAlerts from "../../components/branches/AttentionAlerts";
-import BranchTipsWidget from "../../components/branches/BranchTipsWidget";
+import BranchModal from "../../components/branches/BranchModal";
+import { branchApi } from "../../services/branchApi.js";
+import { branchToRow } from "../../data/branchApiData.js";
 
 export default function BranchesPage() {
-    const [showAddForm, setShowAddForm] = useState(false);
+    const [result, setResult] = useState({ branches: [], business: null, loading: true, error: "" });
+    const [attempt, setAttempt] = useState(0);
+    const [modal, setModal] = useState(null);
+    const [notice, setNotice] = useState("");
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const load = async () => {
+            setResult((current) => ({ ...current, loading: true, error: "" }));
+            try {
+                const response = await branchApi.list(controller.signal);
+                if (!controller.signal.aborted) setResult({ branches: response.data, business: response.business, loading: false, error: "" });
+            } catch (error) {
+                if (!controller.signal.aborted) setResult((current) => ({ ...current, loading: false, error: error.message || "Không thể tải danh sách chi nhánh" }));
+            }
+        };
+        load();
+        return () => controller.abort();
+    }, [attempt]);
+
+    const open = (mode, id) => { setNotice(""); setModal({ mode, id }); };
+    const saved = (branch, mode) => {
+        setResult((current) => ({ ...current, branches: mode === "create" ? [branch, ...current.branches] :
+            current.branches.map((item) => item._id === branch._id ? { ...item, ...branch } : item) }));
+        setModal(null);
+        setNotice(mode === "create" ? "Thêm chi nhánh thành công" : "Cập nhật chi nhánh thành công");
+    };
 
     return (
         <div className="mx-auto w-full max-w-[1600px] space-y-6">
-            <BranchMetricCards onAddBranch={() => setShowAddForm(true)} />
-
-            <BranchList />
-
-            {showAddForm && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-                    onClick={() => setShowAddForm(false)}
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="add-branch-title"
-                        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2
-                                id="add-branch-title"
-                                className="text-lg font-bold text-slate-900"
-                            >
-                                Thêm chi nhánh
-                            </h2>
-
-                            <button
-                                type="button"
-                                onClick={() => setShowAddForm(false)}
-                                className="text-xl text-slate-400 hover:text-slate-700"
-                                aria-label="Đóng"
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <p className="text-sm leading-relaxed text-slate-600">
-                            Đây là vị trí để tích hợp form thêm chi nhánh. Hiện tại giao
-                            diện chưa kết nối API nên chưa lưu chi nhánh mới.
-                        </p>
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() => setShowAddForm(false)}
-                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                            >
-                                Đóng
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <BranchMetricCards disabled={result.loading || Boolean(result.error) || !result.business} onAddBranch={() => open("create")} />
+            {notice && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
+            {!result.loading && !result.error && !result.business && <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">Tài khoản chưa có cơ sở kinh doanh để quản lý chi nhánh.</p>}
+            <BranchList branches={result.branches.map((branch) => branchToRow(branch, result.business))} loading={result.loading} error={result.error}
+                onRetry={() => setAttempt((value) => value + 1)} onView={(id) => open("view", id)} onEdit={(id) => open("edit", id)} onStatus={(id) => open("status", id)} />
+            {modal && <BranchModal key={`${modal.mode}-${modal.id || "new"}`} {...modal} businessId={result.business._id} onClose={() => setModal(null)} onSaved={saved} />}
         </div>
     );
 }
