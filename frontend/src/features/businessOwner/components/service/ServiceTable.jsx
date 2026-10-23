@@ -7,34 +7,21 @@ import {
     Eye,
     Edit,
     MoreVertical,
+    Sparkles,
 } from "lucide-react";
-import { SERVICES_DATA } from "../../data/serviceData";
+import { filterServices } from "../../data/serviceApiData.js";
 
 const PAGE_SIZE = 6;
 
-export default function ServiceTable({ onViewService, onEditService }) {
+export default function ServiceTable({ services, loading, error, onRetry, onViewService, onEditService, onStatusService }) {
     const [keyword, setKeyword] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [page, setPage] = useState(1);
 
     const filteredServices = useMemo(() => {
-        const normalizedKeyword = keyword.trim().toLowerCase();
-
-        return SERVICES_DATA.filter((service) => {
-            const matchesKeyword =
-                service.name.toLowerCase().includes(normalizedKeyword) ||
-                service.desc.toLowerCase().includes(normalizedKeyword);
-
-            const matchesType =
-                typeFilter === "all" || service.type === typeFilter;
-
-            const matchesStatus =
-                statusFilter === "all" || service.status === statusFilter;
-
-            return matchesKeyword && matchesType && matchesStatus;
-        });
-    }, [keyword, typeFilter, statusFilter]);
+        return filterServices(services, keyword, typeFilter, statusFilter);
+    }, [services, keyword, typeFilter, statusFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredServices.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -66,6 +53,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                             type="text"
                             value={keyword}
                             onChange={handleKeywordChange}
+                            aria-label="Tìm kiếm dịch vụ"
                             placeholder="Tìm kiếm dịch vụ..."
                             className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         />
@@ -79,6 +67,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                         <select
                             value={typeFilter}
                             onChange={handleTypeChange}
+                            aria-label="Lọc loại dịch vụ"
                             className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2 pl-3 pr-8 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         >
                             <option value="all">Loại dịch vụ: Tất cả</option>
@@ -95,6 +84,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                         <select
                             value={statusFilter}
                             onChange={handleStatusChange}
+                            aria-label="Lọc trạng thái dịch vụ"
                             className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2 pl-3 pr-8 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         >
                             <option value="all">Trạng thái: Tất cả</option>
@@ -132,18 +122,19 @@ export default function ServiceTable({ onViewService, onEditService }) {
                         </thead>
 
                         <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
-                            {visibleServices.map((service) => (
+                            {loading ? <tr><td colSpan={8} role="status" className="px-4 py-10 text-center text-slate-400">Đang tải dịch vụ...</td></tr> : error ?
+                                <tr><td colSpan={8} role="alert" className="px-4 py-10 text-center text-red-600"><p>{error}</p><button type="button" onClick={onRetry} className="mt-3 font-semibold text-emerald-600">Thử lại</button></td></tr> : visibleServices.map((service) => (
                                 <tr
                                     key={service.id}
                                     className="transition hover:bg-slate-50/70"
                                 >
                                     <td className="px-4 py-3.5">
                                         <div className="flex items-center gap-3">
-                                            <img
+                                            {service.img ? <img
                                                 alt={service.name}
                                                 src={service.img}
                                                 className="h-11 w-11 shrink-0 rounded-xl border border-slate-100 object-cover shadow-xs"
-                                            />
+                                            /> : <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><Sparkles size={20} /></div>}
 
                                             <div className="min-w-0">
                                                 <div className="flex flex-wrap items-center gap-1.5">
@@ -201,13 +192,13 @@ export default function ServiceTable({ onViewService, onEditService }) {
                                         </div>
                                         <div
                                             className={`text-[10px] font-medium ${
-                                                service.isDown
+                                                service.trendDirection === "neutral" ? "text-slate-400" : service.isDown
                                                     ? "text-rose-500"
                                                     : "text-emerald-600"
                                             }`}
                                         >
-                                            {service.isDown ? "▼" : "▲"}{" "}
-                                            {service.trend.replace("+", "").replace("-", "")}
+                                            {service.trendDirection === "neutral" ? "" : service.isDown ? "▼ " : "▲ "}
+                                            {service.trend}
                                         </div>
                                     </td>
 
@@ -238,9 +229,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                                                 aria-label={`Xem ${service.name}`}
                                                 className="cursor-pointer rounded-lg p-1.5 transition hover:bg-slate-100 hover:text-slate-700"
                                                 onClick={() =>
-                                                    onViewService
-                                                        ? onViewService(service)
-                                                        : window.alert(`Xem dịch vụ: ${service.name}`)
+                                                    onViewService(service)
                                                 }
                                             >
                                                 <Eye size={15} />
@@ -252,9 +241,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                                                 aria-label={`Sửa ${service.name}`}
                                                 className="cursor-pointer rounded-lg p-1.5 transition hover:bg-slate-100 hover:text-slate-700"
                                                 onClick={() =>
-                                                    onEditService
-                                                        ? onEditService(service)
-                                                        : window.alert(`Sửa dịch vụ: ${service.name}`)
+                                                    onEditService(service)
                                                 }
                                             >
                                                 <Edit size={15} />
@@ -262,11 +249,11 @@ export default function ServiceTable({ onViewService, onEditService }) {
 
                                             <button
                                                 type="button"
-                                                title="Thao tác khác"
-                                                aria-label={`Thao tác khác với ${service.name}`}
+                                                title={service.statusCode === "ACTIVE" ? "Tạm ngưng dịch vụ" : "Kích hoạt dịch vụ"}
+                                                aria-label={`${service.statusCode === "ACTIVE" ? "Tạm ngưng" : "Kích hoạt"} ${service.name}`}
                                                 className="cursor-pointer rounded-lg p-1.5 transition hover:bg-slate-100 hover:text-slate-700"
                                                 onClick={() =>
-                                                    window.alert(`Thao tác khác với dịch vụ: ${service.name}`)
+                                                    onStatusService(service)
                                                 }
                                             >
                                                 <MoreVertical size={15} />
@@ -276,7 +263,7 @@ export default function ServiceTable({ onViewService, onEditService }) {
                                 </tr>
                             ))}
 
-                            {visibleServices.length === 0 && (
+                            {!loading && !error && visibleServices.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan={8}
@@ -313,7 +300,8 @@ export default function ServiceTable({ onViewService, onEditService }) {
                         <button
                             type="button"
                             disabled={currentPage === 1}
-                            onClick={() => setPage((prev) => prev - 1)}
+                            aria-label="Trang trước"
+                            onClick={() => setPage(currentPage - 1)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <ChevronLeft size={14} />
@@ -339,7 +327,8 @@ export default function ServiceTable({ onViewService, onEditService }) {
                         <button
                             type="button"
                             disabled={currentPage === totalPages}
-                            onClick={() => setPage((prev) => prev + 1)}
+                            aria-label="Trang sau"
+                            onClick={() => setPage(currentPage + 1)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <ChevronRight size={14} />
