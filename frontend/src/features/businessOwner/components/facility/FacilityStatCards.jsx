@@ -1,13 +1,12 @@
 import { Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { STATS } from "../../data/facilityData";
 
-export default function FacilityStatCards() {
+export default function FacilityStatCards({ stats }) {
     const navigate = useNavigate();
 
     return (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STATS.map((stat) => {
+            {stats.map((stat) => {
                 const Icon = stat.icon;
                 const isBranchCard = stat.id === "branches";
 
