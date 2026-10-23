@@ -389,7 +389,7 @@ export default function BusinessOverviewCard({
               </div>
 
               <div className="text-xs font-semibold text-slate-400">
-                Chưa cập nhật
+                {facility.website || "Chưa cập nhật"}
               </div>
             </div>
           </div>
@@ -411,6 +411,12 @@ export default function BusinessOverviewCard({
               : "Chưa có thông tin khu vực từ các chi nhánh"}
           </span>
         </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 text-xs md:grid-cols-2">
+        {[["Loại hình kinh doanh", facility.businessType], ["Giấy phép kinh doanh", facility.licenseNumber],
+          ["Địa chỉ đăng ký", typeof facility.address === "string" ? facility.address : [facility.address?.detail, facility.address?.ward, facility.address?.district, facility.address?.province].filter(Boolean).join(", ")]].map(([label, value]) =>
+          <div key={label}><p className="text-[11px] text-slate-400">{label}</p><p className="mt-1 font-semibold text-slate-700">{value || "Chưa cập nhật"}</p></div>)}
       </div>
 
       {/* MÔ TẢ */}

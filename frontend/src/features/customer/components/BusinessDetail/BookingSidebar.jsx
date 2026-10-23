@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Phone, MapPin, MessageCircle } from 'lucide-react';
 import { formatAddress, openingHoursText } from '../../services/businessData.js';
 
-const BookingSidebar = ({ business, branch }) => {
+const BookingSidebar = ({ business, branch, bookingBranchId }) => {
   const displayName = branch?.name || business?.name || 'Chi nhánh cơ sở';
   const displayPhone = branch?.phone || business?.phone;
   const displayEmail = branch?.email || business?.email;
@@ -41,7 +41,7 @@ const BookingSidebar = ({ business, branch }) => {
             ))}
           </>
         )}
-        {branch?._id && <Link to={'/booking?branchId=' + encodeURIComponent(branch._id)} className="mt-5 block rounded-xl bg-emerald-600 p-3 text-center text-sm font-semibold text-white">Đặt lịch tại chi nhánh</Link>}
+        {business?._id && <Link to={'/booking?' + new URLSearchParams({ businessId: business._id, ...(bookingBranchId ? { branchId: bookingBranchId } : {}) })} className="mt-5 block rounded-xl bg-emerald-600 p-3 text-center text-sm font-semibold text-white">Đặt lịch tại cơ sở</Link>}
         {business?._id && <Link to={'/messages?businessId=' + encodeURIComponent(business._id)} className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-emerald-600 p-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50">
           <MessageCircle size={16} />
           Nhắn tin cho cơ sở

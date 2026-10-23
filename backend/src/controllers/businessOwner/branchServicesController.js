@@ -5,6 +5,18 @@ const Branch = require("../../models/Branch");
 const Service = require("../../models/Service");
 const Business = require("../../models/Business");
 
+const validateBody = (body, creating = false) => {
+  const allowed = ["price", "pricingUnit", "durationMinutes", "capacity", "petTypes", "status", ...(creating ? ["branchId", "serviceId"] : [])];
+  if (!body || typeof body !== "object" || Array.isArray(body) || !Object.keys(body).length || Object.keys(body).some((key) => !allowed.includes(key))) return "Dữ liệu dịch vụ chi nhánh không hợp lệ";
+  if ((creating || body.price !== undefined) && (typeof body.price !== "number" || !Number.isFinite(body.price) || body.price < 0)) return "Giá phải là số không âm";
+  if ((creating || body.pricingUnit !== undefined) && !["PER_SERVICE", "PER_DAY"].includes(body.pricingUnit)) return "Đơn vị tính không hợp lệ";
+  if (body.durationMinutes !== undefined && body.durationMinutes !== null && (!Number.isSafeInteger(body.durationMinutes) || body.durationMinutes <= 0)) return "Thời lượng phải là số nguyên dương";
+  if ((creating || body.capacity !== undefined) && (!Number.isSafeInteger(body.capacity) || body.capacity <= 0)) return "Công suất phải là số nguyên dương";
+  if ((creating || body.petTypes !== undefined) && (!Array.isArray(body.petTypes) || !body.petTypes.length || body.petTypes.some((pet) => !["DOG", "CAT"].includes(pet)) || new Set(body.petTypes).size !== body.petTypes.length)) return "Chọn Chó và/hoặc Mèo, không trùng lặp";
+  if (body.status !== undefined && !["ACTIVE", "INACTIVE"].includes(body.status)) return "Trạng thái không hợp lệ";
+  return null;
+};
+
 // ==============================
 // POST - Thêm dịch vụ vào chi nhánh
 // ==============================
@@ -17,6 +29,9 @@ const createBranchService = async (req, res, next) => {
         message: "Bạn không có quyền thêm dịch vụ vào chi nhánh",
       });
     }
+
+    const validationError = validateBody(req.body, true);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 2. Lấy dữ liệu
     const {
@@ -59,7 +74,7 @@ const createBranchService = async (req, res, next) => {
 
     // 6. Kiểm tra thời gian
     if (
-      durationMinutes !== undefined &&
+      durationMinutes !== undefined && durationMinutes !== null &&
       (!Number.isInteger(durationMinutes) || durationMinutes <= 0)
     ) {
       return res.status(400).json({
@@ -155,6 +170,12 @@ const createBranchService = async (req, res, next) => {
       });
     }
 
+    if (branch.status !== "ACTIVE") return res.status(400).json({ success: false, message: "Chi nhánh đang tạm dừng hoạt động" });
+    if (pricingUnit !== (service.serviceType === "BOARDING" ? "PER_DAY" : "PER_SERVICE") ||
+      (service.serviceType === "APPOINTMENT" && !Number.isSafeInteger(durationMinutes))) {
+      return res.status(400).json({ success: false, message: "Đơn vị tính hoặc thời lượng không phù hợp với loại dịch vụ" });
+    }
+
     // 16. Kiểm tra dịch vụ đã được thêm vào chi nhánh chưa
     const existingBranchService = await BranchService.findOne({
       branchId,
@@ -187,6 +208,7 @@ const createBranchService = async (req, res, next) => {
       data: branchService,
     });
   } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ success: false, message: "Dịch vụ đã tồn tại trong chi nhánh này" });
     next(error);
   }
 };
@@ -195,75 +217,23 @@ const createBranchService = async (req, res, next) => {
 // ==============================
 const getAllBranchServices = async (req, res, next) => {
   try {
-    // 1. Kiểm tra quyền Business Owner
-    if (req.user.role !== "BUSINESS_OWNER") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền xem dịch vụ của chi nhánh",
-      });
-    }
-
-    // 2. Lấy branchId từ query
+    if (req.user.role !== "BUSINESS_OWNER") return res.status(403).json({ success: false, message: "Bạn không có quyền xem dịch vụ chi nhánh" });
     const { branchId } = req.query;
-
-    // 3. Kiểm tra branchId
-    if (!mongoose.isValidObjectId(branchId)) {
-      return res.status(400).json({
-        success: false,
-        message: "branchId không hợp lệ",
-      });
-    }
-
-    // 4. Lấy Owner ID từ JWT
-    const ownerId = req.user._id || req.user.id;
-
-    // 5. Kiểm tra chi nhánh có tồn tại
-    const branch = await Branch.findById(branchId);
-
-    if (!branch) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy chi nhánh",
-      });
-    }
-
-    // 6. Kiểm tra chi nhánh thuộc Business của Owner
-    const business = await Business.findOne({
-      _id: branch.businessId,
-      ownerId,
-    });
-
-    if (!business) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy chi nhánh thuộc doanh nghiệp của bạn",
-      });
-    }
-
-    // 7. Lấy danh sách BranchService
-    const branchServices = await BranchService.find({
-      branchId,
-    })
-      .populate({
-        path: "serviceId",
-        select: "name description serviceType images status categoryId",
-        populate: {
-          path: "categoryId",
-          select: "name code",
-        },
-      })
-      .sort({ createdAt: -1 });
-
-    // 8. Trả kết quả
-    return res.status(200).json({
-      success: true,
-      message: "Lấy danh sách dịch vụ của chi nhánh thành công",
-      total: branchServices.length,
-      data: branchServices,
-    });
-  } catch (error) {
-    next(error);
-  }
+    if (branchId !== undefined && !mongoose.isValidObjectId(branchId)) return res.status(400).json({ success: false, message: "branchId không hợp lệ" });
+    const business = await Business.findOne({ ownerId: req.user._id || req.user.id }).select("name").lean();
+    if (!business) return res.status(200).json({ success: true, business: null, branches: [], services: [], data: [] });
+    const [branches, services] = await Promise.all([
+      Branch.find({ businessId: business._id }).select("name address images status").sort({ name: 1 }).lean(),
+      Service.find({ businessId: business._id }).select("name description serviceType images status categoryId").populate("categoryId", "name code").sort({ name: 1 }).lean(),
+    ]);
+    if (branchId && !branches.some((branch) => String(branch._id) === branchId)) return res.status(404).json({ success: false, message: "Không tìm thấy chi nhánh thuộc doanh nghiệp của bạn" });
+    const ids = branchId ? [branches.find((branch) => String(branch._id) === branchId)._id] : branches.map((branch) => branch._id);
+    const data = ids.length ? await BranchService.find({ branchId: { $in: ids } })
+      .populate({ path: "branchId", select: "name address images status" })
+      .populate({ path: "serviceId", match: { businessId: business._id }, select: "name description serviceType images status categoryId", populate: { path: "categoryId", select: "name code" } })
+      .sort({ createdAt: -1, _id: -1 }).lean() : [];
+    return res.status(200).json({ success: true, business, branches, services, total: data.length, data });
+  } catch (error) { next(error); }
 };
 // ==============================
 // GET - Xem chi tiết BranchService
@@ -346,7 +316,7 @@ const getBranchServiceById = async (req, res, next) => {
     await branchService.populate([
       {
         path: "branchId",
-        select: "name phone email address status",
+        select: "name phone email address images status",
       },
       {
         path: "serviceId",
@@ -390,6 +360,9 @@ const updateBranchService = async (req, res, next) => {
         message: "ID dịch vụ chi nhánh không hợp lệ",
       });
     }
+
+    const validationError = validateBody(req.body);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 3. Lấy Owner ID từ JWT
     const ownerId = req.user._id || req.user.id;
@@ -501,7 +474,7 @@ const updateBranchService = async (req, res, next) => {
 
     // 12. Kiểm tra thời gian thực hiện
     if (
-      durationMinutes !== undefined &&
+      durationMinutes !== undefined && durationMinutes !== null &&
       (
         !Number.isInteger(durationMinutes) ||
         durationMinutes <= 0
@@ -555,11 +528,21 @@ const updateBranchService = async (req, res, next) => {
     }
 
     // 16. Không cho bật ACTIVE nếu Service gốc đang INACTIVE
-    if (status === "ACTIVE" && service.status !== "ACTIVE") {
+    if (status === "ACTIVE" && (service.status !== "ACTIVE" || branch.status !== "ACTIVE")) {
       return res.status(400).json({
         success: false,
-        message: "Không thể kích hoạt vì dịch vụ gốc đang ngừng hoạt động",
+        message: "Không thể kích hoạt vì dịch vụ gốc hoặc chi nhánh đang ngừng hoạt động",
       });
+    }
+
+    if (pricingUnit !== undefined && pricingUnit !== (service.serviceType === "BOARDING" ? "PER_DAY" : "PER_SERVICE")) {
+      return res.status(400).json({ success: false, message: "Đơn vị tính không phù hợp với loại dịch vụ" });
+    }
+    if (service.serviceType === "APPOINTMENT" && durationMinutes === null) return res.status(400).json({ success: false, message: "Dịch vụ hẹn lịch cần thời lượng phục vụ" });
+    if (status === "ACTIVE" && (service.serviceType === "APPOINTMENT" && (!Number.isSafeInteger(durationMinutes ?? branchService.durationMinutes) || (durationMinutes ?? branchService.durationMinutes) <= 0) ||
+      !(capacity ?? branchService.capacity) || !(petTypes ?? branchService.petTypes)?.length ||
+      (pricingUnit ?? branchService.pricingUnit) !== (service.serviceType === "BOARDING" ? "PER_DAY" : "PER_SERVICE"))) {
+      return res.status(400).json({ success: false, message: "Cần hoàn thiện thời lượng, công suất, loài thú cưng và đơn vị tính trước khi kích hoạt" });
     }
 
     // 17. Cập nhật các field được gửi lên
@@ -594,11 +577,11 @@ const updateBranchService = async (req, res, next) => {
     await branchService.populate([
       {
         path: "branchId",
-        select: "name address status",
+        select: "name address images status",
       },
       {
         path: "serviceId",
-        select: "name serviceType status categoryId",
+        select: "name description images serviceType status categoryId",
         populate: {
           path: "categoryId",
           select: "name code",

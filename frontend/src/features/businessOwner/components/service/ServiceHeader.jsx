@@ -1,6 +1,6 @@
-import { Plus, Download, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 
-export default function ServiceHeader({ onAddService }) {
+export default function ServiceHeader({ onAddService, disabled }) {
     return (
         <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
 
@@ -10,7 +10,8 @@ export default function ServiceHeader({ onAddService }) {
                 <button
                     type="button"
                     onClick={onAddService}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700"
+                    disabled={disabled}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
                 >
                     <Plus size={16} />
                     <span>Thêm dịch vụ mới</span>

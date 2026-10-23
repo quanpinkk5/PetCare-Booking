@@ -3,6 +3,7 @@ import {
     Edit,
     ChevronLeft,
     ChevronRight,
+    Building2,
 } from 'lucide-react';
 
 export default function BranchServiceTable({
@@ -12,6 +13,10 @@ export default function BranchServiceTable({
     onToggleStatus,
     onView,
     onEdit,
+    loading,
+    error,
+    onRetry,
+    pendingIds = [],
 }) {
     const PAGE_SIZE = 5;
     const totalPages = Math.max(1, Math.ceil(services.length / PAGE_SIZE));
@@ -39,8 +44,8 @@ export default function BranchServiceTable({
                             <th className="py-3 px-4">Tên dịch vụ</th>
                             <th className="py-3 px-3">Danh mục</th>
                             <th className="py-3 px-3">Giá dịch vụ</th>
-                            <th className="py-3 px-3">Đơn vị</th>
-                            <th className="py-3 px-3">Thời lượng</th>
+                            {/* <th className="py-3 px-3">Đơn vị</th>
+                            <th className="py-3 px-3">Thời lượng</th> */}
                             <th className="py-3 px-3">Công suất</th>
                             <th className="py-3 px-3">Áp dụng</th>
                             <th className="py-3 px-3 text-center">Trạng thái</th>
@@ -49,126 +54,131 @@ export default function BranchServiceTable({
                     </thead>
 
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {currentServices.length > 0 ? (
-                            currentServices.map((srv) => (
-                                <tr
-                                    key={srv.id}
-                                    className="hover:bg-slate-50/60 transition-colors"
-                                >
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center gap-2.5">
-                                            <img
-                                                alt={srv.branchName}
-                                                src={srv.branchImg}
-                                                className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
-                                            />
-                                            <div>
-                                                <div className="font-bold text-slate-900 leading-tight">
-                                                    {srv.branchName}
-                                                </div>
-                                                <div className="text-[10px] text-slate-400 mt-0.5 max-w-[160px] truncate">
-                                                    {srv.branchAddress}
+                        {loading ? <tr><td colSpan={10} role="status" className="py-12 text-center text-slate-400">Đang tải dịch vụ chi nhánh...</td></tr> : error ?
+                            <tr><td colSpan={10} role="alert" className="py-12 text-center text-red-600"><p>{error}</p><button type="button" onClick={onRetry} className="mt-3 font-semibold text-emerald-600">Thử lại</button></td></tr> : currentServices.length > 0 ? (
+                                currentServices.map((srv) => (
+                                    <tr
+                                        key={srv.id}
+                                        className="hover:bg-slate-50/60 transition-colors"
+                                    >
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center gap-2.5">
+                                                {srv.branchImg ? <img
+                                                    alt={srv.branchName}
+                                                    src={srv.branchImg}
+                                                    className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
+                                                /> : <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-400"><Building2 size={20} /></div>}
+                                                <div>
+                                                    <div className="font-bold text-slate-900 leading-tight">
+                                                        {srv.branchName}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5 max-w-[160px] truncate">
+                                                        {srv.branchAddress}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </td>
+                                        </td>
 
-                                    <td className="py-3 px-4">
-                                        <div className="font-semibold text-slate-800">
-                                            {srv.serviceName}
-                                        </div>
-                                        <div className="text-[11px] text-slate-400 line-clamp-1 max-w-[220px]">
-                                            {srv.serviceDesc}
-                                        </div>
-                                    </td>
+                                        <td className="py-3 px-4">
+                                            <div className="font-semibold text-slate-800">
+                                                {srv.serviceName}
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 line-clamp-1 max-w-[220px]">
+                                                {srv.serviceDesc}
+                                            </div>
+                                        </td>
 
-                                    <td className="py-3 px-3">
-                                        <span
-                                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${srv.catColor}`}
-                                        >
+                                        <td className="py-3 px-3">
                                             <span
-                                                className={`w-1.5 h-1.5 rounded-full ${srv.catDot}`}
-                                            />
-                                            {srv.category}
-                                        </span>
-                                    </td>
-
-                                    <td className="py-3 px-3 font-bold text-slate-800">
-                                        {srv.price}
-                                    </td>
-                                    <td className="py-3 px-3 text-slate-500">{srv.unit}</td>
-                                    <td className="py-3 px-3 text-slate-500">{srv.duration}</td>
-                                    <td className="py-3 px-3 text-slate-600 font-medium">
-                                        {srv.capacity}
-                                    </td>
-                                    <td className="py-3 px-3">
-                                        <span className="inline-flex gap-1 text-sm">
-                                            {srv.pets}
-                                        </span>
-                                    </td>
-
-                                    <td className="py-3 px-3 text-center">
-                                        {srv.isActive ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">
-                                                Đang hoạt động
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500">
-                                                Tạm dừng
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                type="button"
-                                                title="Xem chi tiết"
-                                                onClick={() => onView?.(srv)}
-                                                className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                                            >
-                                                <Eye size={16} />
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                title="Chỉnh sửa dịch vụ"
-                                                onClick={() => onEdit?.(srv)}
-                                                className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={srv.isActive}
-                                                aria-label={`Bật/tắt trạng thái ${srv.serviceName}`}
-                                                onClick={() => onToggleStatus?.(srv.id)}
-                                                className={`relative w-8 h-5 rounded-full transition-colors cursor-pointer ${
-                                                    srv.isActive ? 'bg-emerald-500' : 'bg-slate-300'
-                                                }`}
+                                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${srv.catColor}`}
                                             >
                                                 <span
-                                                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                                                        srv.isActive ? 'left-3.5' : 'left-0.5'
-                                                    }`}
+                                                    className={`w-1.5 h-1.5 rounded-full ${srv.catDot}`}
                                                 />
-                                            </button>
-                                        </div>
+                                                {srv.category}
+                                            </span>
+                                        </td>
+
+                                        <td className="py-3 px-3 font-bold text-slate-800">
+                                            {srv.price}
+                                        </td>
+                                        {/* <td className="py-3 px-3 text-slate-500">{srv.unit}</td>
+                                        <td className="py-3 px-3 text-slate-500">{srv.duration}</td> */}
+                                        <td className="py-3 px-3 text-slate-600 font-medium">
+                                            {srv.capacity}
+                                        </td>
+                                        <td className="py-3 px-3">
+                                            <span className="inline-flex gap-1 text-sm">
+                                                {srv.pets}
+                                            </span>
+                                        </td>
+
+                                        <td className="py-3 px-3 text-center">
+                                            {srv.isActive ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">
+                                                    Đang hoạt động
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500">
+                                                    Tạm dừng
+                                                </span>
+                                            )}
+                                            {srv.isActive && !srv.sourceAvailable && <p className="mt-1 text-[10px] text-amber-600">Chi nhánh/dịch vụ gốc không hoạt động</p>}
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    title="Xem chi tiết"
+                                                    aria-label={`Xem ${srv.serviceName} tại ${srv.branchName}`}
+                                                    onClick={() => onView?.(srv)}
+                                                    className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    title="Chỉnh sửa dịch vụ"
+                                                    aria-label={`Sửa ${srv.serviceName} tại ${srv.branchName}`}
+                                                    disabled={pendingIds.includes(srv.id)}
+                                                    onClick={() => onEdit?.(srv)}
+                                                    className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={srv.isActive}
+                                                    aria-busy={pendingIds.includes(srv.id)}
+                                                    disabled={pendingIds.includes(srv.id)}
+                                                    aria-label={`Bật/tắt trạng thái ${srv.serviceName}`}
+                                                    onClick={() => onToggleStatus?.(srv.id)}
+                                                    className={`relative w-8 h-5 rounded-full transition-colors cursor-pointer ${srv.isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                                                        }`}
+                                                >
+                                                    <span
+                                                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${srv.isActive ? 'left-3.5' : 'left-0.5'
+                                                            }`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan={10}
+                                        className="py-12 text-center text-slate-400 text-sm"
+                                    >
+                                        Không tìm thấy dịch vụ chi nhánh nào phù hợp.
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan={10}
-                                    className="py-12 text-center text-slate-400 text-sm"
-                                >
-                                    Không tìm thấy dịch vụ chi nhánh nào phù hợp.
-                                </td>
-                            </tr>
-                        )}
+                            )}
                     </tbody>
                 </table>
             </div>
@@ -207,11 +217,10 @@ export default function BranchServiceTable({
                             key={pageNum}
                             type="button"
                             onClick={() => handlePageChange(pageNum)}
-                            className={`w-7 h-7 rounded border flex items-center justify-center font-medium transition-colors cursor-pointer ${
-                                pageNum === activePage
-                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600 font-bold'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                            }`}
+                            className={`w-7 h-7 rounded border flex items-center justify-center font-medium transition-colors cursor-pointer ${pageNum === activePage
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-600 font-bold'
+                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
                         >
                             {pageNum}
                         </button>
