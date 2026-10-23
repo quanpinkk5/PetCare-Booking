@@ -4,6 +4,7 @@ import FacilityStatCards from "../../components/facility/FacilityStatCards";
 import FacilityInfoCards from "../../components/facility/FacilityInfoCards";
 import FacilityBottomCards from "../../components/facility/FacilityBottomCards";
 import FacilityEditModal from "../../components/facility/FacilityEditModal";
+import FacilityRegistration from "../../components/facility/FacilityRegistration";
 import { facilityApi } from "../../services/facilityApi";
 import { buildFacilityProfile } from "../../data/facilityProfileData";
 
@@ -37,9 +38,11 @@ export default function FacilityProfile() {
     if (error) return <div role="alert" className="mx-auto max-w-7xl space-y-3 rounded-xl bg-white p-6 text-red-600">
         <p>{error}</p><button onClick={() => setRetry((value) => value + 1)} className="font-semibold text-emerald-600">Thử lại</button>
     </div>;
-    if (!data?.business) return <div className="mx-auto max-w-7xl rounded-xl bg-white p-6 text-slate-500">
-        Tài khoản chưa có cơ sở kinh doanh để hiển thị hồ sơ.
-    </div>;
+    if (!data?.business || data.business.status !== "APPROVED") return <FacilityRegistration key={`${data?.business?._id || "new"}-${data?.business?.status || "unregistered"}-${retry}`}
+        business={data?.business} onRefresh={() => setRetry((value) => value + 1)} onSaved={(business) => {
+            setData((current) => ({ ...current, business }));
+            setRetry((value) => value + 1);
+        }} />;
     const profile = buildFacilityProfile(data);
     const saved = (business) => {
         setData((current) => ({ ...current, business }));

@@ -50,3 +50,21 @@ test("a business with no branches still has a complete profile and honest empty 
   assert.deepEqual(profile.schedule, []);
   assert.equal(profile.contact[0].value, "Chưa cập nhật");
 });
+
+test("registration and resubmission use the real business API and propagate review errors", async (t) => {
+  authApi.setAccessToken("owner-token");
+  const calls = [];
+  const payload = { name: "Cơ sở mới", description: "Thông tin cơ sở", phone: "0901234567", email: "brand@example.com", address: { detail: "Số 1", province: "Hà Nội" } };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(options.headers.Authorization, "Bearer owner-token");
+    assert.equal(options.method, "POST");
+    assert.deepEqual(JSON.parse(options.body), payload);
+    calls.push(new URL(url).pathname);
+    return Response.json({ data: { ...payload, status: "PENDING" } });
+  });
+  assert.equal((await facilityApi.registerBusiness(payload)).data.status, "PENDING");
+  assert.equal((await facilityApi.resubmitBusiness("business-1", payload)).data.status, "PENDING");
+  assert.deepEqual(calls, ["/api/businessOwner/businesses", "/api/businessOwner/businesses/business-1/resubmit"]);
+  t.mock.method(globalThis, "fetch", async () => Response.json({ message: "Hồ sơ đã tồn tại" }, { status: 409 }));
+  await assert.rejects(facilityApi.registerBusiness(payload), /Hồ sơ đã tồn tại/);
+});
