@@ -12,13 +12,12 @@ import {
     ArrowDown,
     Eye,
     Edit,
-    MoreVertical,
     Building2,
 } from "lucide-react";
 
 import { filterBranchRows } from "../../data/branchApiData.js";
 
-export default function BranchList({ branches, loading, error, onRetry, onView, onEdit, onStatus }) {
+export default function BranchList({ branches, loading, error, onRetry, onView, onEdit, onStatus, pendingIds = [] }) {
     const [keyword, setKeyword] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [districtFilter, setDistrictFilter] = useState("all");
@@ -201,7 +200,7 @@ export default function BranchList({ branches, loading, error, onRetry, onView, 
                                         </span>
                                     </div>
 
-                                    <div className="col-span-1 flex items-center justify-end gap-1 text-slate-400">
+                                    <div className="col-span-1 flex items-center justify-end gap-2 text-slate-400">
                                         <button
                                             type="button"
                                             title="Xem chi nhánh"
@@ -217,6 +216,7 @@ export default function BranchList({ branches, loading, error, onRetry, onView, 
                                             title="Chỉnh sửa chi nhánh"
                                             aria-label={`Chỉnh sửa ${branch.name}`}
                                             onClick={() => onEdit(branch.id)}
+                                            disabled={pendingIds.includes(branch.id)}
                                             className="p-1 hover:text-emerald-600"
                                         >
                                             <Edit size={14} />
@@ -224,12 +224,16 @@ export default function BranchList({ branches, loading, error, onRetry, onView, 
 
                                         <button
                                             type="button"
+                                            role="switch"
+                                            aria-checked={branch.statusCode === "ACTIVE"}
+                                            aria-busy={pendingIds.includes(branch.id)}
+                                            disabled={pendingIds.includes(branch.id)}
                                             title={branch.statusCode === "ACTIVE" ? "Tạm dừng chi nhánh" : "Kích hoạt chi nhánh"}
-                                            aria-label={`${branch.statusCode === "ACTIVE" ? "Tạm dừng" : "Kích hoạt"} ${branch.name}`}
+                                            aria-label={`Bật/tắt trạng thái ${branch.name}`}
                                             onClick={() => onStatus(branch.id)}
-                                            className="p-1 hover:text-slate-700"
+                                            className={`relative h-5 w-8 shrink-0 cursor-pointer rounded-full transition-colors disabled:cursor-wait disabled:opacity-50 ${branch.statusCode === "ACTIVE" ? "bg-emerald-500" : "bg-slate-300"}`}
                                         >
-                                            <MoreVertical size={14} />
+                                            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${branch.statusCode === "ACTIVE" ? "left-3.5" : "left-0.5"}`} />
                                         </button>
                                     </div>
                                 </div>

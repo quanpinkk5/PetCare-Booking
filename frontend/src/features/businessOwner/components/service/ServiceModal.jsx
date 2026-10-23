@@ -69,8 +69,23 @@ function ServiceForm({ mode, service, categories, saving, onClose, onSave }) {
                         <option value="Lưu trú">Lưu trú</option>
                     </select>
                 </div>
-
                 <div>
+                    <label className="block font-medium text-slate-700">
+                        Trạng thái
+                    </label>
+                    <select
+                        value={formData.status}
+                        onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, status: e.target.value }))
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"
+                    >
+                        <option value="Đang hoạt động">Đang hoạt động</option>
+                        <option value="Tạm ngưng">Tạm ngưng</option>
+                    </select>
+                </div>
+
+                {/* <div>
                     <label className="block font-medium text-slate-700">
                         Thú cưng áp dụng
                     </label>
@@ -81,10 +96,10 @@ function ServiceForm({ mode, service, categories, saving, onClose, onSave }) {
                         placeholder="Chó, Mèo"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"
                     />
-                </div>
+                </div> */}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* <div className="grid grid-cols-2 gap-3">
                 <div>
                     <label className="block font-medium text-slate-700">
                         Giá dịch vụ (VNĐ)
@@ -108,10 +123,10 @@ function ServiceForm({ mode, service, categories, saving, onClose, onSave }) {
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"
                     />
                 </div>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-2 gap-3">
-                <div>
+                {/* <div>
                     <label className="block font-medium text-slate-700">
                         Thời lượng phục vụ
                     </label>
@@ -122,9 +137,9 @@ function ServiceForm({ mode, service, categories, saving, onClose, onSave }) {
                         placeholder="Ví dụ: 60 - 90 phút"
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"
                     />
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                     <label className="block font-medium text-slate-700">
                         Trạng thái
                     </label>
@@ -138,7 +153,7 @@ function ServiceForm({ mode, service, categories, saving, onClose, onSave }) {
                         <option value="Đang hoạt động">Đang hoạt động</option>
                         <option value="Tạm ngưng">Tạm ngưng</option>
                     </select>
-                </div>
+                </div> */}
             </div>
 
             <p className="text-[11px] leading-relaxed text-slate-500">

@@ -8,10 +8,13 @@ import {
 export default function BranchServiceFilterBar({
     onAddService,
     onFilterChange,
+    branches = [],
+    categories = [],
+    disabled = false,
 }) {
-    const [branch, setBranch] = useState('Tất cả chi nhánh');
-    const [category, setCategory] = useState('Tất cả danh mục');
-    const [status, setStatus] = useState('Tất cả trạng thái');
+    const [branch, setBranch] = useState('all');
+    const [category, setCategory] = useState('all');
+    const [status, setStatus] = useState('all');
     const [keyword, setKeyword] = useState('');
 
     const updateFilters = (next) => {
@@ -24,15 +27,15 @@ export default function BranchServiceFilterBar({
     };
 
     const resetFilters = () => {
-        setBranch('Tất cả chi nhánh');
-        setCategory('Tất cả danh mục');
-        setStatus('Tất cả trạng thái');
+        setBranch('all');
+        setCategory('all');
+        setStatus('all');
         setKeyword('');
 
         onFilterChange?.({
-            branch: 'Tất cả chi nhánh',
-            category: 'Tất cả danh mục',
-            status: 'Tất cả trạng thái',
+            branch: 'all',
+            category: 'all',
+            status: 'all',
             keyword: '',
         });
     };
@@ -51,6 +54,7 @@ export default function BranchServiceFilterBar({
                         <input
                             type="text"
                             value={keyword}
+                            aria-label="Tìm kiếm dịch vụ chi nhánh"
                             onChange={(e) => {
                                 const value = e.target.value;
                                 setKeyword(value);
@@ -65,6 +69,7 @@ export default function BranchServiceFilterBar({
                     <div className="w-full sm:w-auto">
                         <select
                             value={branch}
+                            aria-label="Lọc chi nhánh"
                             onChange={(e) => {
                                 const value = e.target.value;
                                 setBranch(value);
@@ -72,11 +77,8 @@ export default function BranchServiceFilterBar({
                             }}
                             className="w-full sm:w-44 text-xs bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-slate-700 outline-none focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-medium cursor-pointer transition-colors"
                         >
-                            <option>Tất cả chi nhánh</option>
-                            <option>Happy Pet - Cầu Giấy</option>
-                            <option>Happy Pet - Hà Đông</option>
-                            <option>Happy Pet - Thanh Xuân</option>
-                            <option>Happy Pet - Nam Từ Liêm</option>
+                            <option value="all">Tất cả chi nhánh</option>
+                            {branches.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
                         </select>
                     </div>
 
@@ -84,6 +86,7 @@ export default function BranchServiceFilterBar({
                     <div className="w-full sm:w-auto">
                         <select
                             value={category}
+                            aria-label="Lọc danh mục"
                             onChange={(e) => {
                                 const value = e.target.value;
                                 setCategory(value);
@@ -91,12 +94,8 @@ export default function BranchServiceFilterBar({
                             }}
                             className="w-full sm:w-40 text-xs bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-slate-700 outline-none focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-medium cursor-pointer transition-colors"
                         >
-                            <option>Tất cả danh mục</option>
-                            <option>Cắt tỉa lông</option>
-                            <option>Tắm & Vệ sinh</option>
-                            <option>Lưu trú</option>
-                            <option>Dắt dạo</option>
-                            <option>Spa thư giãn</option>
+                            <option value="all">Tất cả danh mục</option>
+                            {categories.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
                         </select>
                     </div>
 
@@ -104,6 +103,7 @@ export default function BranchServiceFilterBar({
                     <div className="w-full sm:w-auto">
                         <select
                             value={status}
+                            aria-label="Lọc trạng thái"
                             onChange={(e) => {
                                 const value = e.target.value;
                                 setStatus(value);
@@ -111,16 +111,16 @@ export default function BranchServiceFilterBar({
                             }}
                             className="w-full sm:w-36 text-xs bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-slate-700 outline-none focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-medium cursor-pointer transition-colors"
                         >
-                            <option>Tất cả trạng thái</option>
-                            <option>Đang hoạt động</option>
-                            <option>Tạm dừng</option>
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Đang hoạt động</option>
+                            <option value="INACTIVE">Tạm dừng</option>
                         </select>
                     </div>
 
                     {/* Nút Đặt lại bộ lọc */}
-                    {(branch !== 'Tất cả chi nhánh' ||
-                        category !== 'Tất cả danh mục' ||
-                        status !== 'Tất cả trạng thái' ||
+                    {(branch !== 'all' ||
+                        category !== 'all' ||
+                        status !== 'all' ||
                         keyword !== '') && (
                         <button
                             type="button"
@@ -138,7 +138,8 @@ export default function BranchServiceFilterBar({
                 <button
                     type="button"
                     onClick={onAddService}
-                    className="inline-flex items-center gap-1.5 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer whitespace-nowrap ml-auto"
+                    disabled={disabled}
+                    className="inline-flex items-center gap-1.5 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer whitespace-nowrap ml-auto disabled:opacity-50"
                 >
                     <Plus size={15} />
                     <span>Thêm dịch vụ vào chi nhánh</span>
