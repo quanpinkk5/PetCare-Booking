@@ -24,6 +24,7 @@ router.get(
 // Hồ sơ thương hiệu thuộc tài khoản đang đăng nhập.
 router.get("/businesses/profile", authenticate, businessesController.getBusinessProfile);
 router.patch("/businesses/:id", authenticate, businessesController.updateBusiness);
+router.post("/businesses/:id/resubmit", authenticate, businessesController.resubmitBusiness);
 
 // GET - Lấy Businesses theo ID
 router.get(

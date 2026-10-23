@@ -103,3 +103,77 @@ test("another owner's business cannot be updated and malformed IDs fail cleanly"
   assert.equal((await request("PATCH", "/businesses/507f1f77bcf86cd799439099", { name: "Changed" })).status, 404);
   assert.equal((await request("PATCH", "/businesses/invalid", { name: "Changed" })).status, 400);
 });
+
+const registration = { name: " Cơ sở mới ", description: " Giới thiệu cơ sở ", phone: " 0901234567 ", email: " BRAND@example.com ",
+  businessType: " Spa thú cưng ", licenseNumber: " GPKD-123 ", address: { detail: " Số 1 Đường A ", ward: "Phường B", district: "Quận C", province: " Hà Nội " },
+  logo: "https://example.com/logo.jpg", images: ["https://example.com/photo.jpg"], website: "https://example.com" };
+
+test("registration creates one owned PENDING business with all information submitted for admin review", async (t) => {
+  t.mock.method(User, "findById", async () => owner);
+  const filters = [];
+  t.mock.method(Business, "findOne", async (filter) => { filters.push(filter); return null; });
+  t.mock.method(Business, "create", async (data) => {
+    assert.equal(data.ownerId, owner._id); assert.equal(data.status, "PENDING");
+    assert.equal(data.name, "Cơ sở mới"); assert.equal(data.description, "Giới thiệu cơ sở");
+    assert.equal(data.phone, "0901234567"); assert.equal(data.email, "brand@example.com");
+    assert.equal(data.licenseNumber, "GPKD-123"); assert.equal(data.businessType, "Spa thú cưng");
+    assert.equal(data.address.detail, "Số 1 Đường A"); assert.equal(data.address.province, "Hà Nội");
+    assert.equal(data.slug, "co-so-moi"); assert.equal(data.averageRating, 0);
+    return { _id: business._id, ...data };
+  });
+  const result = await request("POST", "/businesses", registration);
+  assert.equal(result.status, 201); assert.equal(result.data.status, "PENDING");
+  assert.deepEqual(filters, [{ ownerId: owner._id }, { slug: "co-so-moi" }]);
+});
+
+test("registration requires an owner login and validates required details and protected fields before database writes", async (t) => {
+  assert.equal((await request("POST", "/businesses", registration, null)).status, 401);
+  t.mock.method(User, "findById", async () => ({ ...owner, role: "CUSTOMER" }));
+  assert.equal((await request("POST", "/businesses", registration)).status, 403);
+  t.mock.method(User, "findById", async () => owner);
+  const create = t.mock.method(Business, "create", () => { throw Error("Unexpected write"); });
+  const read = t.mock.method(Business, "findOne", () => { throw Error("Unexpected read"); });
+  for (const body of [{ ...registration, name: " " }, { ...registration, email: "bad" }, { ...registration, phone: "bad" },
+    { ...registration, address: {} }, { ...registration, address: { ...registration.address, detail: 42 } },
+    { ...registration, status: "APPROVED" }, { ...registration, ownerId: "other" }, { ...registration, averageRating: 5 },
+    { ...registration, logo: "javascript:bad" }, { ...registration, images: [42] }, {}, []]) {
+    assert.equal((await request("POST", "/businesses", body)).status, 400);
+  }
+  assert.equal(read.mock.callCount(), 0); assert.equal(create.mock.callCount(), 0);
+});
+
+test("existing registrations and duplicate index races cannot create a second business", async (t) => {
+  t.mock.method(User, "findById", async () => owner);
+  t.mock.method(Business, "findOne", async () => business);
+  const create = t.mock.method(Business, "create", () => { throw Error("Unexpected write"); });
+  assert.equal((await request("POST", "/businesses", registration)).status, 409); assert.equal(create.mock.callCount(), 0);
+  t.mock.method(Business, "findOne", async () => null);
+  t.mock.method(Business, "create", async () => { throw Object.assign(Error("Duplicate"), { code: 11000 }); });
+  assert.equal((await request("POST", "/businesses", registration)).status, 409);
+});
+
+test("only a rejected, owned business can be resubmitted, always returning to PENDING", async (t) => {
+  t.mock.method(User, "findById", async () => owner);
+  t.mock.method(Business, "findOneAndUpdate", async (filter, operation, options) => {
+    assert.deepEqual(filter, { _id: business._id, ownerId: owner._id, status: "REJECTED" });
+    assert.equal(operation.$set.status, "PENDING"); assert.equal(operation.$set.slug, undefined);
+    assert.equal(operation.$set.name, "Cơ sở mới"); assert.equal(options.runValidators, true);
+    return { ...business, ...operation.$set };
+  });
+  assert.equal((await request("POST", `/businesses/${business._id}/resubmit`, registration)).data.status, "PENDING");
+  t.mock.method(Business, "findOneAndUpdate", async () => null);
+  assert.equal((await request("POST", `/businesses/${business._id}/resubmit`, registration)).status, 409);
+  assert.equal((await request("POST", `/businesses/${business._id}/resubmit`, { ...registration, status: "APPROVED" })).status, 400);
+});
+
+test("the admin review details include the registration address, license and business type", async (t) => {
+  const { getBusinessById } = require("../src/controllers/admin/businessAdminController");
+  t.mock.method(Business, "findById", () => ({ populate: () => ({ lean: async () => ({ ...business, ...registration, ownerId: null }) }) }));
+  t.mock.method(Branch, "find", () => ({ select: () => ({ sort: () => ({ lean: async () => [] }) }) }));
+  let result;
+  await getBusinessById({ params: { id: business._id } }, { status() { return this; }, json(data) { result = data; } });
+  assert.equal(result.data.business.licenseNumber, registration.licenseNumber);
+  assert.equal(result.data.business.businessType, registration.businessType);
+  assert.deepEqual(result.data.business.address, registration.address);
+  assert.equal(result.data.business.website, registration.website);
+});
