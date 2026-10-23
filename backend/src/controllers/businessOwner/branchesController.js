@@ -1,6 +1,72 @@
 const mongoose = require("mongoose");
 const Branch = require("../../models/Branch");
 const Business = require("../../models/Business");
+const BranchService = require("../../models/BranchService");
+const Booking = require("../../models/Booking");
+
+const validateBranchBody = (body, creating = false) => {
+  const allowed = ["name", "phone", "email", "address", "openingHours", "images", ...(creating ? ["businessId"] : ["status"])];
+  if (!body || Array.isArray(body) || typeof body !== "object" || !Object.keys(body).length || Object.keys(body).some((key) => !allowed.includes(key))) return "Dữ liệu chi nhánh không hợp lệ";
+  for (const field of ["name", "phone", "email"]) {
+    if (body[field] !== undefined && (typeof body[field] !== "string" || body[field].length > 1000)) return `${field} không hợp lệ`;
+  }
+  if (body.name !== undefined && !body.name.trim()) return "Tên chi nhánh không được để trống";
+  if (body.status !== undefined && !["ACTIVE", "INACTIVE"].includes(body.status)) return "Trạng thái chi nhánh không hợp lệ";
+  if (body.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())) return "Email không hợp lệ";
+  if (body.address !== undefined && (!body.address || Array.isArray(body.address) || typeof body.address !== "object" ||
+    Object.entries(body.address).some(([key, value]) => !["detail", "street", "ward", "district", "province", "city"].includes(key) || typeof value !== "string" || value.length > 1000))) return "Địa chỉ không hợp lệ";
+  if (body.images !== undefined && (!Array.isArray(body.images) || body.images.length > 100 || !body.images.every((url) => typeof url === "string" && url.length <= 5000 && /^https?:\/\/[^\s]+$/i.test(url)))) return "Hình ảnh phải là mảng tối đa 100 đường dẫn HTTP/HTTPS";
+  if (body.openingHours !== undefined && (!Array.isArray(body.openingHours) || body.openingHours.length > 100 || !body.openingHours.every((item) => item && typeof item === "object" &&
+    typeof item.day === "string" && item.day.trim() && item.day.length <= 100 && typeof item.time === "string" && item.time.trim() && item.time.length <= 100))) return "Giờ hoạt động cần có ngày và khung giờ hợp lệ";
+  return null;
+};
+
+// Date-only booking dates are stored at UTC midnight; choose the calendar month in Vietnam.
+const getMonthBounds = (now = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "numeric" }).formatToParts(now);
+  const year = Number(parts.find((item) => item.type === "year").value);
+  const month = Number(parts.find((item) => item.type === "month").value) - 1;
+  return { previous: new Date(Date.UTC(year, month - 1, 1)), current: new Date(Date.UTC(year, month, 1)), next: new Date(Date.UTC(year, month + 1, 1)) };
+};
+
+const getBranches = async (req, res, next) => {
+  try {
+    if (req.user.role !== "BUSINESS_OWNER") return res.status(403).json({ success: false, message: "Bạn không có quyền xem danh sách chi nhánh" });
+    const business = await Business.findOne({ ownerId: req.user._id || req.user.id }).select("name logo").lean();
+    if (!business) return res.status(200).json({ success: true, business: null, data: [] });
+    const branches = await Branch.find({ businessId: business._id }).sort({ createdAt: -1, _id: -1 }).lean();
+    if (!branches.length) return res.status(200).json({ success: true, business, data: [] });
+    const ids = branches.map((branch) => branch._id);
+    const bounds = getMonthBounds();
+    const [services, bookings] = await Promise.all([
+      BranchService.aggregate([
+        { $match: { branchId: { $in: ids }, status: "ACTIVE" } },
+        { $lookup: { from: "services", localField: "serviceId", foreignField: "_id", as: "service" } },
+        { $unwind: "$service" },
+        { $match: { "service.businessId": business._id, "service.status": "ACTIVE" } },
+        { $group: { _id: "$branchId", count: { $sum: 1 } } },
+      ]),
+      Booking.aggregate([
+        { $match: { status: { $ne: "CANCELLED" }, $or: [
+          { bookingType: "APPOINTMENT", bookingDate: { $gte: bounds.previous, $lt: bounds.next } },
+          { bookingType: "BOARDING", checkInDate: { $gte: bounds.previous, $lt: bounds.next } },
+        ] } },
+        { $lookup: { from: "branchServices", localField: "branchServiceId", foreignField: "_id", as: "offering" } },
+        { $unwind: "$offering" },
+        { $match: { "offering.branchId": { $in: ids } } },
+        { $project: { branchId: "$offering.branchId", date: { $cond: [{ $eq: ["$bookingType", "BOARDING"] }, "$checkInDate", "$bookingDate"] } } },
+        { $group: { _id: "$branchId", current: { $sum: { $cond: [{ $gte: ["$date", bounds.current] }, 1, 0] } }, previous: { $sum: { $cond: [{ $lt: ["$date", bounds.current] }, 1, 0] } } } },
+      ]),
+    ]);
+    const serviceMap = new Map(services.map((item) => [String(item._id), item.count]));
+    const bookingMap = new Map(bookings.map((item) => [String(item._id), item]));
+    return res.status(200).json({ success: true, business, data: branches.map((branch) => ({
+      ...branch, serviceCount: serviceMap.get(String(branch._id)) || 0,
+      monthlyBookings: bookingMap.get(String(branch._id))?.current || 0,
+      previousMonthBookings: bookingMap.get(String(branch._id))?.previous || 0,
+    })) });
+  } catch (error) { next(error); }
+};
 
 // POST - Tạo chi nhánh
 const createBranch = async (req, res, next) => {
@@ -12,6 +78,9 @@ const createBranch = async (req, res, next) => {
         message: "Bạn không có quyền tạo chi nhánh",
       });
     }
+
+    const validationError = validateBranchBody(req.body, true);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 2. Lấy dữ liệu từ frontend
     const { businessId, name, phone, email, address, openingHours, images } =
@@ -130,6 +199,9 @@ const updateBranch = async (req, res, next) => {
         message: "ID chi nhánh không hợp lệ",
       });
     }
+
+    const validationError = validateBranchBody(req.body);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 3. Lấy ID Owner từ JWT
     const ownerId = req.user._id || req.user.id;
@@ -297,6 +369,8 @@ const getBranchById = async (req, res, next) => {
   }
 };
 module.exports = {
+  getBranches,
+  getMonthBounds,
   createBranch,
   updateBranch,
   getBranchById,
