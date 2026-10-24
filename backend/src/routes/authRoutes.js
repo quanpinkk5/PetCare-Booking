@@ -1,9 +1,9 @@
-
 const express = require("express");
 const router = express.Router();
 
 const authController = require("../controllers/auth/authController");
 const authenticate = require("../middlewares/authMiddleware");
+const authorize = require("../middlewares/roleMiddleware");
 const {
   loginLimiter,
   forgotPasswordLimiter,
@@ -29,10 +29,15 @@ router.post("/logout", authController.logout);
 router.post(
   "/forgot-password",
   forgotPasswordLimiter,
-  authController.forgotPassword
+  authController.forgotPassword,
 );
 router.post("/reset-password", authController.resetPassword);
 // router.post("/google", googleLogin);
-router.post("/businessOwner", authController.createBusinessOwner);
+router.post(
+  "/businessOwner",
+  authenticate,
+  authorize("ADMIN"),
+  authController.createBusinessOwner,
+);
 
 module.exports = router;
