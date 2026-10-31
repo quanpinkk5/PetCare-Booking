@@ -14,6 +14,7 @@ import Payment from "../features/customer/pages/Payment/Payment";
 import PaymentHistory from "../features/customer/pages/PaymentHistory/PaymentHistory";
 import MyReviews from "../features/customer/pages/MyReviews/MyReviews";
 import Notifications from "../features/customer/pages/Notifications/Notifications";
+import PetDiary from "../features/customer/pages/PetDiary/PetDiary";
 
 const CustomerRoutes = () => {
   return (
@@ -38,6 +39,10 @@ const CustomerRoutes = () => {
         <Route path="profile" element={<Profile />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="my-bookings/:id" element={<BookingDetail />} />
+        <Route path="my-bookings/:id/diary" element={<PetDiary />} />
+        <Route path="my-bookings/:id/pet-diary" element={<PetDiary />} />
+        <Route path="pet-diary" element={<PetDiary />} />
+        <Route path="pet-diary/:id" element={<PetDiary />} />
         <Route path="reviews" element={<MyReviews />} />
         <Route path="my-reviews" element={<MyReviews />} />
         <Route path="messages" element={<Messages />} />

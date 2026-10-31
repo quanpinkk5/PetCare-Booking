@@ -1,25 +1,31 @@
-
-import { BookOpen, Heart, Sparkles, CheckCircle2, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BookOpen, Heart, Sparkles, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 
 const CareJournal = ({ booking }) => {
     const isUnderway = booking?.hasCareJournal && (
         booking?.statusType === "in-progress" ||
         booking?.statusType === "completed");
 
+    const diaryPath = `/my-bookings/${booking?.recordId || booking?.id || ""}/diary`;
+
     return (
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                 <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#009879] flex items-center justify-center">
                         <BookOpen size={15} />
                     </div>
                     <h3 className="font-bold text-slate-800 text-sm">
                         Nhật ký chăm sóc thú cưng
                     </h3>
                 </div>
-                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                    Live PetCare Log
-                </span>
+                <Link
+                    to={diaryPath}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#009879] hover:text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors"
+                >
+                    <span>Xem Pet Diary</span>
+                    <ChevronRight size={13} />
+                </Link>
             </div>
 
             {/* Banner summary */}
