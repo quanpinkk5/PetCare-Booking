@@ -19,6 +19,7 @@ const BusinessCard = ({
     const address = card.branches?.map((branch) => formatAddress(branch.address)).filter(Boolean).join("; ") || card.location || "Xem thông tin chi nhánh";
     const { label: ratingLabel, count: reviewCount, hasRating } = businessRating(card);
     const detailUrl = `/businesses/${businessId}`;
+    const bookingUrl = `/booking?${new URLSearchParams({ businessId })}`;
     const branchCount = card.branches?.length || 0;
 
     if (view === "list") {
@@ -114,7 +115,7 @@ const BusinessCard = ({
                             </Link>
 
                             <Link
-                                to={`${detailUrl}?tab=chi-nhanh`}
+                                to={bookingUrl}
                                 className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-600/25 transition-all inline-flex items-center gap-1.5"
                             >
                                 <Calendar size={13} />
@@ -214,7 +215,7 @@ const BusinessCard = ({
                 </Link>
 
                 <Link
-                    to={`${detailUrl}?tab=chi-nhanh`}
+                    to={bookingUrl}
                     className="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-xl shadow-xs hover:shadow-emerald-600/25 transition-all inline-flex items-center justify-center gap-1"
                 >
                     <span>Đặt lịch</span>

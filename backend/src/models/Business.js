@@ -32,6 +32,15 @@ const businessSchema = new mongoose.Schema(
       trim: true,
     },
 
+    businessType: { type: String, default: "", trim: true },
+    licenseNumber: { type: String, default: "", trim: true },
+    website: { type: String, default: "", trim: true },
+    socialUrl: { type: String, default: "", trim: true },
+    address: { type: mongoose.Schema.Types.Mixed, default: {} },
+    openingHours: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    policies: { type: [String], default: [] },
+    note: { type: String, default: "", trim: true },
+
     logo: {
       type: String,
       default: "",

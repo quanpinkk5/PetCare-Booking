@@ -612,6 +612,11 @@ const getBusinessById = async (req, res) => {
       name: business.name,
       slug: business.slug,
       description: business.description || "",
+      businessType: business.businessType || "",
+      licenseNumber: business.licenseNumber || "",
+      address: business.address || {},
+      website: business.website || "",
+      socialUrl: business.socialUrl || "",
 
       logo: business.logo || "",
       images: business.images || [],

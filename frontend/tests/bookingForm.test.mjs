@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { authApi } from '../src/features/auth/services/authApi.js';
 import { bookingApi } from '../src/features/customer/services/bookingApi.js';
-import { boardingDays, bookingPet, eligibleServices, loadBookingBranches, bookingPayload } from '../src/features/customer/services/bookingFormData.js';
+import { boardingDays, bookingPet, eligibleServices, initialBookingLocation, loadBookingBranches, bookingPayload } from '../src/features/customer/services/bookingFormData.js';
 
 const pet = { id: 'pet-id', species: 'CAT' };
 const branch = { id: 'branch-id' };
@@ -54,10 +54,62 @@ test('branch loader follows pagination and never invents rating, phone or addres
       pagination: { totalPages: 2 } };
   } });
   assert.deepEqual(pages, [1, 2]);
-  assert.equal(branches.length, 2);
+  assert.equal(branches.length, 4);
+  assert.equal(branches[0].isMain, true);
+  assert.equal(branches[0].canBook, false);
   assert.equal(branches[0].rating, 0);
-  assert.equal(branches[0].address, '12 A, HCM');
+  assert.equal(branches[1].address, '12 A, HCM');
   assert.equal(branches[0].phone, 'Chưa cập nhật');
+});
+
+test('booking from a business shows all its locations including the main location, without other businesses', async () => {
+  const api = {
+    list: async () => { throw new Error('Must not load all businesses'); },
+    detail: async (id) => {
+      assert.equal(id, 'business-a');
+      return { data: { _id: id, name: 'PetCare A' } };
+    },
+    branches: async (id) => {
+      assert.equal(id, 'business-a');
+      return { data: [{ _id: 'branch-1', name: 'Quận 1' }, { _id: 'branch-2', name: 'Quận 2' }] };
+    },
+  };
+  const branches = await loadBookingBranches(api, { businessId: 'business-a', branchId: 'branch-2' });
+  assert.deepEqual(branches.map((branch) => branch.id), ['business:business-a', 'branch-1', 'branch-2']);
+  assert.equal(branches[0].name, 'PetCare A');
+  assert.equal(branches[0].isMain, true);
+  assert.equal(branches[0].canBook, false);
+  assert.equal(branches[1].canBook, true);
+  assert.equal(initialBookingLocation(branches).id, 'business:business-a');
+  assert.equal(initialBookingLocation(branches, 'branch-2').id, 'branch-2');
+  assert.equal(initialBookingLocation([]), null);
+  assert.throws(() => bookingPayload({ ...form, branch: branches[0], service: { ...service, branchId: branches[0].id } }), /phù hợp/);
+  assert.equal(branches.every((branch) => branch.businessId === 'business-a'), true);
+  await assert.rejects(loadBookingBranches(api, { businessId: 'business-a', branchId: 'other-business-branch' }), /không thuộc cơ sở/);
+});
+
+test('existing branch booking links resolve their business and include its sibling locations', async () => {
+  const branches = await loadBookingBranches({
+    branch: async (id) => { assert.equal(id, 'selected-branch'); return { data: { businessId: 'business-a' } }; },
+    detail: async (id) => ({ data: { _id: id, name: 'PetCare A' } }),
+    branches: async () => ({ data: [{ _id: 'selected-branch', name: 'Chi nhánh A' }, { _id: 'main', name: 'Cơ sở chính' }] }),
+  }, { branchId: 'selected-branch' });
+  assert.equal(branches.length, 3);
+  assert.equal(branches[0].isMain, true);
+  assert.equal(branches[2].id, 'main');
+});
+
+test('a business without active branches displays its main card without creating a bookable branch', async () => {
+  const api = {
+    detail: async () => ({ data: { _id: 'business-a', name: 'PetCare A' } }),
+    branches: async () => ({ data: [] }),
+  };
+  const locations = await loadBookingBranches(api, { businessId: 'business-a' });
+  assert.equal(locations.length, 1);
+  assert.equal(locations[0].isMain, true);
+  assert.equal(locations[0].canBook, false);
+  await assert.rejects(loadBookingBranches({ ...api, branches: async () => { throw new Error('Không tìm thấy doanh nghiệp'); } },
+    { businessId: 'unavailable' }), /Không tìm thấy/);
 });
 
 test('create, offering and slots call actual customer routes and preserve API failures', async (t) => {

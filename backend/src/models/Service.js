@@ -39,6 +39,8 @@ const serviceSchema = new mongoose.Schema(
       default: [],
     },
 
+    isHighlight: { type: Boolean, default: false },
+
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],

@@ -495,7 +495,7 @@ const BusinessDetailContent = ({ id, initialBranchId }) => {
         </div>
 
         {/* Right column: Sticky BookingSidebar */}
-        <BookingSidebar business={business} branch={branch} />
+        <BookingSidebar business={business} branch={branch} bookingBranchId={selectedBranch} />
       </div>
     </main>
   );

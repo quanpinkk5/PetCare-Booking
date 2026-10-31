@@ -28,6 +28,7 @@ const request = async (path, options = {}) => {
     response.status === 401 &&
     (path === "/auth/me" ||
       path.startsWith("/admin/") ||
+      path.startsWith("/businessOwner/") ||
       path.startsWith("/customer/"))
   ) {
     const refreshResponse = await sendRequestToRefresh();

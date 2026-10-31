@@ -1,15 +1,10 @@
 import { Edit2, LayoutDashboard } from "lucide-react";
-import {
-  FACILITY_INFO,
-  CONTACT_INFO,
-  QUICK_INFO,
-  FACILITY_DESCRIPTION,
-} from "../../data/facilityData";
 
-function EditButton() {
+function EditButton({ onClick }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
     >
       <Edit2 size={12} />
@@ -38,7 +33,7 @@ function InfoRow({ info, labelWidth = "w-28" }) {
   );
 }
 
-export default function FacilityInfoCards() {
+export default function FacilityInfoCards({ profile, onEdit }) {
   return (
     <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
       <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -47,11 +42,11 @@ export default function FacilityInfoCards() {
             <h3 className="text-sm font-bold text-slate-900">
               Thông tin cơ sở
             </h3>
-            <EditButton />
+            <EditButton onClick={() => onEdit("info")} />
           </div>
 
           <div className="space-y-3 text-xs">
-            {FACILITY_INFO.map((info) => (
+            {profile.info.map((info) => (
               <InfoRow key={info.label} info={info} />
             ))}
 
@@ -64,7 +59,7 @@ export default function FacilityInfoCards() {
                 </span>
 
                 <p className="text-[11px] leading-relaxed text-slate-600">
-                  {FACILITY_DESCRIPTION}
+                  {profile.description}
                 </p>
               </div>
             </div>
@@ -78,11 +73,11 @@ export default function FacilityInfoCards() {
             <h3 className="text-sm font-bold text-slate-900">
               Thông tin liên hệ
             </h3>
-            <EditButton />
+            <EditButton onClick={() => onEdit("contact")} />
           </div>
 
           <div className="space-y-4 text-xs">
-            {CONTACT_INFO.map((info) => (
+            {profile.contact.map((info) => (
               <InfoRow key={info.label} info={info} labelWidth="w-24" />
             ))}
           </div>
@@ -98,7 +93,7 @@ export default function FacilityInfoCards() {
           </div>
 
           <div className="space-y-3.5 text-xs">
-            {QUICK_INFO.map((info) => {
+            {profile.quick.map((info) => {
               const Icon = info.icon;
 
               return (
@@ -117,11 +112,11 @@ export default function FacilityInfoCards() {
                     </span>
                   ) : info.isManager ? (
                     <div className="flex items-center gap-2 text-right">
-                      <img
+                      {info.managerAvatar && <img
                         alt="Người quản lý"
                         src={info.managerAvatar}
                         className="h-5 w-5 rounded-full object-cover"
-                      />
+                      />}
 
                       <div>
                         <span className="block text-[11px] font-semibold leading-tight text-slate-800">
@@ -146,6 +141,7 @@ export default function FacilityInfoCards() {
         <div className="pt-4">
           <button
             type="button"
+            onClick={() => onEdit("info")}
             className="block w-full rounded-lg border border-emerald-600 py-2 text-center text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
           >
             Cập nhật thông tin

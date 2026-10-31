@@ -28,6 +28,7 @@ export const openingHoursText = (hours) => {
     const open = item.openTime || item.open || '';
     const close = item.closeTime || item.close || '';
     if (item.isClosed || item.closed) return `${day}: Đóng cửa`;
+    if (typeof item.time === 'string' && item.time.trim()) return `${day ? day + ': ' : ''}${item.time}`;
     return typeof open === 'string' && typeof close === 'string' && open && close
       ? `${day ? day + ': ' : ''}${open} - ${close}` : '';
   }).filter(Boolean);

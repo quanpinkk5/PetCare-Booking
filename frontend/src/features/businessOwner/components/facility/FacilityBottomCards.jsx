@@ -1,15 +1,10 @@
 import { CheckCircle2, Clock, Edit2 } from "lucide-react";
-import {
-    SCHEDULE,
-    GALLERY,
-    POLICIES,
-    FACILITY_NOTE,
-} from "../../data/facilityData";
 
-function EditButton() {
+function EditButton({ onClick }) {
     return (
         <button
             type="button"
+            onClick={onClick}
             className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
         >
             <Edit2 size={12} />
@@ -18,7 +13,7 @@ function EditButton() {
     );
 }
 
-export default function FacilityBottomCards() {
+export default function FacilityBottomCards({ profile, onEdit }) {
     return (
         <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-12">
             <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:col-span-4">
@@ -27,13 +22,14 @@ export default function FacilityBottomCards() {
                         <h3 className="text-sm font-bold text-slate-900">
                             Giờ hoạt động
                         </h3>
-                        <EditButton />
+                        <EditButton onClick={() => onEdit("schedule")} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-                        {SCHEDULE.map((item) => (
+                        {!profile.schedule.length && <p className="col-span-2 text-slate-500">Chưa cập nhật giờ hoạt động</p>}
+                        {profile.schedule.map((item, index) => (
                             <div
-                                key={item.day}
+                                key={`${item.day}-${index}`}
                                 className="flex items-center justify-between gap-2 text-slate-600"
                             >
                                 <span className="font-medium text-slate-500">{item.day}</span>
@@ -57,13 +53,13 @@ export default function FacilityBottomCards() {
                     <h3 className="text-sm font-bold text-slate-900">
                         Hình ảnh cơ sở
                     </h3>
-                    <EditButton />
+                    <EditButton onClick={() => onEdit("images")} />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2.5">
-                    {GALLERY.map((url, index) => (
+                    {profile.gallery.map((url, index) => (
                         <div
-                            key={url}
+                            key={`${url}-${index}`}
                             className="group relative aspect-square overflow-hidden rounded-lg bg-slate-100"
                         >
                             <img
@@ -76,6 +72,7 @@ export default function FacilityBottomCards() {
 
                     <button
                         type="button"
+                        onClick={() => onEdit("images")}
                         className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-emerald-300 bg-emerald-50/40 text-emerald-600 transition hover:bg-emerald-50"
                     >
                         <Edit2 size={20} className="mb-1" />
@@ -90,12 +87,13 @@ export default function FacilityBottomCards() {
                         <h3 className="text-sm font-bold text-slate-900">
                             Chính sách & ghi chú
                         </h3>
-                        <EditButton />
+                        <EditButton onClick={() => onEdit("policies")} />
                     </div>
 
                     <ul className="space-y-2.5 text-xs text-slate-600">
-                        {POLICIES.map((policy) => (
-                            <li key={policy} className="flex items-start gap-2">
+                        {!profile.policies.length && <li>Chưa cập nhật chính sách</li>}
+                        {profile.policies.map((policy, index) => (
+                            <li key={index} className="flex items-start gap-2">
                                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
                                 <span>{policy}</span>
                             </li>
@@ -107,7 +105,7 @@ export default function FacilityBottomCards() {
                     <span className="mb-0.5 flex items-center gap-1 font-bold text-amber-800">
                         ★ Ghi chú
                     </span>
-                    {FACILITY_NOTE}
+                    {profile.note}
                 </div>
             </div>
         </section>

@@ -5,6 +5,8 @@ const authenticate = require("../../middlewares/authMiddleware");
 
 const branchesController = require("../../controllers/businessOwner/branchesController");
 
+router.get("/branches", authenticate, branchesController.getBranches);
+
 // POST - Tạo chi nhánh
 router.post("/branches", authenticate, branchesController.createBranch);
 

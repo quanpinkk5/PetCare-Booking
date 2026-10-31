@@ -2,6 +2,57 @@ const mongoose = require("mongoose");
 const Service = require("../../models/Service");
 const Business = require("../../models/Business");
 const ServiceCategory = require("../../models/ServiceCategory");
+const BranchService = require("../../models/BranchService");
+const Booking = require("../../models/Booking");
+const getMonthBounds = require("../../utils/ownerMonthBounds");
+
+const validateBody = (body, creating = false) => {
+  const allowed = ["name", "description", "categoryId", "serviceType", "images", "status", "isHighlight", ...(creating ? ["businessId"] : [])];
+  if (!body || typeof body !== "object" || Array.isArray(body) || !Object.keys(body).length || Object.keys(body).some((key) => !allowed.includes(key))) return "Dữ liệu dịch vụ không hợp lệ";
+  if ((creating || body.name !== undefined) && (typeof body.name !== "string" || !body.name.trim() || body.name.length > 300)) return "Tên dịch vụ không hợp lệ";
+  if (body.description !== undefined && (typeof body.description !== "string" || body.description.length > 10000)) return "Mô tả phải là chuỗi tối đa 10000 ký tự";
+  if (body.status !== undefined && !["ACTIVE", "INACTIVE"].includes(body.status)) return "Trạng thái dịch vụ không hợp lệ";
+  if (body.serviceType !== undefined && !["APPOINTMENT", "BOARDING"].includes(body.serviceType)) return "Loại dịch vụ không hợp lệ";
+  if (body.isHighlight !== undefined && typeof body.isHighlight !== "boolean") return "Đánh dấu nổi bật không hợp lệ";
+  if (body.images !== undefined && (!Array.isArray(body.images) || body.images.length > 100 || !body.images.every((url) => typeof url === "string" && url.length <= 5000 && /^https?:\/\/[^\s]+$/i.test(url)))) return "Hình ảnh phải là mảng đường dẫn HTTP/HTTPS";
+  return null;
+};
+
+// Prices, durations and pet types belong to branch offerings, not the service catalog.
+const enrichServices = async (services, businessId) => {
+  if (!services.length) return [];
+  const ids = services.map((service) => service._id);
+  const bounds = getMonthBounds();
+  const [offerings, bookings] = await Promise.all([
+    BranchService.aggregate([
+      { $match: { serviceId: { $in: ids }, status: "ACTIVE" } },
+      { $lookup: { from: "branches", localField: "branchId", foreignField: "_id", as: "branch" } },
+      { $unwind: "$branch" },
+      { $match: { "branch.businessId": businessId, "branch.status": "ACTIVE" } },
+      { $project: { serviceId: 1, price: 1, pricingUnit: 1, durationMinutes: 1, petTypes: 1, branchName: "$branch.name" } },
+    ]),
+    Booking.aggregate([
+      { $match: { status: { $ne: "CANCELLED" }, $or: [
+        { bookingType: "APPOINTMENT", bookingDate: { $gte: bounds.previous, $lt: bounds.next } },
+        { bookingType: "BOARDING", checkInDate: { $gte: bounds.previous, $lt: bounds.next } },
+      ] } },
+      { $lookup: { from: "branchServices", localField: "branchServiceId", foreignField: "_id", as: "offering" } },
+      { $unwind: "$offering" },
+      { $match: { "offering.serviceId": { $in: ids } } },
+      { $project: { serviceId: "$offering.serviceId", date: { $cond: [{ $eq: ["$bookingType", "BOARDING"] }, "$checkInDate", "$bookingDate"] } } },
+      { $group: { _id: "$serviceId", current: { $sum: { $cond: [{ $gte: ["$date", bounds.current] }, 1, 0] } }, previous: { $sum: { $cond: [{ $lt: ["$date", bounds.current] }, 1, 0] } } } },
+    ]),
+  ]);
+  const offeringsByService = new Map();
+  for (const offering of offerings) {
+    const key = String(offering.serviceId);
+    if (!offeringsByService.has(key)) offeringsByService.set(key, []);
+    offeringsByService.get(key).push(offering);
+  }
+  const bookingMap = new Map(bookings.map((item) => [String(item._id), item]));
+  return services.map((service) => ({ ...service, offerings: offeringsByService.get(String(service._id)) || [],
+    monthlyBookings: bookingMap.get(String(service._id))?.current || 0, previousMonthBookings: bookingMap.get(String(service._id))?.previous || 0 }));
+};
 
 
 // ==============================
@@ -16,6 +67,9 @@ const createService = async (req, res, next) => {
         message: "Bạn không có quyền tạo dịch vụ",
       });
     }
+
+    const validationError = validateBody(req.body, true);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 2. Lấy dữ liệu từ request
     const {
@@ -113,7 +167,8 @@ const createService = async (req, res, next) => {
       description: description?.trim() || "",
       serviceType,
       images: images || [],
-      status: "ACTIVE",
+      status: req.body.status || "ACTIVE",
+      isHighlight: req.body.isHighlight || false,
     });
 
     // 11. Trả kết quả
@@ -143,7 +198,7 @@ const getAllServices = async (req, res, next) => {
     // 2. Lấy businessId từ query
     const { businessId } = req.query;
 
-    if (!mongoose.isValidObjectId(businessId)) {
+    if (businessId !== undefined && !mongoose.isValidObjectId(businessId)) {
       return res.status(400).json({
         success: false,
         message: "businessId không hợp lệ",
@@ -153,12 +208,10 @@ const getAllServices = async (req, res, next) => {
     // 3. Kiểm tra quyền sở hữu Business
     const ownerId = req.user._id || req.user.id;
 
-    const business = await Business.findOne({
-      _id: businessId,
-      ownerId,
-    });
+    const business = await Business.findOne({ ownerId, ...(businessId !== undefined ? { _id: businessId } : {}) });
 
     if (!business) {
+      if (businessId === undefined) return res.status(200).json({ success: true, business: null, data: [] });
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy doanh nghiệp thuộc tài khoản của bạn",
@@ -167,16 +220,17 @@ const getAllServices = async (req, res, next) => {
 
     // 4. Lấy danh sách dịch vụ
     const services = await Service.find({
-      businessId,
+      businessId: business._id,
     })
       .populate("categoryId", "name code")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1, _id: -1 }).lean();
 
     // 5. Trả kết quả
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách dịch vụ thành công",
-      data: services,
+      business: { _id: business._id, name: business.name },
+      data: await enrichServices(services, business._id),
     });
   } catch (error) {
     next(error);
@@ -204,6 +258,9 @@ const updateService = async (req, res, next) => {
         message: "ID dịch vụ không hợp lệ",
       });
     }
+
+    const validationError = validateBody(req.body);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     // 3. Lấy ID Owner từ JWT
     const ownerId = req.user._id || req.user.id;
@@ -299,6 +356,10 @@ const updateService = async (req, res, next) => {
       });
     }
 
+    if (serviceType !== undefined && serviceType !== service.serviceType && await BranchService.exists({ serviceId: service._id })) {
+      return res.status(409).json({ success: false, message: "Dịch vụ đã được cấu hình tại chi nhánh. Không thể đổi loại dịch vụ; hãy tạo dịch vụ mới với loại phù hợp." });
+    }
+
     // 12. Nếu đổi danh mục, kiểm tra danh mục mới
     if (categoryId !== undefined) {
       if (!mongoose.isValidObjectId(categoryId)) {
@@ -343,6 +404,7 @@ const updateService = async (req, res, next) => {
     if (status !== undefined) {
       service.status = status;
     }
+    if (req.body.isHighlight !== undefined) service.isHighlight = req.body.isHighlight;
 
     // 14. Lưu thay đổi
     await service.save();
@@ -414,7 +476,7 @@ const getServiceById = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Lấy chi tiết dịch vụ thành công",
-      data: service,
+      data: (await enrichServices([service.toObject()], service.businessId))[0],
     });
   } catch (error) {
     next(error);
