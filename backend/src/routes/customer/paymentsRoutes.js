@@ -4,12 +4,15 @@ const router = express.Router();
 const authenticate = require("../../middlewares/authMiddleware");
 
 const {
+  getPaymentHistory,
   createVnpayPayment,
   vnpayIpn,
   vnpayReturn,
   getPaymentStatus,
   retryVnpayPayment,
 } = require("../../controllers/customer/paymentsController");
+
+router.get("/payments", authenticate, getPaymentHistory);
 
 router.post("/payments/vnpay/create", authenticate, createVnpayPayment);
 

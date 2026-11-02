@@ -15,6 +15,38 @@ const {
 
 const ACTIVE_STATUSES = ["PENDING", "PROCESSING"];
 
+// Only expose transactions owned by the authenticated customer. Metadata and
+// gateway reconciliation evidence are intentionally excluded.
+const getPaymentHistory = async (req, res, next) => {
+  try {
+    if (req.user.role !== "CUSTOMER") {
+      return res.status(403).json({ success: false, message: "Không có quyền truy cập" });
+    }
+    const payments = await Payment.find({ customerId: getCustomerId(req) })
+      .select("paymentCode bookingId customerId amount currency method status transactionId paidAt refundedAt failedAt createdAt")
+      .populate({
+        path: "bookingId",
+        select: "bookingCode status paymentStatus petId branchServiceId",
+        populate: [
+          { path: "petId", select: "name breed gender" },
+          {
+            path: "branchServiceId", select: "serviceId branchId",
+            populate: [
+              { path: "serviceId", select: "name description" },
+              { path: "branchId", select: "name address phone" },
+            ],
+          },
+        ],
+      })
+      .populate({ path: "customerId", select: "fullName email phone address" })
+      .sort({ createdAt: -1, _id: -1 })
+      .lean();
+    return res.json({ success: true, data: payments });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getCustomerId = (req) => req.user._id || req.user.id;
 
 const isSuccess = (params) =>
@@ -753,6 +785,7 @@ const retryVnpayPayment = async (req, res, next) => {
 };
 
 module.exports = {
+  getPaymentHistory,
   createVnpayPayment,
   vnpayIpn,
   vnpayReturn,

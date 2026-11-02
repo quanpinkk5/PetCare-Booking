@@ -112,3 +112,4 @@ app.use("/api/customer", customerMessageRoutes);
 
 // Payment API
 app.use("/api/customer", customerPaymentRoutes);
+app.use("/api/customer/notifications", require("./routes/customer/notificationsRoutes"));

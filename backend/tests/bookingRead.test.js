@@ -90,6 +90,26 @@ test('detail does not expose another customer booking', async (t) => {
   assert.equal((await call(controller.getBookingById, {}, { id })).status, 404);
   assert.equal((await call(controller.getBookingById, {}, { id: 'invalid' })).status, 400);
 });
+test('detail includes the branch business ID needed to contact its recipient', async (t) => {
+  let includedBusiness = false;
+  t.mock.method(Booking, 'findOne', (filter) => {
+    assert.deepEqual(filter, { _id: id, customerId });
+    return {
+      populate(options) {
+        if (options?.path === 'branchServiceId') {
+          const branch = options.populate.find((item) => item.path === 'branchId');
+          assert.ok(branch.select.split(' ').includes('businessId'));
+          includedBusiness = true;
+        }
+        return this;
+      },
+      lean: async () => ({ _id: id, branchServiceId: { branchId: { businessId: 'business-id' } } }),
+    };
+  });
+  const result = await call(controller.getBookingById, {}, { id });
+  assert.equal(includedBusiness, true);
+  assert.equal(result.data.branchServiceId.branchId.businessId, 'business-id');
+});
 test('cancel requires unpaid mutable state and an atomic ownership guard', async (t) => {
   const session = { withTransaction: async (fn) => fn(), endSession: async () => {} };
   t.mock.method(mongoose, 'startSession', async () => session);

@@ -687,7 +687,7 @@ const getBookingById = async (req, res, next) => {
           // Thông tin chi nhánh
           {
             path: "branchId",
-            select: "name address phone email",
+            select: "name address phone email businessId",
           },
 
           // Thông tin dịch vụ
