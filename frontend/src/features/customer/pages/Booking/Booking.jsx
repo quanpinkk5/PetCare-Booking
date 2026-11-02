@@ -14,7 +14,7 @@ import BookingDateTimeSelector from '../../components/Booking/BookingDateTimeSel
 import BookingSuggestedServices from '../../components/Booking/BookingSuggestedServices';
 import BookingSummary from '../../components/Booking/BookingSummary';
 
-const Booking = () => {
+const BookingForm = () => {
   const navigate = useNavigate();
   const { user, isAuthLoading } = useAuth();
   const [params] = useSearchParams();
@@ -25,6 +25,7 @@ const Booking = () => {
   const [branches, setBranches] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
   const [selectedService, setSelectedService] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedDate, setSelectedDate] = useState(vietnamToday);
@@ -51,17 +52,24 @@ const Booking = () => {
         ]);
         const branchId = preferred?.data.branchId || requested.branchId;
         const branchList = await loadBookingBranches(businessApi, {
-          businessId: requested.businessId || preferred?.data.branch?.businessId || preferred?.data.business?._id,
+          businessId: preferred?.data.branch?.businessId || preferred?.data.business?._id || requested.businessId,
           branchId,
         });
         if (!active) return;
         const mapped = pets.data.map(bookingPet);
         setPetsList(mapped);
         setBranches(branchList);
-        setSelectedPet(mapped.find((pet) => pet.id === requested.petId) || mapped[0] || null);
-        setSelectedBranch(initialBookingLocation(branchList, branchId));
+        setSelectedPet(mapped.find((pet) => pet.id === requested.petId)
+          || (preferred && mapped.find((pet) => eligibleServices([preferred.data], pet).length > 0))
+          || mapped[0] || null);
+        const scopedBusinessId = branchId || requested.businessId ? branchList[0]?.businessId || '' : '';
+        setSelectedBusinessId(scopedBusinessId);
+        setSelectedBranch(scopedBusinessId ? initialBookingLocation(branchList, branchId) : null);
         setSelectedService(null);
         setSelectedTime('');
+        setCheckOutDate('');
+        setAvailability({ key: '', data: [], error: '' });
+        setManualSelection(false);
         setError('');
       } catch (err) { if (active) setError(err.message); }
       finally { if (active) setLoading(false); }
@@ -105,15 +113,26 @@ const Booking = () => {
 
   const selectPet = (pet) => {
     if (pet.id === selectedPet?.id) return;
-    setSelectedPet(pet); setSelectedService(null); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); setManualSelection(true);
+    setSelectedPet(pet); setSelectedService(null); setSelectedTime(''); setCheckOutDate('');
+    setAvailability({ key: '', data: [], error: '' });
+    if (selectedPet) setManualSelection(true);
   };
   const selectBranch = (branch) => {
+    if (branch.isMain || branch.canBook === false) return;
     if (branch.id === selectedBranch?.id) return;
-    setSelectedBranch(branch); setSelectedService(null); setSelectedTime(''); setManualSelection(true);
+    setSelectedBranch(branch); setSelectedService(null); setSelectedTime(''); setCheckOutDate('');
+    setAvailability({ key: '', data: [], error: '' }); setManualSelection(true);
+  };
+  const selectBusiness = (businessId) => {
+    if (businessId === selectedBusinessId) return;
+    setSelectedBusinessId(businessId);
+    setSelectedBranch(initialBookingLocation(branches.filter((branch) => branch.businessId === businessId)));
+    setSelectedService(null); setSelectedTime(''); setCheckOutDate('');
+    setAvailability({ key: '', data: [], error: '' }); setManualSelection(true);
   };
   const selectService = (item) => {
     if (item.id === service?.id) return;
-    setSelectedService(item); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); setError(''); setManualSelection(true);
+    setSelectedService(item); setSelectedTime(''); setCheckOutDate(''); setAvailability({ key: '', data: [], error: '' }); setError(''); setManualSelection(true);
   };
   const handleAddPet = async (pet) => {
     const response = await petApi.create(pet);
@@ -189,6 +208,10 @@ const Booking = () => {
 
             <BookingBranchSelector
               branches={branches}
+              selectedBusinessId={selectedBusinessId}
+              onBusinessSelect={selectBusiness}
+              scoped={Boolean(requested.businessId || requested.branchId || requested.offeringId)}
+              loading={loading}
               selectedBranch={selectedBranch}
               onSelect={selectBranch}
             />
@@ -199,7 +222,7 @@ const Booking = () => {
               onSelect={selectService}
               onRetry={() => { setLoading(true); setRetry((value) => value + 1); }}
               loading={servicesLoading} error={offerings.branchId === branchId ? offerings.error : ''}
-              emptyMessage={isMainLocation ? 'Cơ sở chính chưa có gói dịch vụ đặt lịch trực tiếp. Vui lòng chọn một chi nhánh bên trên để xem dịch vụ và lịch trống.' : undefined}
+              emptyMessage={!selectedBranch ? 'Vui lòng chọn cơ sở và chi nhánh bên trên để xem dịch vụ.' : undefined}
             />
 
             <BookingDateTimeSelector
@@ -238,6 +261,11 @@ const Booking = () => {
       </div>
     </div>
   );
+};
+
+const Booking = () => {
+  const [params] = useSearchParams();
+  return <BookingForm key={params.toString()} />;
 };
 
 export default Booking;

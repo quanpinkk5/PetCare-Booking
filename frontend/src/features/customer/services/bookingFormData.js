@@ -17,7 +17,7 @@ export const bookingPet = (pet) => ({
 });
 
 export const bookingBranch = (branch, business) => ({
-  ...branch, id: branch._id, name: business.name + ' — ' + branch.name,
+  ...branch, id: branch._id, name: business.name + ' — ' + branch.name, branchName: branch.name,
   isMain: false, canBook: true,
   businessId: business._id, businessName: business.name,
   address: formatAddress(branch.address), phone: branch.phone || business.phone || 'Chưa cập nhật',
@@ -34,8 +34,11 @@ export const bookingLocations = (business, branches = []) => [{
   image: imageUrl(business.images, business.logo || ''),
 }, ...branches.map((branch) => bookingBranch(branch, business))];
 
-export const initialBookingLocation = (locations, branchId) =>
-  locations.find((location) => location.id === branchId) || locations[0] || null;
+export const initialBookingLocation = (locations, branchId) => {
+  const bookable = locations.filter((location) => !location.isMain && location.canBook !== false);
+  return bookable.find((location) => location.id === branchId)
+    || (bookable.length === 1 ? bookable[0] : null);
+};
 
 export const bookingService = (offering) => ({
   ...offering, id: offering._id, name: offering.service.name,

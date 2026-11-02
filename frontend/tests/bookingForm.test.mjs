@@ -80,7 +80,9 @@ test('booking from a business shows all its locations including the main locatio
   assert.equal(branches[0].isMain, true);
   assert.equal(branches[0].canBook, false);
   assert.equal(branches[1].canBook, true);
-  assert.equal(initialBookingLocation(branches).id, 'business:business-a');
+  assert.equal(initialBookingLocation(branches), null);
+  assert.equal(initialBookingLocation(branches, 'business:business-a'), null);
+  assert.equal(branches[1].branchName, 'Quận 1');
   assert.equal(initialBookingLocation(branches, 'branch-2').id, 'branch-2');
   assert.equal(initialBookingLocation([]), null);
   assert.throws(() => bookingPayload({ ...form, branch: branches[0], service: { ...service, branchId: branches[0].id } }), /phù hợp/);
@@ -108,8 +110,21 @@ test('a business without active branches displays its main card without creating
   assert.equal(locations.length, 1);
   assert.equal(locations[0].isMain, true);
   assert.equal(locations[0].canBook, false);
+  assert.equal(initialBookingLocation(locations), null);
   await assert.rejects(loadBookingBranches({ ...api, branches: async () => { throw new Error('Không tìm thấy doanh nghiệp'); } },
     { businessId: 'unavailable' }), /Không tìm thấy/);
+});
+
+test('initial location selects only a bookable branch and requires a choice when several exist', () => {
+  const main = { id: 'main', isMain: true, canBook: false };
+  const first = { id: 'first', canBook: true };
+  const second = { id: 'second', canBook: true };
+  const unavailable = { id: 'unavailable', canBook: false };
+  assert.equal(initialBookingLocation([main, first, unavailable]), first);
+  assert.equal(initialBookingLocation([main, first, second]), null);
+  assert.equal(initialBookingLocation([main, first, second], 'second'), second);
+  assert.equal(initialBookingLocation([main, first, second, unavailable], 'unavailable'), null);
+  assert.equal(initialBookingLocation([main, unavailable]), null);
 });
 
 test('create, offering and slots call actual customer routes and preserve API failures', async (t) => {
