@@ -11,9 +11,11 @@ import MyBookings from "../features/customer/pages/MyBookings/MyBookings";
 import BookingDetail from "../features/customer/pages/BookingDetail/BookingDetail";
 import Messages from "../features/customer/pages/Messages/Messages";
 import Payment from "../features/customer/pages/Payment/Payment";
+import PaymentResult from "../features/customer/pages/Payment/PaymentResult";
 import PaymentHistory from "../features/customer/pages/PaymentHistory/PaymentHistory";
 import MyReviews from "../features/customer/pages/MyReviews/MyReviews";
 import Notifications from "../features/customer/pages/Notifications/Notifications";
+import PetDiary from "../features/customer/pages/PetDiary/PetDiary";
 
 const CustomerRoutes = () => {
   return (
@@ -28,6 +30,7 @@ const CustomerRoutes = () => {
         <Route path="booking-detail" element={<BookingDetail />} />
         <Route path="booking-detail/:id" element={<BookingDetail />} />
         <Route path="payment" element={<Payment />} />
+        <Route path="payment-result" element={<PaymentResult />} />
         <Route path="payment/:id" element={<Payment />} />
         <Route path="checkout" element={<Payment />} />
         <Route path="checkout/:id" element={<Payment />} />
@@ -38,6 +41,10 @@ const CustomerRoutes = () => {
         <Route path="profile" element={<Profile />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="my-bookings/:id" element={<BookingDetail />} />
+        <Route path="my-bookings/:id/diary" element={<PetDiary />} />
+        <Route path="my-bookings/:id/pet-diary" element={<PetDiary />} />
+        <Route path="pet-diary" element={<PetDiary />} />
+        <Route path="pet-diary/:id" element={<PetDiary />} />
         <Route path="reviews" element={<MyReviews />} />
         <Route path="my-reviews" element={<MyReviews />} />
         <Route path="messages" element={<Messages />} />

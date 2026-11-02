@@ -102,7 +102,7 @@ const RightInfoPanel = ({ chat }) => {
 
           <button
             type="button"
-            onClick={() => navigate("/my-pets")}
+            onClick={() => navigate(currentBooking.recordId ? `/my-bookings/${currentBooking.recordId}/diary` : "/pet-diary")}
             className="flex w-full items-center justify-center space-x-2 rounded-xl border border-[#009879] px-3 py-2 text-xs font-semibold text-[#009879] hover:bg-[#009879]/5 transition-colors cursor-pointer"
           >
             <BookOpen size={14} />

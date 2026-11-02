@@ -79,3 +79,16 @@ test('deleted pets or services remain viewable without inventing customer data',
   assert.equal(detail.pet.weight, 'Chưa cập nhật');
   assert.equal(detail.facility.phone, 'Chưa cập nhật');
 });
+
+test('booking details preserve the business recipient independently of booking and branch IDs', () => {
+  for (const businessId of ['business-id', { _id: 'business-id' }]) {
+    const detail = bookingDetailData({ ...fixture,
+      branchServiceId: { ...fixture.branchServiceId,
+        branchId: { ...fixture.branchServiceId.branchId, _id: 'branch-id', businessId },
+      },
+    });
+    assert.equal(detail.businessId, 'business-id');
+    assert.equal(detail.recordId, 'database-id');
+  }
+  assert.equal(bookingDetailData({ ...fixture, branchServiceId: null }).businessId, '');
+});

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Message = require("../../models/Message");
 const Conversation = require("../../models/Conversation");
 const Business = require("../../models/Business");
+const { notifyMessage, notifyRead } = require("../../utils/messageEvents");
 
 // ============================================
 // KHÁCH HÀNG GỬI TIN NHẮN VĂN BẢN
@@ -94,6 +95,7 @@ const sendMessage = async (req, res, next) => {
     conversation.lastMessageAt = message.createdAt;
 
     await conversation.save();
+    notifyMessage(req, conversation, business, message);
 
     return res.status(201).json({
       success: true,
@@ -218,6 +220,7 @@ const markMessagesAsRead = async (req, res, next) => {
     }
 
     // Đánh dấu các tin nhắn nhận được là đã đọc
+    const readAt = new Date();
     const result = await Message.updateMany(
       {
         conversationId: conversation._id,
@@ -227,11 +230,12 @@ const markMessagesAsRead = async (req, res, next) => {
       {
         $set: {
           isRead: true,
-          readAt: new Date(),
+          readAt,
         },
       }
     );
 
+    if (result.modifiedCount) notifyRead(req, conversation, readAt, result.modifiedCount);
     return res.status(200).json({
       success: true,
       message: "Đánh dấu tin nhắn đã đọc thành công",

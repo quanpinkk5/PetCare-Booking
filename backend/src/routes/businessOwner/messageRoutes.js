@@ -1,0 +1,11 @@
+const router = require("express").Router();
+const authenticate = require("../../middlewares/authMiddleware");
+const authorize = require("../../middlewares/roleMiddleware");
+const controller = require("../../controllers/businessOwner/messageController");
+const guard = [authenticate, authorize("BUSINESS_OWNER")];
+router.get("/conversations", guard, controller.getConversations);
+router.get("/conversations/:conversationId/messages", guard, controller.getMessages);
+router.patch("/conversations/:conversationId/read", guard, controller.markRead);
+router.patch("/conversations/:conversationId/important", guard, controller.setImportant);
+router.post("/messages", guard, controller.sendMessage);
+module.exports = router;

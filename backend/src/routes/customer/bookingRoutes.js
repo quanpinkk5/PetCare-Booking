@@ -3,6 +3,9 @@ const router = express.Router();
 const authenticate = require("../../middlewares/authMiddleware");
 const authorize = require("../../middlewares/roleMiddleware");
 const bookingController = require("../../controllers/customer/bookingController");
+const { getDiary } = require("../../controllers/customer/petDiaryController");
+
+router.get('/bookings/:id/diary', authenticate, authorize('CUSTOMER'), getDiary);
 
 router.post(
   "/bookings",

@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { PAYMENTS_DATA } from "../../data/paymentData";
+import { ownerPaymentApi } from "../../services/paymentApi";
+import { mapOwnerPayment, matchesPaymentDates, summarizePayments } from "../../services/paymentView";
 
 import PaymentMetrics from "../../components/payments/PaymentMetrics";
 import PaymentFilters from "../../components/payments/PaymentFilters";
@@ -9,11 +10,32 @@ import PaymentDetailModal from "../../components/payments/PaymentDetailModal";
 
 const INITIAL_FILTERS = {
   branch: "Tất cả",
+  fromDate: "",
+  toDate: "",
   status: "Tất cả",
   method: "Tất cả",
 };
 
 export default function PaymentsPage() {
+  const [payments, setPayments] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    ownerPaymentApi.list(controller.signal).then((response) => {
+      if (controller.signal.aborted) return;
+      setPayments((response.data || []).map(mapOwnerPayment));
+      setBranches(response.branches || []);
+    }).catch((err) => {
+      if (!controller.signal.aborted) setError(err.message || "Không thể tải thanh toán");
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [refreshKey]);
+
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,11 +44,12 @@ export default function PaymentsPage() {
   const filteredPayments = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
-    return PAYMENTS_DATA.filter((payment) => {
+    return payments.filter((payment) => {
       const matchesSearch =
         !keyword ||
         [
           payment.id,
+          payment.bookingCode,
           payment.customer,
           payment.phone,
           payment.branch,
@@ -36,7 +59,7 @@ export default function PaymentsPage() {
 
       const matchesBranch =
         filters.branch === "Tất cả" ||
-        payment.branch.includes(filters.branch);
+        payment.branchId === filters.branch;
 
       const matchesStatus =
         filters.status === "Tất cả" ||
@@ -50,12 +73,19 @@ export default function PaymentsPage() {
         matchesSearch &&
         matchesBranch &&
         matchesStatus &&
-        matchesMethod
+        matchesMethod &&
+        matchesPaymentDates(payment, filters.fromDate, filters.toDate)
       );
     });
-  }, [filters, searchTerm]);
+  }, [payments, filters, searchTerm]);
+
+  const metrics = summarizePayments(filteredPayments);
 
   const handleReset = () => {
+    setLoading(true);
+    setError("");
+    setSelectedPayment(null);
+    setRefreshKey((key) => key + 1);
     setFilters(INITIAL_FILTERS);
     setSearchTerm("");
     setCurrentPage(1);
@@ -134,11 +164,13 @@ export default function PaymentsPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       {/* 1. Các thẻ chỉ số thống kê */}
-      <PaymentMetrics />
+      <PaymentMetrics metrics={metrics} unavailable={loading || Boolean(error)} />
 
       {/* 2. Bộ lọc & Bảng danh sách giao dịch (chiếm toàn bộ chiều rộng) */}
       <div className="space-y-4">
         <PaymentFilters
+          branches={branches}
+          disabled={loading || Boolean(error)}
           filters={filters}
           setFilters={handleFiltersChange}
           searchTerm={searchTerm}
@@ -148,6 +180,8 @@ export default function PaymentsPage() {
         />
 
         <PaymentTable
+          loading={loading}
+          error={error}
           payments={filteredPayments}
           selectedPaymentId={displayedPayment?.id}
           onSelectPayment={handleSelectPayment}

@@ -1,10 +1,11 @@
 import { Info } from "lucide-react";
 import { METRICS_DATA } from "../../data/paymentData";
 
-export default function PaymentMetrics() {
+export default function PaymentMetrics({ metrics, unavailable = false }) {
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-      {METRICS_DATA.map((metric) => {
+      {METRICS_DATA.map((template, index) => {
+        const metric = { ...template, ...metrics[index] };
         const Icon = metric.icon;
 
         return (
@@ -25,15 +26,15 @@ export default function PaymentMetrics() {
               </div>
 
               <div className="mt-0.5 text-base font-bold tracking-tight text-slate-900">
-                {metric.value}
+                {unavailable ? "—" : metric.value}
               </div>
 
               <div
                 className={`mt-0.5 flex flex-wrap items-center gap-1 text-[11px] font-medium ${metric.trendColor}`}
               >
-                <span>{metric.trend}</span>
+                <span>{unavailable ? "—" : metric.trend}</span>
                 <span className="font-normal text-slate-400">
-                  {metric.sub}
+                  {unavailable ? "" : metric.sub}
                 </span>
               </div>
             </div>

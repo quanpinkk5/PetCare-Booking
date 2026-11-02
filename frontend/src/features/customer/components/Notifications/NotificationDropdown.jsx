@@ -26,7 +26,7 @@ const TYPE_ICONS = {
 };
 
 const NotificationDropdown = ({ onClose }) => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading, error, busy, refreshNotifications } = useNotifications();
   const [tab, setTab] = useState("all"); // 'all' | 'unread'
   const navigate = useNavigate();
 
@@ -45,7 +45,7 @@ const NotificationDropdown = ({ onClose }) => {
     if (item.actionUrl) {
       navigate(item.actionUrl);
     } else {
-      navigate("/notifications");
+      navigate(`/notifications?id=${encodeURIComponent(item.id)}`);
     }
   };
 
@@ -70,6 +70,7 @@ const NotificationDropdown = ({ onClose }) => {
             <button
               type="button"
               onClick={markAllAsRead}
+              disabled={busy || loading}
               title="Đánh dấu tất cả đã đọc"
               className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer transition-colors"
             >
@@ -108,7 +109,9 @@ const NotificationDropdown = ({ onClose }) => {
 
       {/* Notification List */}
       <div className="max-h-80 overflow-y-auto divide-y divide-slate-100/70">
-        {previewItems.length === 0 ? (
+        {error && <p role="alert" className="p-3 text-xs text-rose-700">{error} <button type="button" onClick={refreshNotifications} className="underline">Thử lại</button></p>}
+        {loading && <p role="status" className="p-3 text-xs text-slate-500">Đang tải thông báo...</p>}
+        {previewItems.length === 0 && !loading && !error ? (
           <div className="py-10 px-4 text-center">
             <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
               <Bell size={20} />

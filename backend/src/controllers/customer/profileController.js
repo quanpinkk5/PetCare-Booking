@@ -1,4 +1,5 @@
 const User = require("../../models/User");
+const { toStoredGender, toProfileGender } = require("../../utils/profileGender");
 
 const updateProfile = async (req, res, next) => {
   try {
@@ -82,7 +83,7 @@ const updateProfile = async (req, res, next) => {
       if (!["", "Nam", "Nữ", "Khác"].includes(body.gender)) {
         return res.status(400).json({ success: false, message: "Giới tính không hợp lệ" });
       }
-      updates.gender = body.gender;
+      updates.gender = toStoredGender(body.gender);
     }
 
     if (body.birthday !== undefined) {
@@ -195,7 +196,7 @@ const updateProfile = async (req, res, next) => {
           phone: customer.phone,
           avatar: customer.avatar,
           address: customer.address,
-          gender: customer.gender || "",
+          gender: toProfileGender(customer.gender),
           birthday: customer.birthday || "",
           bio: customer.bio || "",
           role: customer.role,

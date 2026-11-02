@@ -109,7 +109,7 @@ const PendingReviewCard = ({ pendingItem, onWriteReview }) => {
 
         <div className="flex items-center gap-2">
           <Link
-            to={`/my-bookings/${pendingItem.bookingId}`}
+            to={`/my-bookings/${pendingItem.bookingRecordId || pendingItem.bookingId}`}
             className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-colors"
           >
             <Eye size={13} className="text-slate-500" />

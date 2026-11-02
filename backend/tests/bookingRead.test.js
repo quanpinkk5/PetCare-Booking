@@ -1,6 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const Booking = require('../src/models/Booking');
+const Payment = require('../src/models/Payment');
+const mongoose = require('mongoose');
 const Pet = require('../src/models/Pet');
 const Branch = require('../src/models/Branch');
 const Service = require('../src/models/Service');
@@ -88,7 +90,30 @@ test('detail does not expose another customer booking', async (t) => {
   assert.equal((await call(controller.getBookingById, {}, { id })).status, 404);
   assert.equal((await call(controller.getBookingById, {}, { id: 'invalid' })).status, 400);
 });
+test('detail includes the branch business ID needed to contact its recipient', async (t) => {
+  let includedBusiness = false;
+  t.mock.method(Booking, 'findOne', (filter) => {
+    assert.deepEqual(filter, { _id: id, customerId });
+    return {
+      populate(options) {
+        if (options?.path === 'branchServiceId') {
+          const branch = options.populate.find((item) => item.path === 'branchId');
+          assert.ok(branch.select.split(' ').includes('businessId'));
+          includedBusiness = true;
+        }
+        return this;
+      },
+      lean: async () => ({ _id: id, branchServiceId: { branchId: { businessId: 'business-id' } } }),
+    };
+  });
+  const result = await call(controller.getBookingById, {}, { id });
+  assert.equal(includedBusiness, true);
+  assert.equal(result.data.branchServiceId.branchId.businessId, 'business-id');
+});
 test('cancel requires unpaid mutable state and an atomic ownership guard', async (t) => {
+  const session = { withTransaction: async (fn) => fn(), endSession: async () => {} };
+  t.mock.method(mongoose, 'startSession', async () => session);
+  t.mock.method(Payment, 'findOne', () => ({ session: async () => null }));
   t.mock.method(Booking, 'findOne', async () => ({ status: 'CONFIRMED', paymentStatus: 'UNPAID' }));
   t.mock.method(Booking, 'findOneAndUpdate', async (filter, update) => {
     assert.equal(filter.customerId, customerId);

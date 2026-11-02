@@ -7,6 +7,7 @@ const conversationSchema = new mongoose.Schema(
     bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
     lastMessage: String,
     lastMessageAt: Date,
+    ownerImportant: { type: Boolean, default: false },
   },
   { timestamps: true, collection: "conversations", versionKey: false },
 );

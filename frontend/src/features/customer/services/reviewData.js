@@ -32,3 +32,13 @@ export const reviewPayload = (item, creating) => ({
   comment: item.comment, images: item.images || [], subRatings: item.subRatings || {},
   tags: item.tags || [], isAnonymous: Boolean(item.isAnonymous),
 });
+
+// A completed booking can already have a review. Reuse that review instead of
+// treating its absence from the pending list as an incomplete booking.
+export const resolveBookingReview = (bookingId, pending, reviews) => {
+  const matches = (item) => [item.bookingRecordId, item.bookingId].some((id) => id && String(id) === String(bookingId));
+  const existing = reviews.find(matches);
+  if (existing) return { item: existing, isEditMode: true, tab: 'reviewed' };
+  const target = pending.find(matches);
+  return target ? { item: target, isEditMode: false, tab: 'pending' } : null;
+};

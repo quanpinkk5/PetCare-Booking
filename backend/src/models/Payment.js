@@ -1,18 +1,14 @@
-
 const mongoose = require("mongoose");
 
-const PAYMENT_METHODS = [
-  "CASH",
-  "VNPAY",
-  "MOMO",
-  "BANK_TRANSFER",
-];
+const PAYMENT_METHODS = ["CASH", "VNPAY", "MOMO", "BANK_TRANSFER"];
 
 const PAYMENT_STATUSES = [
   "PENDING",
   "PROCESSING",
   "PAID",
   "FAILED",
+  "EXPIRED",
+  "REFUNDED",
 ];
 
 const paymentSchema = new mongoose.Schema(
@@ -107,6 +103,10 @@ const paymentSchema = new mongoose.Schema(
       default: {},
       select: false,
     },
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -131,5 +131,15 @@ paymentSchema.index({
   businessId: 1,
   createdAt: -1,
 });
-
+//Index này ngăn hai Payment PENDING hoặc PROCESSING cùng tồn tại cho một Booking. Các Payment FAILED, EXPIRED vẫn được giữ
+paymentSchema.index(
+  { bookingId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ["PENDING", "PROCESSING"] },
+    },
+    name: "unique_active_payment_per_booking",
+  },
+);
 module.exports = mongoose.model("Payment", paymentSchema);

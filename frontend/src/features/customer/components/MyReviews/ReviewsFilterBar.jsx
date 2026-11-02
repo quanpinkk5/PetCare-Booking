@@ -1,11 +1,7 @@
-import React from "react";
 import {
   Search,
   X,
-  Star,
-  SlidersHorizontal,
   RotateCcw,
-  CheckCircle2,
   Image as ImageIcon,
   MessageSquare
 } from "lucide-react";
@@ -32,7 +28,16 @@ const ReviewsFilterBar = ({
     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm space-y-4">
       {/* 1. Main Navigation Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-        
+        <div className="flex gap-2" role="tablist" aria-label="Danh sách đánh giá">
+          {[{ id: 'reviewed', label: 'Đã đánh giá', count: reviewedCount },
+            { id: 'pending', label: 'Chờ đánh giá', count: pendingCount }].map((tab) => (
+            <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${activeTab === tab.id ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-teal-50'}`}>
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
 
         {/* Reset button if filter is active */}
         {isFiltered && (

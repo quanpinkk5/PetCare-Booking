@@ -7,6 +7,7 @@ import {
   ChevronRight,
   RotateCcw,
   CheckCircle2,
+  AlertCircle,
   Coins
 } from "lucide-react";
 
@@ -19,7 +20,7 @@ import ImageLightboxModal from "../../components/MyReviews/ImageLightboxModal";
 import DeleteConfirmModal from "../../components/MyReviews/DeleteConfirmModal";
 
 import { reviewApi } from '../../services/reviewApi.js';
-import { reviewData, pendingReviewData, reviewPayload } from '../../services/reviewData.js';
+import { reviewData, pendingReviewData, reviewPayload, resolveBookingReview } from '../../services/reviewData.js';
 import { useAuth } from '../../../../context/AuthContext';
 
 const ITEMS_PER_PAGE = 4;
@@ -88,9 +89,11 @@ const MyReviews = () => {
       setReviews(list); setPendingReviews(pending);
       if (paramBookingId && paramAction === 'write' && handledRequest.current !== paramBookingId) {
         handledRequest.current = paramBookingId;
-        const target = pending.find((item) => item.bookingRecordId === paramBookingId || item.bookingId === paramBookingId);
-        if (target) { setModalTargetItem(target); setIsEditMode(false); setReviewModalOpen(true); setActiveTab('pending'); }
-        else setToast({ message: 'Lịch đặt này chưa hoàn thành hoặc đã được đánh giá.', type: 'error' });
+        const target = resolveBookingReview(paramBookingId, pending, list);
+        if (target) {
+          setModalTargetItem(target.item); setIsEditMode(target.isEditMode);
+          setReviewModalOpen(true); setActiveTab(target.tab); setCurrentPage(1);
+        } else setToast({ message: 'Không tìm thấy đánh giá có thể mở cho lịch đặt này. Đơn cần hoàn thành; đánh giá đã bị ẩn hoặc xóa không thể tạo lại.', type: 'error' });
       }
     }).catch((error) => { if (!cancelled) setLoadError(error.message || 'Không thể tải đánh giá.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -304,6 +307,8 @@ const MyReviews = () => {
           >
             {toast.type === "reward" ? (
               <Coins size={20} className="text-amber-500 fill-amber-400 shrink-0" />
+            ) : toast.type === "error" ? (
+              <AlertCircle size={18} className="text-red-600 shrink-0" />
             ) : (
               <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
             )}
