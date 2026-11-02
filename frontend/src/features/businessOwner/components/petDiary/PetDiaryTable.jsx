@@ -1,27 +1,22 @@
-import { useState, useEffect } from "react";
-import { Eye, Edit3, ChevronLeft, ChevronRight } from "lucide-react";
+import PetDiaryAvatar from "./PetDiaryAvatar.jsx";
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function PetDiaryTable({
   pets = [],
   selectedPetId,
   onSelectPet,
   onViewDetail,
-  onEditDiary,
-  onUpdateDiary,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  loading = false,
 }) {
-  const [pageSize, setPageSize] = useState(5);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Tự động chuyển về trang 1 khi danh sách thay đổi (lọc, tìm kiếm, v.v.)
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pets.length, pageSize]);
-
-  const totalPages = Math.max(1, Math.ceil(pets.length / pageSize));
-  const activePage = Math.min(Math.max(1, currentPage), totalPages);
-
+  const pageSize = pagination.limit;
+  const totalPages = pagination.totalPages;
+  const activePage = pagination.page;
+  const total = pagination.total;
   const startIndex = (activePage - 1) * pageSize;
-  const currentPets = pets.slice(startIndex, startIndex + pageSize);
+  const currentPets = loading ? [] : pets;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
@@ -58,7 +53,7 @@ export default function PetDiaryTable({
                   >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <img
+                        <PetDiaryAvatar
                           alt={pet.name}
                           src={pet.img}
                           className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
@@ -122,12 +117,12 @@ export default function PetDiaryTable({
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      <span className="inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-emerald-100/80 text-emerald-700">
-                        HOÀN THÀNH
+                      <span className={`inline-block px-2.5 py-0.5 text-[10px] font-bold rounded-md ${pet.statusBadge}`}>
+                        {pet.status}
                       </span>
                     </td>
 
-                    {/* Cột thao tác có 2 hành động: Xem chi tiết và Cập nhật */}
+                    {/* Xem chi tiết nhật ký */}
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
@@ -142,19 +137,6 @@ export default function PetDiaryTable({
                           <Eye size={13} className="text-slate-500" />
                           <span>Chi tiết</span>
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            (onEditDiary || onUpdateDiary)?.(pet);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-xl bg-blue-50 border border-blue-200 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 shadow-2xs hover:bg-blue-100 hover:border-blue-300 transition cursor-pointer"
-                          title="Chỉnh sửa nhật ký"
-                        >
-                          <Edit3 size={13} className="text-blue-600" />
-                          <span>Chỉnh sửa</span>
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -166,7 +148,7 @@ export default function PetDiaryTable({
                   colSpan={8}
                   className="py-12 text-center text-xs text-slate-400"
                 >
-                  Không tìm thấy thú cưng hoặc nhật ký phù hợp.
+                  {loading ? "Đang tải nhật ký thú cưng..." : "Không tìm thấy thú cưng hoặc nhật ký phù hợp."}
                 </td>
               </tr>
             )}
@@ -178,16 +160,16 @@ export default function PetDiaryTable({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-100 bg-slate-50/50 text-xs text-slate-500">
         <div className="flex items-center gap-3">
           <span>
-            {pets.length === 0 ? (
+            {total === 0 ? (
               "Không có bản ghi nào"
             ) : (
               <>
                 Hiển thị{" "}
                 <strong className="text-slate-800">
-                  {startIndex + 1} - {Math.min(startIndex + pageSize, pets.length)}
+                  {startIndex + 1} - {Math.min(startIndex + pageSize, total)}
                 </strong>{" "}
                 trong tổng số{" "}
-                <strong className="text-slate-800">{pets.length}</strong> thú cưng
+                <strong className="text-slate-800">{total}</strong> đơn lưu trú
               </>
             )}
           </span>
@@ -196,7 +178,8 @@ export default function PetDiaryTable({
             <span className="text-slate-400">| Số dòng:</span>
             <select
               value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              disabled={loading}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
               className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-semibold outline-none cursor-pointer"
             >
               <option value={5}>5</option>
@@ -211,18 +194,19 @@ export default function PetDiaryTable({
             <button
               type="button"
               aria-label="Trang trước"
-              disabled={activePage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={loading || activePage <= 1}
+              onClick={() => onPageChange(Math.max(1, activePage - 1))}
               className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
             >
               <ChevronLeft size={14} />
             </button>
 
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNum) => (
+            {Array.from({ length: totalPages }, (_, index) => index + 1).filter((pageNum) => pageNum === 1 || pageNum === totalPages || Math.abs(pageNum - activePage) <= 1).map((pageNum) => (
               <button
                 key={pageNum}
                 type="button"
-                onClick={() => setCurrentPage(pageNum)}
+                disabled={loading}
+                onClick={() => onPageChange(pageNum)}
                 className={`w-7 h-7 rounded-lg border flex items-center justify-center font-medium transition-colors cursor-pointer ${
                   pageNum === activePage
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold shadow-2xs"
@@ -236,8 +220,8 @@ export default function PetDiaryTable({
             <button
               type="button"
               aria-label="Trang sau"
-              disabled={activePage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={loading || activePage >= totalPages}
+              onClick={() => onPageChange(Math.min(totalPages, activePage + 1))}
               className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
             >
               <ChevronRight size={14} />

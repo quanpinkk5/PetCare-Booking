@@ -1,143 +1,245 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Eye, PawPrint } from "lucide-react";
 
+// ========================================
+// AVATAR THÚ CƯNG
+// ========================================
+function PetAvatar({ src, name }) {
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
+
+  if (!src || imageError) {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+        <PawPrint size={19} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name || "Thú cưng"}
+      onError={() => setImageError(true)}
+      className="h-10 w-10 shrink-0 rounded-xl border border-slate-100 object-cover shadow-sm"
+    />
+  );
+}
+
+// ========================================
+// BẢNG QUẢN LÝ LƯU TRÚ
+// ========================================
 export default function BoardingTable({
   pets = [],
   onSelectPet,
   selectedPetId,
   onViewDetail,
+
+  // Phân trang từ Backend
+  pagination = {
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 0,
+  },
+  onPageChange,
+  loading = false,
 }) {
-  const PAGE_SIZE = 5;
-  const [currentPage, setCurrentPage] = useState(1);
+  const currentPage = pagination.page || 1;
+  const pageSize = pagination.limit || 5;
+  const total = pagination.total || 0;
+  const totalPages = pagination.totalPages || 0;
 
-  // Tự động reset về trang 1 khi danh sách pets thay đổi (ví dụ: khi tìm kiếm hoặc lọc)
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pets.length]);
+  const startItem = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
 
-  const totalPages = Math.max(1, Math.ceil(pets.length / PAGE_SIZE));
-  const activePage = Math.min(Math.max(1, currentPage), totalPages);
+  const endItem = Math.min(currentPage * pageSize, total);
 
-  const startIndex = (activePage - 1) * PAGE_SIZE;
-  const currentPets = pets.slice(startIndex, startIndex + PAGE_SIZE);
+  const handleViewDetail = (pet) => {
+    onSelectPet?.(pet);
+    onViewDetail?.(pet);
+  };
+
+  const handlePageChange = (page) => {
+    if (loading || page < 1 || page > totalPages || page === currentPage) {
+      return;
+    }
+
+    onPageChange?.(page);
+  };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-      {/* Header của bảng */}
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+    <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      {/* HEADER */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
         <div>
-          <h3 className="font-bold text-slate-800 text-sm">
+          <h3 className="text-sm font-bold text-slate-800">
             Danh sách thú cưng lưu trú
           </h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            Tìm thấy <span className="font-semibold text-emerald-600">{pets.length}</span> thú cưng
+
+          <p className="mt-0.5 text-[11px] text-slate-400">
+            Tìm thấy{" "}
+            <span className="font-semibold text-emerald-600">{total}</span> đơn
+            lưu trú phù hợp
           </p>
         </div>
       </div>
 
-      {/* Bảng dữ liệu */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse whitespace-nowrap text-left text-xs">
+      {/* BẢNG DỮ LIỆU */}
+      <div className="w-full overflow-x-auto">
+        <table className="w-full min-w-[900px] border-collapse whitespace-nowrap text-left text-xs">
           <thead>
-            <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              <th className="py-3 px-4">Thú cưng</th>
-              <th className="py-3 px-4">Chủ nuôi</th>
-              <th className="py-3 px-4">Check-in</th>
-              <th className="py-3 px-4">Check-out</th>
-              <th className="py-3 px-4 text-center">Trạng thái</th>
-              <th className="py-3 px-4 text-center">Thao tác</th>
+            <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <th className="px-4 py-3">Thú cưng</th>
+
+              <th className="px-4 py-3">Chủ nuôi</th>
+
+              <th className="px-4 py-3">Check-in</th>
+
+              <th className="px-4 py-3">Check-out</th>
+
+              <th className="px-4 py-3 text-center">Trạng thái</th>
+
+              <th className="px-4 py-3 text-center">Thao tác</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100 text-slate-700">
-            {currentPets.map((pet) => (
-              <tr
-                key={pet.id}
-                onClick={() => onSelectPet?.(pet)}
-                className={`cursor-pointer transition hover:bg-slate-50/70 ${
-                  selectedPetId === pet.id ? "bg-emerald-50/40" : ""
-                }`}
-              >
-                {/* Thú cưng */}
-                <td className="py-3.5 px-4">
-                  <div className="flex items-center gap-2.5">
-                    <img
-                      src={pet.img}
-                      alt={pet.name}
-                      className="h-10 w-10 rounded-xl object-cover border border-slate-100 shadow-2xs shrink-0"
-                    />
-                    <div>
-                      <p
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectPet?.(pet);
-                          onViewDetail?.(pet);
-                        }}
-                        className="text-xs font-bold text-slate-800 hover:text-emerald-600 transition"
-                      >
-                        {pet.name}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        {pet.type} • <span className="text-emerald-700 font-medium">{pet.roomName}</span>
-                      </p>
+            {pets.map((pet) => {
+              const isSelected = selectedPetId === pet.id;
+
+              const petName = pet.name || "Thú cưng";
+
+              const ownerName = pet.owner || "Khách hàng";
+
+              const petType = pet.type || "Chưa cập nhật";
+
+              const roomName = pet.roomName || "Chưa cập nhật phòng";
+
+              return (
+                <tr
+                  key={pet._id || pet.id}
+                  onClick={() => onSelectPet?.(pet)}
+                  className={`cursor-pointer transition-colors hover:bg-slate-50/70 ${
+                    isSelected ? "bg-emerald-50/40" : ""
+                  }`}
+                >
+                  {/* THÚ CƯNG */}
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <PetAvatar src={pet.img} name={petName} />
+
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetail(pet);
+                          }}
+                          className="block cursor-pointer text-left text-xs font-bold text-slate-800 transition hover:text-emerald-600"
+                        >
+                          {petName}
+                        </button>
+
+                        <p className="mt-0.5 text-[10px] text-slate-400">
+                          {petType}
+                          {" • "}
+                          <span className="font-medium text-emerald-700">
+                            {roomName}
+                          </span>
+                        </p>
+
+                        <p className="mt-0.5 font-mono text-[10px] text-slate-400">
+                          {pet.id}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Chủ nuôi */}
-                <td className="py-3.5 px-4">
-                  <p className="text-xs font-medium text-slate-800">
-                    {pet.owner}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-mono">{pet.phone}</p>
-                </td>
+                  {/* CHỦ NUÔI */}
+                  <td className="px-4 py-3.5">
+                    <p className="font-medium text-slate-800">{ownerName}</p>
 
-                {/* Check-in */}
-                <td className="py-3.5 px-4">
-                  <p className="font-medium text-slate-800">{pet.checkinDate}</p>
-                  <p className="text-[10px] text-slate-400">{pet.checkinTime}</p>
-                </td>
+                    <p className="mt-0.5 font-mono text-[10px] text-slate-400">
+                      {pet.phone || "—"}
+                    </p>
+                  </td>
 
-                {/* Check-out */}
-                <td className="py-3.5 px-4">
-                  <p className="font-medium text-slate-800">{pet.checkoutDate}</p>
-                  <p className={`text-[10px] font-medium ${pet.checkoutColor}`}>
-                    {pet.checkoutStatus}
-                  </p>
-                </td>
+                  {/* CHECK-IN */}
+                  <td className="px-4 py-3.5">
+                    <p className="font-medium text-slate-800">
+                      {pet.checkinDate || "—"}
+                    </p>
 
-                {/* Trạng thái */}
-                <td className="py-3.5 px-4 text-center">
-                  <span
-                    className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold ${pet.statusClass}`}
-                  >
-                    {pet.status}
-                  </span>
-                </td>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {pet.checkinTime || "Ngày nhận dự kiến"}
+                    </p>
+                  </td>
 
-                {/* Thao tác: Xem chi tiết */}
-                <td className="py-3.5 px-4 text-center">
-                  <button
-                    type="button"
-                    aria-label={`Xem chi tiết ${pet.name}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectPet?.(pet);
-                      onViewDetail?.(pet);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer shadow-2xs"
-                  >
-                    <Eye size={13} />
-                    <span>Xem chi tiết</span>
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  {/* CHECK-OUT */}
+                  <td className="px-4 py-3.5">
+                    <p className="font-medium text-slate-800">
+                      {pet.checkoutDate || "—"}
+                    </p>
 
+                    <p
+                      className={`mt-0.5 text-[10px] font-medium ${
+                        pet.checkoutColor || "text-slate-400"
+                      }`}
+                    >
+                      {pet.checkoutStatus || "Ngày trả dự kiến"}
+                    </p>
+                  </td>
+
+                  {/* TRẠNG THÁI */}
+                  <td className="px-4 py-3.5 text-center">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                        pet.statusClass || "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {pet.status || "Chưa xác định"}
+                    </span>
+                  </td>
+
+                  {/* THAO TÁC */}
+                  <td className="px-4 py-3.5 text-center">
+                    <button
+                      type="button"
+                      aria-label={`Xem chi tiết ${petName}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetail(pet);
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100"
+                    >
+                      <Eye size={13} />
+                      <span>Xem chi tiết</span>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* KHÔNG CÓ DỮ LIỆU */}
             {pets.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400">
-                  Không tìm thấy thú cưng lưu trú phù hợp.
+                <td colSpan={6} className="px-4 py-14 text-center">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <PawPrint size={22} />
+                    </div>
+
+                    <p className="text-sm font-semibold text-slate-600">
+                      Không tìm thấy thú cưng lưu trú phù hợp
+                    </p>
+
+                    <p className="text-xs text-slate-400">
+                      Hãy thử thay đổi từ khóa hoặc bộ lọc tìm kiếm.
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -145,58 +247,87 @@ export default function BoardingTable({
         </table>
       </div>
 
-      {/* Phân trang */}
-      <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      {/* =====================================
+          PHÂN TRANG BACKEND
+          NẰM NGAY DƯỚI BẢNG
+      ===================================== */}
+      <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 text-xs text-slate-500 sm:flex-row">
+        {/* SỐ LƯỢNG HIỂN THỊ */}
         <span>
-          {pets.length === 0 ? (
+          {total === 0 ? (
             "Không có thú cưng nào"
           ) : (
             <>
               Hiển thị{" "}
               <strong className="text-slate-800">
-                {startIndex + 1} - {Math.min(startIndex + PAGE_SIZE, pets.length)}
+                {startItem} - {endItem}
               </strong>{" "}
-              trong tổng số{" "}
-              <strong className="text-slate-800">{pets.length}</strong> thú cưng
+              trên tổng số <strong className="text-slate-800">{total}</strong>{" "}
+              đơn lưu trú
             </>
           )}
         </span>
 
+        {/* NÚT PHÂN TRANG */}
         {totalPages > 1 && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            {/* TRANG TRƯỚC */}
             <button
               type="button"
               aria-label="Trang trước"
-              disabled={activePage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              disabled={loading || currentPage <= 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={15} />
             </button>
 
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                type="button"
-                onClick={() => setCurrentPage(pageNum)}
-                className={`w-7 h-7 rounded-lg border flex items-center justify-center font-medium transition-colors cursor-pointer ${
-                  pageNum === activePage
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-600 font-bold"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {pageNum}
-              </button>
-            ))}
+            {/* SỐ TRANG */}
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .filter((pageNumber) => {
+                // Trang đầu / cuối luôn hiển thị.
+                // Các trang khác chỉ hiển thị
+                // trong khoảng gần trang hiện tại.
+                return (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  Math.abs(pageNumber - currentPage) <= 1
+                );
+              })
+              .map((pageNumber, index, pages) => {
+                const previousPage = pages[index - 1];
 
+                return (
+                  <div key={pageNumber} className="flex items-center gap-1.5">
+                    {previousPage && pageNumber - previousPage > 1 && (
+                      <span className="px-1 text-slate-400">...</span>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        pageNumber === currentPage
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  </div>
+                );
+              })}
+
+            {/* TRANG SAU */}
             <button
               type="button"
               aria-label="Trang sau"
-              disabled={activePage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              disabled={loading || currentPage >= totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={15} />
             </button>
           </div>
         )}

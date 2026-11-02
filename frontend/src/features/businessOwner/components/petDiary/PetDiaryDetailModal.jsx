@@ -1,17 +1,34 @@
+import PetDiaryAvatar from "./PetDiaryAvatar.jsx";
 import {
   X,
   ShieldCheck,
-  Calendar,
-  Clock,
-  Utensils,
   FileText,
   Edit3,
-  ArrowRight,
+  Plus,
   BookHeart,
 } from "lucide-react";
-import { TIMELINE_DATA } from "../../data/petDiaryData";
+import { useEffect, useState } from "react";
+import { petDiaryApi } from "../../services/petDiaryApi.js";
+import { diaryTimeline } from "../../data/petDiaryApiData.js";
 
-export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
+export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary, onEditDiary }) {
+  const [timeline, setTimeline] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedDiaryId, setSelectedDiaryId] = useState(null);
+  const selectedDiary = timeline.find((item) => item.id === selectedDiaryId);
+  const canEditDiary = !loading && !error && !!selectedDiary && pet.statusCode === "IN_PROGRESS" && !!onEditDiary;
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    setSelectedDiaryId(null);
+    petDiaryApi.getDiaries(pet.bookingId).then((response) => {
+      if (!cancelled) setTimeline(diaryTimeline(response.data.diaries));
+    }).catch((err) => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [pet.bookingId]);
   if (!pet) return null;
 
   return (
@@ -53,7 +70,7 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
         <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
           {/* Hồ sơ thú cưng */}
           <div className="flex items-start gap-4 pb-4 border-b border-slate-100">
-            <img
+            <PetDiaryAvatar
               alt={pet.name}
               src={pet.img}
               className="w-16 h-16 rounded-2xl object-cover ring-1 ring-slate-200 shadow-sm shrink-0"
@@ -79,7 +96,7 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
               </div>
 
               <p className="text-[11px] text-slate-500 mt-0.5">
-                {pet.breed} • {pet.age} • {pet.weight || "10 kg"}
+                {pet.breed} • {pet.age} • {pet.weight}
               </p>
 
               <div className="flex items-center gap-1.5 text-[11px] font-medium mt-1 text-emerald-600">
@@ -128,23 +145,38 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h5 className="font-bold text-slate-800 text-xs">
-                Lịch sử chăm sóc hôm nay
+                Lịch sử chăm sóc
               </h5>
               <span className="text-[10px] text-slate-400">
-                {TIMELINE_DATA.length} hoạt động
+                {loading ? "Đang tải..." : `${timeline.length} hoạt động`}
               </span>
             </div>
 
             <div className="space-y-2">
-              {TIMELINE_DATA.map((item) => {
+              {error && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-rose-700">{error}</p>}
+              {!loading && !error && timeline.length === 0 && <p className="p-3 text-slate-400">Chưa có nhật ký chăm sóc cho đơn lưu trú này.</p>}
+              {!loading && !error && timeline.map((item) => {
                 const Icon = item.icon;
+                const isSelected = selectedDiaryId === item.id;
+                const toggleSelection = () => setSelectedDiaryId((previous) => previous === item.id ? null : item.id);
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-2xs hover:border-slate-200 transition"
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    aria-label={`Chọn ${item.type} lúc ${item.time}`}
+                    onClick={toggleSelection}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggleSelection();
+                      }
+                    }}
+                    className={`flex items-center justify-between gap-3 p-3 rounded-xl border shadow-2xs transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${isSelected ? "bg-emerald-50 border-emerald-400 ring-1 ring-emerald-200" : "bg-white border-slate-100 hover:border-slate-200"}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-slate-400 font-semibold text-[10px] w-10 shrink-0">
+                      <span className="text-slate-400 font-semibold text-[10px] w-20 shrink-0">
                         {item.time}
                       </span>
                       <div
@@ -155,22 +187,29 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800">
                           {item.type}
+                          {isSelected && <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">Đang chọn</span>}
                         </p>
                         {item.desc && (
-                          <p className="text-[11px] text-slate-500 truncate max-w-sm">
+                          <p className="text-[11px] text-slate-500 whitespace-pre-line break-words max-w-sm">
                             {item.desc}
                           </p>
                         )}
+                        {item.author && <p className="text-[10px] text-slate-400">{item.author}</p>}
                       </div>
                     </div>
 
-                    {item.img && (
-                      <img
-                        alt="Ảnh cập nhật"
-                        src={item.img}
-                        className="w-9 h-9 rounded-lg object-cover ring-1 ring-slate-200 shrink-0"
-                      />
-                    )}
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="flex max-w-32 flex-wrap justify-end gap-1">
+                        {item.images.map((url, index) => (
+                          <img
+                            key={`${url}-${index}`}
+                            alt="Ảnh cập nhật"
+                            src={url}
+                            className="w-9 h-9 rounded-lg object-cover ring-1 ring-slate-200 shrink-0"
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -179,7 +218,7 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3.5 bg-slate-50/70">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-3.5 bg-slate-50/70">
           <button
             type="button"
             onClick={onClose}
@@ -188,17 +227,32 @@ export default function PetDiaryDetailModal({ pet, onClose, onUpdateDiary }) {
             Đóng
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onUpdateDiary?.(pet);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition cursor-pointer shadow-sm shadow-emerald-200"
-          >
-            <Edit3 size={14} />
-            <span>Thêm cập nhật cho {pet.name}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={!canEditDiary}
+              onClick={() => {
+                if (canEditDiary) onEditDiary({ ...pet, ...selectedDiary.editData });
+              }}
+              title={selectedDiary ? `Chỉnh sửa ${selectedDiary.type} lúc ${selectedDiary.time}` : "Chọn một hoạt động trong nhật ký để chỉnh sửa"}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Edit3 size={14} />
+              <span>Chỉnh sửa</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onUpdateDiary?.(pet);
+              }}
+              disabled={pet.statusCode !== "IN_PROGRESS"}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition cursor-pointer shadow-sm shadow-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Plus size={14} />
+              <span>Thêm cập nhật cho {pet.name}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
