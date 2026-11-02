@@ -1,19 +1,29 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link, Navigate } from "react-router-dom";
 import PetDiaryHeader from "../../components/PetDiary/PetDiaryHeader";
 import PetOverviewCard from "../../components/PetDiary/PetOverviewCard";
 import ActivityTimeline from "../../components/PetDiary/ActivityTimeline";
 import PhotoGallerySection from "../../components/PetDiary/PhotoGallerySection";
 import QuickInfoSidebar from "../../components/PetDiary/QuickInfoSidebar";
 import ImageLightboxModal from "../../components/PetDiary/ImageLightboxModal";
-import { DEFAULT_DIARY } from "../../services/petDiaryData";
-import { bookingApi } from "../../services/bookingApi";
-import { bookingDetailData } from "../../services/bookingData";
+import { petDiaryData } from "../../services/petDiaryData";
+import { petDiaryApi } from "../../services/petDiaryApi";
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function PetDiary() {
   const { id } = useParams();
-  const [diary, setDiary] = useState(DEFAULT_DIARY);
-  const [isLoading, setIsLoading] = useState(false);
+  const [params] = useSearchParams();
+  const { user, isAuthLoading } = useAuth();
+  const bookingId = id || params.get('bookingId') || '';
+  return <PetDiaryContent key={String(user?._id || user?.id || '') + ':' + bookingId} bookingId={bookingId} user={user} isAuthLoading={isAuthLoading} />;
+}
+
+function PetDiaryContent({ bookingId, user, isAuthLoading }) {
+  const [result, setResult] = useState({ data: null, error: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedDate, setSelectedDate] = useState('');
+  const diary = result.data ? petDiaryData(result.data.booking, result.data.entries, selectedDate) : null;
 
   // Lightbox modal state
   const [lightboxState, setLightboxState] = useState({
@@ -23,55 +33,28 @@ export default function PetDiary() {
   });
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [id]);
-
-  // If a booking id or code is passed in route params, attempt to fetch real booking details
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    setIsLoading(true);
-
-    bookingApi
-      .detail(id)
-      .then((res) => {
-        if (!isMounted || !res?.data) return;
-        const b = bookingDetailData(res.data);
-        if (b) {
-          setDiary((prev) => ({
-            ...prev,
-            bookingId: b.id || prev.bookingId,
-            bookingRecordId: b.recordId || id,
-            facility: {
-              ...prev.facility,
-              name: b.facility?.name || prev.facility.name,
-              phone: b.facility?.phone || prev.facility.phone,
-              address: b.facility?.address || prev.facility.address,
-              status: b.status || prev.facility.status,
-            },
-            pet: {
-              ...prev.pet,
-              name: b.pet?.name || prev.pet.name,
-              breed: b.pet?.breed || prev.pet.breed,
-              weight: b.pet?.weight || prev.pet.weight,
-              avatar: b.pet?.img || prev.pet.avatar,
-              careNotes: b.note || prev.pet.careNotes,
-            },
-          }));
-        }
-      })
-      .catch(() => {
-        // Fallback to default diary gracefully
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
+    if (!bookingId || isAuthLoading || user?.role !== 'CUSTOMER') return;
+    const controller = new AbortController();
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const response = await petDiaryApi.detail(bookingId, { signal: controller.signal });
+        if (!controller.signal.aborted) setResult({ data: response.data, error: '' });
+      } catch (error) {
+        if (!controller.signal.aborted) setResult((previous) => ({ ...previous, error: error.message || 'Không thể tải nhật ký.' }));
+      } finally { if (!controller.signal.aborted) setIsLoading(false); }
     };
-  }, [id]);
+    load();
+    const refresh = () => { if (document.visibilityState === 'visible') setRefreshKey((value) => value + 1); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      controller.abort(); window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [bookingId, user, isAuthLoading, refreshKey]);
 
   // Open lightbox from an activity image
   const handleActivityImageClick = (imageUrl, title, time) => {
@@ -134,12 +117,29 @@ export default function PetDiary() {
     }));
   };
 
+  if (!isAuthLoading && !user) return <Navigate to="/login" replace />;
+  if (user && user.role !== 'CUSTOMER') return <Navigate to="/" replace />;
+  if (!diary) return <main className="max-w-7xl mx-auto p-8 text-center space-y-4">
+    <p role={result.error ? 'alert' : 'status'}>{!bookingId ? 'Chọn lịch đặt để xem nhật ký chăm sóc.' : result.error || 'Đang tải nhật ký chăm sóc...'}</p>
+    {result.error && <button type="button" onClick={() => setRefreshKey((value) => value + 1)} className="text-teal-700 underline">Thử lại</button>}
+    <Link to="/my-bookings" className="block text-teal-700">Lịch đặt của tôi</Link>
+  </main>;
+
   return (
     <div className="min-h-screen bg-[#f8fafc]/80 pb-14 pt-4">
       <main className="max-w-[1380px] w-full mx-auto px-4 sm:px-6">
         {/* 1. Header with Breadcrumb, Title, Status & Hero Illustration */}
         <PetDiaryHeader diary={diary} />
 
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <label className="text-sm font-semibold text-slate-700">Ngày xem nhật ký
+            <select value={diary.selectedDate} onChange={(event) => { setSelectedDate(event.target.value); handleCloseLightbox(); }} className="ml-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+              {diary.availableDates.map((date) => <option key={date} value={date}>{date.split('-').reverse().join('/')}</option>)}
+            </select>
+          </label>
+          <button type="button" disabled={isLoading} onClick={() => setRefreshKey((value) => value + 1)} className="text-sm font-semibold text-teal-700 disabled:opacity-50">{isLoading ? 'Đang đồng bộ...' : 'Làm mới nhật ký'}</button>
+        </div>
+        {result.error && <p role="alert" className="mb-4 rounded-xl bg-rose-50 p-4 text-rose-700">{result.error}</p>}
         {/* 2. Pet Overview & Boarding Stay Card */}
         <PetOverviewCard diary={diary} />
 
@@ -150,12 +150,14 @@ export default function PetDiary() {
             {/* Timeline of daily activities */}
             <ActivityTimeline
               activities={diary.activities}
+              dateLabel={diary.dateLabel}
               onImageClick={handleActivityImageClick}
             />
 
             {/* Gallery of today's photos */}
             <PhotoGallerySection
               photos={diary.todayPhotos}
+              dateLabel={diary.dateLabel}
               onViewAll={handleViewAllPhotos}
               onPhotoClick={handleGalleryPhotoClick}
             />

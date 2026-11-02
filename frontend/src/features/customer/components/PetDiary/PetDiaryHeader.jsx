@@ -6,18 +6,6 @@ export default function PetDiaryHeader({ diary }) {
 
   return (
     <div className="relative mb-6">
-      {/* Decorative background image on top right */}
-      <div className="absolute right-0 top-0 -mt-2 hidden md:block w-72 lg:w-96 h-36 pointer-events-none select-none overflow-hidden opacity-90">
-        <div className="relative w-full h-full flex items-center justify-end pr-4">
-          <div className="absolute inset-0 bg-radial from-emerald-100/40 via-teal-50/20 to-transparent rounded-full blur-xl" />
-          <img
-            src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=80"
-            alt=""
-            className="relative h-28 w-28 lg:h-32 lg:w-32 object-cover rounded-3xl shadow-sm rotate-2 border-2 border-white/80"
-          />
-        </div>
-      </div>
-
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-2">
         <ol className="flex items-center flex-wrap gap-1.5 text-xs text-slate-500 font-medium">

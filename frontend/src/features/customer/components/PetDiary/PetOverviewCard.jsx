@@ -11,12 +11,12 @@ import {
 
 export default function PetOverviewCard({ diary }) {
   const navigate = useNavigate();
-  const { pet, bookingId, bookingRecordId, facility } = diary;
+  const { pet, bookingId, bookingRecordId, isBoarding, messageUrl } = diary;
 
   // Calculate boarding progress percent
   const progressPercent = Math.min(
     100,
-    Math.max(0, Math.round(((pet.currentDay || 1) / (pet.totalDays || 1)) * 100))
+    Math.max(0, Math.round(((pet.currentDay || 0) / (pet.totalDays || 1)) * 100))
   );
 
   return (
@@ -26,11 +26,11 @@ export default function PetOverviewCard({ diary }) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:col-span-7">
           {/* Pet Avatar */}
           <div className="relative shrink-0">
-            <img
+            {pet.avatar ? <img
               src={pet.avatar}
               alt={pet.name}
               className="h-22 w-22 sm:h-24 sm:w-24 rounded-2xl border-2 border-emerald-100 object-cover shadow-xs"
-            />
+            /> : <div className="h-24 w-24 rounded-2xl bg-emerald-50 flex items-center justify-center"><Dog size={36} className="text-emerald-500" /></div>}
           </div>
 
           {/* Info Details */}
@@ -41,7 +41,7 @@ export default function PetOverviewCard({ diary }) {
                 {pet.name}
               </h2>
               <span className={`text-base font-bold ${pet.genderColor || "text-blue-500"}`}>
-                {pet.genderSymbol || "♂"}
+                {pet.genderSymbol}
               </span>
             </div>
 
@@ -66,7 +66,7 @@ export default function PetOverviewCard({ diary }) {
             </div>
 
             {/* Check-in / Check-out & Progress */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-0.5 text-xs text-slate-600">
+            {isBoarding ? <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-0.5 text-xs text-slate-600">
               <div className="flex items-center gap-1">
                 <Calendar size={13} className="text-emerald-600" />
                 <span className="text-slate-400">Check-in:</span>
@@ -90,7 +90,7 @@ export default function PetOverviewCard({ diary }) {
                   />
                 </div>
               </div>
-            </div>
+            </div> : <p className="text-xs text-slate-600">Lịch hẹn: {pet.appointmentDate} · {pet.appointmentTime}</p>}
           </div>
         </div>
 
@@ -114,15 +114,8 @@ export default function PetOverviewCard({ diary }) {
           {/* Message facility button */}
           <button
             type="button"
-            onClick={() =>
-              navigate("/messages", {
-                state: {
-                  branchName: facility.name,
-                  bookingId: bookingId,
-                  petName: pet.name,
-                },
-              })
-            }
+            disabled={!messageUrl}
+            onClick={() => messageUrl && navigate(messageUrl)}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#009879] bg-white px-3.5 py-2.5 text-xs font-semibold text-[#009879] transition-all hover:bg-emerald-50/50 hover:shadow-xs active:scale-[0.99] cursor-pointer"
           >
             <MessageCircle size={15} />

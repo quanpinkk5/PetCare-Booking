@@ -16,7 +16,7 @@ import {
 
 export default function QuickInfoSidebar({ diary }) {
   const navigate = useNavigate();
-  const { facility, pet, summary, bookingId } = diary;
+  const { facility, pet, summary, messageUrl } = diary;
 
   return (
     <aside className="space-y-5">
@@ -49,7 +49,7 @@ export default function QuickInfoSidebar({ diary }) {
             </span>
           </div>
 
-          {/* Thời gian gửi */}
+          {/* Cập nhật gần nhất */}
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 text-slate-500">
               <Clock size={14} className="text-slate-400" />
@@ -66,12 +66,12 @@ export default function QuickInfoSidebar({ diary }) {
               <Phone size={14} className="text-slate-400" />
               Hotline
             </span>
-            <a
+            {facility.phone ? <a
               href={`tel:${facility.phone}`}
               className="font-bold text-slate-800 hover:text-emerald-600 transition-colors"
             >
               {facility.phone}
-            </a>
+            </a> : <span className="text-slate-500">Chưa cập nhật</span>}
           </div>
 
           {/* Giờ hoạt động */}
@@ -158,6 +158,7 @@ export default function QuickInfoSidebar({ diary }) {
         </h3>
 
         <div className="space-y-2.5">
+          {!pet.ownerRequests?.length && <p className="text-xs text-slate-500">Không có yêu cầu bổ sung.</p>}
           {pet.ownerRequests?.map((req, idx) => (
             <div key={idx} className="flex items-center gap-2 text-xs">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
@@ -168,16 +169,8 @@ export default function QuickInfoSidebar({ diary }) {
       </section>
 
       {/* 4. Liên hệ nhanh Banner */}
-      <section
-        onClick={() =>
-          navigate("/messages", {
-            state: {
-              branchName: facility.name,
-              bookingId: bookingId,
-              petName: pet.name,
-            },
-          })
-        }
+      <button type="button" disabled={!messageUrl}
+        onClick={() => messageUrl && navigate(messageUrl)}
         className="group relative overflow-hidden rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white p-4 shadow-xs transition-all hover:shadow-md hover:border-emerald-300 cursor-pointer"
       >
         <div className="flex items-center justify-between gap-3">
@@ -190,7 +183,7 @@ export default function QuickInfoSidebar({ diary }) {
                 Chat với {facility.name}
               </h4>
               <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">
-                Đội ngũ chăm sóc luôn sẵn sàng hỗ trợ bạn 24/7.
+                Liên hệ cơ sở để trao đổi về việc chăm sóc thú cưng.
               </p>
             </div>
           </div>
@@ -199,7 +192,7 @@ export default function QuickInfoSidebar({ diary }) {
             <PawPrint size={32} />
           </div>
         </div>
-      </section>
+      </button>
     </aside>
   );
 }

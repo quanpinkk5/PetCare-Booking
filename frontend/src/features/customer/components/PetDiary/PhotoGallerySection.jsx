@@ -1,6 +1,6 @@
 import { Image as ImageIcon } from "lucide-react";
 
-export default function PhotoGallerySection({ photos = [], onViewAll, onPhotoClick }) {
+export default function PhotoGallerySection({ photos = [], onViewAll, onPhotoClick, dateLabel }) {
   // Show first 6 photos in the grid row as shown in the mockup
   const previewPhotos = photos.slice(0, 6);
 
@@ -8,9 +8,10 @@ export default function PhotoGallerySection({ photos = [], onViewAll, onPhotoCli
     <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
       {/* Title */}
       <h3 className="mb-4 text-base font-bold text-slate-900 tracking-tight">
-        Hình ảnh hôm nay
+        Hình ảnh ngày {dateLabel}
       </h3>
 
+      {photos.length === 0 && <p className="text-sm text-slate-500">Chưa có hình ảnh cho ngày này.</p>}
       {/* Grid of photos */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         {previewPhotos.map((photo, index) => (
@@ -35,6 +36,7 @@ export default function PhotoGallerySection({ photos = [], onViewAll, onPhotoCli
         <button
           type="button"
           onClick={onViewAll}
+          disabled={!photos.length}
           className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/40 px-5 py-2 text-xs font-bold text-[#009879] transition-all hover:bg-emerald-100/60 hover:shadow-xs cursor-pointer active:scale-95"
         >
           <ImageIcon size={15} />

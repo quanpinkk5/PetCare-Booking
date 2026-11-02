@@ -35,14 +35,15 @@ const activityThemeMap = {
   },
 };
 
-export default function ActivityTimeline({ activities = [], onImageClick }) {
+export default function ActivityTimeline({ activities = [], onImageClick, dateLabel }) {
   return (
     <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
       {/* Title */}
       <h3 className="mb-6 text-base font-bold text-slate-900 tracking-tight">
-        Hoạt động hôm nay
+        Hoạt động ngày {dateLabel}
       </h3>
 
+      {activities.length === 0 && <p className="text-sm text-slate-500">Cơ sở chưa cập nhật hoạt động cho ngày này.</p>}
       {/* Timeline items */}
       <div className="relative space-y-6">
         {activities.map((item, index) => {
