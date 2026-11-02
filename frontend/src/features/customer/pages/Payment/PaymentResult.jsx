@@ -1,3 +1,4 @@
+import { canPayBooking } from '../../services/bookingPayment.js';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, CircleAlert, Clock3, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
@@ -75,7 +76,7 @@ function BookingPaymentResult({ bookingId }) {
         setAttempt((value) => value + 1);
       }} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={16} /> Kiểm tra lại</button>
       <Link to={`/my-bookings/${bookingId}`} className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800">Xem lịch đặt</Link>
-      {!result.loading && !result.polling && !result.error && result.data?.bookingStatus === 'CONFIRMED' && result.data?.paymentStatus === 'UNPAID' && <Link to={`/payment/${bookingId}`} className="rounded-xl border border-teal-700 px-5 py-3 text-sm font-semibold text-teal-700 hover:bg-teal-50">Thanh toán lại qua VNPay</Link>}
+      {!result.loading && !result.polling && !result.error && canPayBooking(result.data?.bookingStatus, result.data?.paymentStatus) && <Link to={`/payment/${bookingId}`} className="rounded-xl border border-teal-700 px-5 py-3 text-sm font-semibold text-teal-700 hover:bg-teal-50">Thanh toán lại qua VNPay</Link>}
       <Link to="/my-bookings" className="rounded-xl px-5 py-3 text-sm font-semibold text-teal-700 hover:bg-teal-50">Lịch đặt của tôi</Link>
     </div>
   </ResultCard>;

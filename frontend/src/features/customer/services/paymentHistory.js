@@ -1,3 +1,4 @@
+import { canPayBooking } from './bookingPayment.js';
 const STATUS = {
   PAID: ['completed', 'Thành công'],
   PENDING: ['pending', 'Chờ thanh toán'],
@@ -58,7 +59,8 @@ export function mapPaymentTransaction(payment) {
     basePrice: payment.amount, totalAmount: payment.amount,
     platformFee: 0, discount: 0, discountCode: '',
     refundedAmount: payment.status === 'REFUNDED' ? payment.amount : 0,
-    canPay: booking.status === 'CONFIRMED' && booking.paymentStatus === 'UNPAID',
+    canViewInvoice: booking.paymentStatus === 'PAID' && payment.status === 'PAID',
+    canPay: canPayBooking(booking.status, booking.paymentStatus),
   };
 }
 

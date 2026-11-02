@@ -119,3 +119,17 @@ test('gateway errors and missing payment URL never become payment success', asyn
   create.mock.mockImplementation(async () => ({ data: {} }));
   await assert.rejects(startVnpayPayment('id'), /Không nhận được liên kết/);
 });
+
+for (const bookingStatus of ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED']) {
+  test(`unpaid ${bookingStatus} bookings can pay, while settled bookings cannot pay again`, async (t) => {
+    let paymentStatus = 'UNPAID';
+    t.mock.method(paymentApi, 'status', async () => ({ data: { bookingStatus, paymentStatus, payments: [] } }));
+    const create = t.mock.method(paymentApi, 'create', async () => ({ data: { paymentUrl: 'https://example.com/pay' } }));
+    assert.equal((await startVnpayPayment('id')).paymentUrl, 'https://example.com/pay');
+    paymentStatus = 'PAID';
+    assert.equal((await startVnpayPayment('id')).paymentStatus, 'PAID');
+    paymentStatus = 'REFUNDED';
+    await assert.rejects(startVnpayPayment('id'), /không còn ở trạng thái/);
+    assert.equal(create.mock.callCount(), 1);
+  });
+}

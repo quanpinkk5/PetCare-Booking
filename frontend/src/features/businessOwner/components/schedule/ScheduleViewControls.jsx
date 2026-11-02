@@ -1,39 +1,4 @@
-const formatLocalDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
-const parseLocalDate = (dateString) => {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
-
-export const getWeekStart = (dateString) => {
-  const date = parseLocalDate(dateString);
-
-  // Thứ Hai là ngày đầu tuần
-  const weekday = date.getDay();
-  const diff = weekday === 0 ? -6 : 1 - weekday;
-
-  date.setDate(date.getDate() + diff);
-
-  return formatLocalDate(date);
-};
-
-export const getWeekDates = (weekStart) => {
-  const monday = parseLocalDate(weekStart);
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
-    return formatLocalDate(date);
-  });
-};
-
-export const getTodayLocal = () => formatLocalDate(new Date());
+import { getWeekStart, getWeekDates } from "../../services/scheduleData";
 
 const formatDisplayDate = (dateString) => {
   const [year, month, day] = dateString.split("-");
@@ -89,7 +54,7 @@ return (
       />
 
       {/* Giữ dòng hiển thị tuần nhưng không ảnh hưởng căn hàng */}
-      <p className="absolute left-0 top-full mt-1 whitespace-nowrap text-[10px] text-slate-500">
+      <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">
         {viewMode === "week"
           ? `Tuần: ${weekLabel}`
           : `Ngày: ${formatDisplayDate(selectedDate)}`}

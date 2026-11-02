@@ -1,5 +1,19 @@
 import { formatAddress, imageUrl, servicePrice } from './businessData.js';
 
+export const groupAppointmentSlots = (slots = []) => {
+  const groups = new Map();
+  for (const slot of slots) {
+    if (!slot.startTime || !slot.endTime || !(slot.remainingCapacity > 0)) continue;
+    const startTime = slot.workingStartTime || slot.startTime;
+    const endTime = slot.workingEndTime || slot.endTime;
+    const key = `${startTime}|${endTime}`;
+    if (!groups.has(key)) groups.set(key, { key, startTime, endTime, slots: [] });
+    groups.get(key).slots.push(slot);
+  }
+  return [...groups.values()].sort((a, b) => a.startTime.localeCompare(b.startTime))
+    .map((group) => ({ ...group, slots: [...group.slots].sort((a, b) => a.startTime.localeCompare(b.startTime)) }));
+};
+
 export const vietnamToday = () => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
 }).format(new Date());

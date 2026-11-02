@@ -154,7 +154,8 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = async (payload) => {
     try {
-      const response = await authApi.updateProfile(payload);
+      const response = await (user?.role === 'BUSINESS_OWNER'
+        ? authApi.updateOwnerAvatar(payload) : authApi.updateProfile(payload));
       const updated = response.data.user;
       setUser((current) => ({ ...current, ...updated, name: updated.fullName }));
       return { success: true, user: updated };

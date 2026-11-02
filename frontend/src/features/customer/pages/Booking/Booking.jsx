@@ -101,14 +101,15 @@ const BookingForm = () => {
   const slots = availability.key === slotKey ? availability.data : [];
   useEffect(() => {
     if (!slotKey) return;
+    const controller = new AbortController();
     let active = true;
     const [id, date] = slotKey.split(':');
-    bookingApi.availability(id, date).then((response) => {
+    bookingApi.availability(id, date, controller.signal).then((response) => {
       if (active) setAvailability({ key: slotKey, data: response.data.availableSlots, error: '' });
     }).catch((err) => {
       if (active) setAvailability({ key: slotKey, data: [], error: err.message });
     });
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [slotKey, slotRetry]);
 
   const selectPet = (pet) => {
@@ -229,10 +230,11 @@ const BookingForm = () => {
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               note={note}
-              timeSlots={slots.map((slot) => slot.startTime)}
+              timeSlots={slots}
+              durationMinutes={service?.durationMinutes}
               loading={slotsLoading} error={availability.key === slotKey ? availability.error : ''}
               bookingType={service?.bookingType} checkOutDate={checkOutDate} onCheckOutSelect={setCheckOutDate}
-              onRetry={() => { setAvailability({ key: '', data: [], error: '' }); setSlotRetry((value) => value + 1); }}
+              onRetry={() => { setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); setSlotRetry((value) => value + 1); }}
               onDateSelect={(date) => { if (date === selectedDate) return; setSelectedDate(date); setSelectedTime(''); setAvailability({ key: '', data: [], error: '' }); }}
               onTimeSelect={setSelectedTime}
               onNoteChange={setNote}

@@ -114,12 +114,12 @@ const Login = ({ defaultTab }) => {
   //     effectiveUser?.role === "businessOwner" ||
   //     effectiveUser?.role === "partner"
   //   ) {
-  //     navigate("/business/dashboard", { replace: true });
+  //     navigate("/business/bookings", { replace: true });
   //   } else {
   //     navigate("/", { replace: true });
   //   }
   // };
-  
+
 const redirectAfterAuth = (targetUser) => {
   const effectiveUser = targetUser || user;
 
@@ -129,13 +129,13 @@ const redirectAfterAuth = (targetUser) => {
     return;
   }
 
-  // BUSINESS_OWNER → Dashboard chủ cơ sở
+  // BUSINESS_OWNER → Quản lý đặt lịch
   if (
     effectiveUser?.role === "BUSINESS_OWNER" ||
     effectiveUser?.role === "businessOwner" ||
     effectiveUser?.role === "partner"
   ) {
-    navigate("/business/dashboard", { replace: true });
+    navigate("/business/bookings", { replace: true });
     return;
   }
 
@@ -464,12 +464,12 @@ const redirectAfterAuth = (targetUser) => {
                 </div>
 
                 <div className="flex items-center gap-2 pt-2 border-t border-emerald-200/60">
-                  {user.role === "businessOwner" || user.role === "partner" ? (
+                  {user.role === "BUSINESS_OWNER" ? (
                     <button
-                      onClick={() => navigate("/business/dashboard")}
+                      onClick={() => navigate("/business/bookings")}
                       className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors text-center cursor-pointer"
                     >
-                      Vào Dashboard Quản lý
+                      Vào Quản lý đặt lịch
                     </button>
                   ) : (
                     <button

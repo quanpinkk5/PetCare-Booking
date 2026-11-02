@@ -1,4 +1,4 @@
-import { ChevronDown, Calendar, CalendarX, Plus } from "lucide-react";
+import { ChevronDown, CalendarX, Plus } from "lucide-react";
 import ScheduleViewControls from "./ScheduleViewControls";
 export default function ScheduleFilterBar({
   branches = [],
@@ -13,6 +13,8 @@ export default function ScheduleFilterBar({
   onViewModeChange,
   selectedDate,
   onDateChange,
+  disabled = false,
+  loading = false,
 }) {
   return (
 <section className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3.5 pb-7 pt-3.5 shadow-sm">
@@ -26,6 +28,8 @@ export default function ScheduleFilterBar({
           <div className="relative">
             <select
               value={branchId}
+              disabled={disabled}
+              aria-label="Chi nhánh"
               onChange={(e) => onBranchChange?.(e.target.value)}
               className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-2.5 pr-7 text-xs font-medium text-slate-700 outline-none focus:border-emerald-500"
             >
@@ -57,7 +61,8 @@ export default function ScheduleFilterBar({
             <select
               value={branchServiceId}
               onChange={(e) => onServiceChange?.(e.target.value)}
-              disabled={services.length === 0}
+              disabled={disabled || services.length === 0}
+              aria-label="Dịch vụ"
               className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-2.5 pr-7 text-xs font-medium text-slate-700 outline-none focus:border-emerald-500 disabled:opacity-50"
             >
               {services.length === 0 && (
@@ -94,7 +99,7 @@ export default function ScheduleFilterBar({
         <button
           type="button"
           onClick={onAddSchedule}
-          disabled={!branchServiceId}
+          disabled={disabled || loading || !branchServiceId}
           className="flex cursor-pointer items-center gap-1 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-600 shadow-sm hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={14} />
@@ -104,6 +109,7 @@ export default function ScheduleFilterBar({
         <button
           type="button"
           onClick={onAddException}
+          disabled={disabled || !branchServiceId}
           className="flex cursor-pointer items-center gap-1 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-600 shadow-sm hover:bg-emerald-50"
         >
           <CalendarX size={14} />

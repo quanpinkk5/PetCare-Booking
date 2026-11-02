@@ -93,7 +93,7 @@ const MyReviews = () => {
         if (target) {
           setModalTargetItem(target.item); setIsEditMode(target.isEditMode);
           setReviewModalOpen(true); setActiveTab(target.tab); setCurrentPage(1);
-        } else setToast({ message: 'Không tìm thấy đánh giá có thể mở cho lịch đặt này. Đơn cần hoàn thành; đánh giá đã bị ẩn hoặc xóa không thể tạo lại.', type: 'error' });
+        } else setToast({ message: 'Không tìm thấy đánh giá có thể mở cho lịch đặt này. Đơn cần hoàn thành và đã thanh toán; đánh giá đã bị ẩn hoặc xóa không thể tạo lại.', type: 'error' });
       }
     }).catch((error) => { if (!cancelled) setLoadError(error.message || 'Không thể tải đánh giá.'); })
       .finally(() => { if (!cancelled) setLoading(false); });

@@ -14,10 +14,10 @@ export default function BusinessPlaceholderPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <Link
-            to="/business/dashboard"
+            to="/business/bookings"
             className="hover:text-emerald-600 transition"
           >
-            Dashboard
+            Đặt lịch
           </Link>
           <span>/</span>
           <span className="font-semibold text-slate-800">{title}</span>
@@ -25,11 +25,11 @@ export default function BusinessPlaceholderPage({
 
         <button
           type="button"
-          onClick={() => navigate("/business/dashboard")}
+          onClick={() => navigate("/business/bookings")}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
         >
           <ArrowLeft size={14} />
-          <span>Về Dashboard</span>
+          <span>Về Đặt lịch</span>
         </button>
       </div>
 
@@ -62,16 +62,16 @@ export default function BusinessPlaceholderPage({
           </h3>
           <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-slate-500 leading-relaxed">
             Giao diện chi tiết cho mục này đang được xây dựng. Bạn có thể quay lại
-            bảng điều khiển chính (Dashboard) để tiếp tục thao tác.
+            trang quản lý đặt lịch để tiếp tục thao tác.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("/business/dashboard")}
+              onClick={() => navigate("/business/bookings")}
               className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition cursor-pointer"
             >
-              Quay lại Dashboard
+              Quay lại Đặt lịch
             </button>
             <Link
               to="/"

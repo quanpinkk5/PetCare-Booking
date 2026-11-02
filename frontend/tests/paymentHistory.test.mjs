@@ -45,3 +45,12 @@ test('time filters follow Vietnam month boundaries and year rollover', () => {
   assert.equal(matchesPaymentTimeRange('2026-11-01T00:00:00Z', 'older', now), true);
   assert.equal(matchesPaymentTimeRange(null, 'this_month', now), false);
 });
+
+test('invoices require a settled booking and a successful payment attempt', () => {
+  for (const paymentStatus of ['UNPAID', 'PAID', 'REFUNDED', undefined]) {
+    for (const status of ['PENDING', 'PROCESSING', 'FAILED', 'EXPIRED', 'PAID', 'REFUNDED']) {
+      const tx = mapPaymentTransaction({ status, bookingId: { status: 'COMPLETED', paymentStatus } });
+      assert.equal(tx.canViewInvoice, paymentStatus === 'PAID' && status === 'PAID');
+    }
+  }
+});

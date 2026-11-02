@@ -4,7 +4,7 @@ export const bookingApi = {
   create: (payload) => apiRequest('/customer/bookings', {
     method: 'POST', body: JSON.stringify(payload),
   }),
-  availability: (id, date) => apiRequest(`/customer/branchServices/${encodeURIComponent(id)}/availableSlots?${new URLSearchParams({ date })}`),
+  availability: (id, date, signal) => apiRequest(`/customer/branchServices/${encodeURIComponent(id)}/availableSlots?${new URLSearchParams({ date })}`, { signal }),
   offering: (id) => apiRequest(`/customer/branchServices/${encodeURIComponent(id)}`),
   list: (filters = {}) => {
     const query = new URLSearchParams();

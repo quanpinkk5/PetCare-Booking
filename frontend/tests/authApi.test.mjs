@@ -135,3 +135,15 @@ test("expired profile session does not retry indefinitely", async (t) => {
   assert.equal(urls.length, 2);
   assert.ok(urls[1].endsWith("/auth/refresh"));
 });
+
+test('business owner avatar uses the owner endpoint with authentication', async (t) => {
+  authApi.setAccessToken('owner-token');
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(new URL(url).pathname, '/api/businessOwner/profile/avatar');
+    assert.equal(options.method, 'PATCH');
+    assert.equal(options.headers.Authorization, 'Bearer owner-token');
+    assert.deepEqual(JSON.parse(options.body), { avatar: 'https://example.com/owner.png' });
+    return json({ data: { user: { avatar: 'https://example.com/owner.png' } } });
+  });
+  assert.equal((await authApi.updateOwnerAvatar({ avatar: 'https://example.com/owner.png' })).data.user.avatar, 'https://example.com/owner.png');
+});

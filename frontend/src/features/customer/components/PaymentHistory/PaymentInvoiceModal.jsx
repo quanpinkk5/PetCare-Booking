@@ -18,7 +18,7 @@ import {
 export default function PaymentInvoiceModal({ transaction, onClose }) {
     const printRef = useRef(null);
 
-    if (!transaction) return null;
+    if (!transaction?.canViewInvoice) return null;
 
     const statusConfig = PAYMENT_STATUSES[transaction.status] || PAYMENT_STATUSES.completed;
     const methodConfig = PAYMENT_METHODS[transaction.method] || PAYMENT_METHODS.vnpay;

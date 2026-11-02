@@ -1,3 +1,4 @@
+import { canPayBooking } from './bookingPayment.js';
 import { apiRequest } from '../../auth/services/authApi.js';
 
 export const paymentApi = {
@@ -17,7 +18,7 @@ export const paymentApi = {
 export async function startVnpayPayment(bookingId) {
   const { data } = await paymentApi.status(bookingId);
   if (data.paymentStatus === 'PAID') return { bookingId, paymentStatus: 'PAID' };
-  if (data.bookingStatus !== 'CONFIRMED' || data.paymentStatus !== 'UNPAID') {
+  if (!canPayBooking(data.bookingStatus, data.paymentStatus)) {
     throw new Error(data.bookingStatus === 'PENDING' ? 'Vui lòng chờ cơ sở xác nhận lịch đặt trước khi thanh toán.' : 'Lịch đặt không còn ở trạng thái có thể thanh toán.');
   }
   const active = data.payments?.find((payment) => ['PENDING', 'PROCESSING'].includes(payment.status));

@@ -1,3 +1,4 @@
+import CustomerAvatar from "../../features/customer/components/CustomerAvatar.jsx";
 import { useState, useRef, useEffect } from "react";
 import { Bell, Menu, ExternalLink, User, LogOut, ChevronDown, GitFork } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
@@ -5,8 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useBusinessNotifications } from "../../context/BusinessNotificationContext";
 
 const PAGE_TITLES = {
-  "/business": "Dashboard",
-  "/business/dashboard": "Dashboard",
+  "/business": "Đặt lịch",
   "/business/profile": "Hồ sơ cơ sở",
   "/business/branches": "Chi nhánh",
   "/business/services": "Dịch vụ",
@@ -24,10 +24,44 @@ const PAGE_TITLES = {
 export default function BusinessOwnerHeader({ onToggleSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { unreadCount } = useBusinessNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const avatarInputRef = useRef(null);
+  const avatarSavingRef = useRef(false);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState(null);
+
+  const changeAvatar = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || avatarSavingRef.current) return;
+    setAvatarNotice(null);
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 256 * 1024) {
+      setAvatarNotice({ error: true, message: 'Chọn ảnh PNG, JPEG hoặc WebP tối đa 256 KB.' });
+      return;
+    }
+    avatarSavingRef.current = true;
+    setIsAvatarSaving(true);
+    try {
+      const avatar = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Không thể đọc ảnh đã chọn.'));
+        reader.readAsDataURL(file);
+      });
+      const result = await updateUser({ avatar });
+      setAvatarNotice({ error: !result.success, message: result.success ? 'Đã lưu ảnh đại diện.' : result.error });
+    } catch (error) {
+      setAvatarNotice({ error: true, message: error.message || 'Không thể lưu ảnh đại diện.' });
+    } finally {
+      avatarSavingRef.current = false;
+      setIsAvatarSaving(false);
+    }
+  };
+
+
 
   const title = PAGE_TITLES[location.pathname] || "Business Portal";
 
@@ -73,7 +107,7 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         {/* Link back to Customer storefront */}
-        
+
 
         {/* Notifications */}
         <button
@@ -97,21 +131,11 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex cursor-pointer items-center gap-2 sm:gap-3 rounded-xl p-1 hover:bg-slate-50 transition"
           >
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name || "Avatar"}
-                className="h-9 w-9 rounded-full object-cover border border-emerald-200 shadow-xs"
-              />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-amber-300 bg-amber-100 text-lg">
-                🐶
-              </div>
-            )}
+            <CustomerAvatar user={user} className="h-9 w-9 border border-emerald-200 shadow-xs text-sm" />
 
             <div className="hidden text-left leading-tight sm:block">
               <p className="text-xs font-bold text-slate-800 line-clamp-1">
-                {user?.name || "Happy Pet Cầu Giấy"}
+                {user?.fullName || user?.name || "Chủ cơ sở"}
               </p>
               <p className="text-[11px] text-slate-400">
                 {user?.roleLabel || "Chủ cơ sở"}
@@ -126,19 +150,32 @@ export default function BusinessOwnerHeader({ onToggleSidebar }) {
             />
           </button>
 
+          <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Chọn ảnh đại diện chủ cơ sở" className="hidden" onChange={changeAvatar} />
+          {avatarNotice && <div role={avatarNotice.error ? 'alert' : 'status'} className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-lg">
+            <p>{avatarNotice.message}</p>
+            <button type="button" onClick={() => setAvatarNotice(null)} className="mt-2 font-semibold text-emerald-700">Đóng</button>
+          </div>}
+
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl animate-in fade-in z-50">
               <div className="border-b border-slate-100 px-3 py-2">
                 <p className="text-xs font-bold text-slate-800 truncate">
-                  {user?.name || "Happy Pet"}
+                  {user?.fullName || user?.name || "Chủ cơ sở"}
                 </p>
                 <p className="text-[11px] text-slate-400 truncate">
-                  {user?.email || "petspa.caugiay@gmail.com"}
+                  {user?.email || ""}
                 </p>
               </div>
 
               <div className="py-1">
+                <button type="button" disabled={isAvatarSaving} onClick={() => {
+                  setAvatarNotice(null);
+                  setIsDropdownOpen(false);
+                  avatarInputRef.current?.click();
+                }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 disabled:opacity-50 cursor-pointer">
+                  <User size={15} /><span>{isAvatarSaving ? 'Đang lưu ảnh...' : 'Đổi ảnh đại diện'}</span>
+                </button>
                 <Link
                   to="/"
                   onClick={() => setIsDropdownOpen(false)}

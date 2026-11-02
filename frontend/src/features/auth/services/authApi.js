@@ -116,6 +116,10 @@ export const authApi = {
       body: JSON.stringify(payload),
     }),
 
+  updateOwnerAvatar: (payload) => request('/businessOwner/profile/avatar', {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+
   refresh: sendRequestToRefresh,
 
   logout: () =>

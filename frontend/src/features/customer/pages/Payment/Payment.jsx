@@ -1,3 +1,4 @@
+import { canPayBooking } from '../../services/bookingPayment.js';
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Lock, ShieldCheck } from "lucide-react";
@@ -100,7 +101,7 @@ function BookingPayment({ bookingId }) {
   const basePrice = result.status.totalPrice;
   const platformFee = 0;
   const finalTotal = basePrice;
-  const canPay = result.status.bookingStatus === "CONFIRMED" && result.status.paymentStatus === "UNPAID";
+  const canPay = canPayBooking(result.status.bookingStatus, result.status.paymentStatus);
   const handleApplyDiscount = () => setDiscountError("Mã giảm giá hiện chưa được hỗ trợ cho thanh toán VNPay.");
   const handleRemoveDiscount = () => { setDiscountCode(""); setDiscountError(""); };
 
@@ -193,7 +194,7 @@ function BookingPayment({ bookingId }) {
               {!canPay && <p role="status" className="text-sm text-amber-700">{result.status.paymentStatus === "PAID" ? "Lịch đặt đã được thanh toán." : result.status.bookingStatus === "PENDING" ? "Vui lòng chờ cơ sở xác nhận lịch đặt trước khi thanh toán." : "Lịch đặt không còn ở trạng thái có thể thanh toán."}</p>}
               <Link to={'/payment-result?bookingId=' + encodeURIComponent(bookingId)} className="inline-block text-sm font-semibold text-teal-700">Kiểm tra trạng thái thanh toán</Link>
               {/* Big CTA Button */}
-              <button
+              {canPay && <button
                 type="button"
                 disabled={isProcessing || !canPay}
                 onClick={handlePayment}
@@ -213,7 +214,7 @@ function BookingPayment({ bookingId }) {
                     </span>
                   </>
                 )}
-              </button>
+              </button>}
 
               {/* Security badges & Partners */}
               <div className="pt-2 text-center space-y-2">

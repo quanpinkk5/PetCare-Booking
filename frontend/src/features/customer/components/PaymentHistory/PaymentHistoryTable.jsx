@@ -72,6 +72,7 @@ export default function PaymentHistoryTable({
                                             <div className="space-y-1">
                                                 <button
                                                     type="button"
+                                                    disabled={!tx.canViewInvoice}
                                                     onClick={() => onViewInvoice(tx)}
                                                     className="font-mono font-bold text-slate-900 hover:text-emerald-700 hover:underline transition-colors block text-left cursor-pointer"
                                                 >
@@ -192,25 +193,27 @@ export default function PaymentHistoryTable({
                                                 )}
 
                                                 {/* View invoice */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onViewInvoice(tx)}
-                                                    className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-semibold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer"
-                                                    title="Xem giao dịch chi tiết"
-                                                >
-                                                    <FileText size={13} className="text-emerald-600" />
-                                                    <span>Chứng từ</span>
-                                                </button>
+                                                {tx.canViewInvoice && <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onViewInvoice(tx)}
+                                                        className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-semibold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                                                        title="Xem giao dịch chi tiết"
+                                                    >
+                                                        <FileText size={13} className="text-emerald-600" />
+                                                        <span>Chứng từ</span>
+                                                    </button>
 
-                                                {/* Print button */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onPrintInvoice(tx)}
-                                                    className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition cursor-pointer"
-                                                    title="In nhanh"
-                                                >
-                                                    <Printer size={13} />
-                                                </button>
+                                                    {/* Print button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onPrintInvoice(tx)}
+                                                        className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                                                        title="In nhanh"
+                                                    >
+                                                        <Printer size={13} />
+                                                    </button>
+                                                </>}
                                             </div>
                                         </td>
                                     </tr>
@@ -308,6 +311,7 @@ export default function PaymentHistoryTable({
                                     </button>
                                 )}
 
+                                {tx.canViewInvoice && (
                                 <button
                                     type="button"
                                     onClick={() => onViewInvoice(tx)}
@@ -316,6 +320,7 @@ export default function PaymentHistoryTable({
                                     <FileText size={14} className="text-emerald-600" />
                                     <span>Xem giao dịch</span>
                                 </button>
+                                )}
 
                                 <Link
                                     to={`/my-bookings/${tx.bookingObjectId}`}

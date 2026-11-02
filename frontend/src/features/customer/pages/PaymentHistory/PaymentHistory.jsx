@@ -80,10 +80,10 @@ function PaymentHistoryContent() {
     const itemsPerPage = 6;
 
     const selectedInvoice = invoiceSelection === undefined
-        ? transactions.find((tx) => initialTxn
+        ? transactions.filter((tx) => tx.canViewInvoice).find((tx) => initialTxn
             ? [tx.id, tx.paymentId].includes(initialTxn)
             : initialBookingId && [tx.bookingId, tx.bookingObjectId].includes(initialBookingId)) || null
-        : transactions.find((tx) => tx.paymentId === invoiceSelection?.paymentId) || null;
+        : transactions.find((tx) => tx.canViewInvoice && tx.paymentId === invoiceSelection?.paymentId) || null;
 
     // Check if any filter is active
     const isFiltered = useMemo(() => {

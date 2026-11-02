@@ -1,6 +1,6 @@
 import { PawPrint, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { MENU_ITEMS } from "../../features/businessOwner/data/dashboardData";
+import { MENU_ITEMS } from "../../features/businessOwner/data/businessMenu";
 import { useBusinessNotifications } from "../../context/BusinessNotificationContext";
 
 export default function BusinessOwnerSidebar({ isOpen, onClose }) {
@@ -45,7 +45,6 @@ export default function BusinessOwnerSidebar({ isOpen, onClose }) {
               <NavLink
                 key={item.id}
                 to={item.path}
-                end={item.path === "/business/dashboard"}
                 onClick={() => onClose?.()}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${

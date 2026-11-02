@@ -1,3 +1,4 @@
+import { canPayBooking, canUseCompletedBookingActions } from "../../services/bookingPayment.js";
 import { useNavigate } from "react-router-dom";
 import {
     Calendar,
@@ -93,23 +94,30 @@ const BookingCard = ({ booking }) => {
                 return (
                     <div className="flex items-center gap-1.5 w-full">
                         {viewDetailButton}
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
-                            className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap"
-                            title="Xem hóa đơn điện tử"
-                        >
-                            <Receipt size={13} className="shrink-0" />
-                            <span>Hóa đơn</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
-                            className="flex-1 px-2 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
-                        >
-                            <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
-                            <span>Đánh giá</span>
-                        </button>
+                        {canUseCompletedBookingActions('COMPLETED', booking.paymentStatus) && <>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
+                                className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap"
+                                title="Xem hóa đơn điện tử"
+                            >
+                                <Receipt size={13} className="shrink-0" />
+                                <span>Hóa đơn</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
+                                className="flex-1 px-2 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
+                            >
+                                <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />
+                                <span>Đánh giá</span>
+                            </button>
+                        </>}
+                        {canPayBooking('COMPLETED', booking.paymentStatus) && (
+                            <button type="button" onClick={() => navigate(`/payment/${bookingId}`)} className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1.5 cursor-pointer">
+                                <CreditCard size={14} /><span>Thanh toán ngay</span>
+                            </button>
+                        )}
                     </div>
                 );
 

@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 import BusinessOwnerLayout from "../layouts/businessOwner/BusinessOwnerLayout";
-import BusinessDashboard from "../features/businessOwner/page/Dashboard/BusinessDashboard";
 import FacilityProfile from "../features/businessOwner/page/FacilityProfile/FacilityProfile";
 import BranchesPage from "../features/businessOwner/page/Branches/BranchesPage";
 import ServicesPage from "../features/businessOwner/page/Services/ServicesPage";
@@ -45,9 +44,7 @@ const BusinessOwnerRoutes = () => {
   return (
     <Routes>
       <Route element={<BusinessOwnerLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-
-        <Route path="dashboard" element={<BusinessDashboard />} />
+        <Route index element={<Navigate to="bookings" replace />} />
         <Route path="profile" element={<FacilityProfile />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="services" element={<ServicesPage />} />
@@ -61,7 +58,7 @@ const BusinessOwnerRoutes = () => {
         <Route path="reviews" element={<ReviewManagement />} />
         <Route path="notifications" element={<NotificationsPage />} />
 
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
+        <Route path="*" element={<Navigate to="bookings" replace />} />
       </Route>
     </Routes>
   );

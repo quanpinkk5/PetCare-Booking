@@ -337,7 +337,7 @@ export const INITIAL_BUSINESS_NOTIFICATIONS = [
     petName: null,
     petType: null,
     petAvatar: "📢",
-    actionUrl: "/business/dashboard",
+    actionUrl: "/business/bookings",
     actionLabel: "Đã hiểu",
     metadata: {
       maintenanceWindow: "01:00 - 02:00, 20/10/2026",

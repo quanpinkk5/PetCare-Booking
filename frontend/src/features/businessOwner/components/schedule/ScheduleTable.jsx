@@ -14,7 +14,7 @@ const DAYS_OF_WEEK = [
 
 const STATUS_CONFIG = {
   AVAILABLE: {
-    title: "Còn chỗ",
+    title: "Đang hoạt động",
     className:
       "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100",
   },
@@ -83,12 +83,7 @@ export default function ScheduleTable({
         <div className="flex flex-wrap items-center gap-3 text-[11px]">
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            <span className="text-slate-600">Còn chỗ</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-            <span className="text-slate-600">Đã đầy</span>
+            <span className="text-slate-600">Đang hoạt động</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -175,7 +170,7 @@ export default function ScheduleTable({
                         <div>{config.title}</div>
 
                         <div className="text-[9px] opacity-75">
-                          Tối đa {slot.capacity} chỗ
+                          {slot.capacity == null ? "Chưa cấu hình sức chứa" : `Tối đa ${slot.capacity} chỗ`}
                         </div>
                       </button>
                     </td>

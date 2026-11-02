@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { authApi } from '../src/features/auth/services/authApi.js';
 import { bookingApi } from '../src/features/customer/services/bookingApi.js';
-import { boardingDays, bookingPet, eligibleServices, initialBookingLocation, loadBookingBranches, bookingPayload } from '../src/features/customer/services/bookingFormData.js';
+import { boardingDays, bookingPet, eligibleServices, initialBookingLocation, loadBookingBranches, bookingPayload, groupAppointmentSlots } from '../src/features/customer/services/bookingFormData.js';
 
 const pet = { id: 'pet-id', species: 'CAT' };
 const branch = { id: 'branch-id' };
@@ -12,6 +12,21 @@ const offering = { _id: 'offering-id', branchId: branch.id, petTypes: ['CAT'], p
 const service = eligibleServices([offering], pet)[0];
 const form = { pet, branch, service, date: '2099-01-01', time: '09:30', note: ' Nhẹ tay ',
   slots: [{ startTime: '09:30', remainingCapacity: 1 }] };
+
+test('customer time picker groups appointment intervals by actual owner working hours', () => {
+  const slots = [
+    { startTime: '14:00', endTime: '14:30', workingStartTime: '13:30', workingEndTime: '18:30', remainingCapacity: 2 },
+    { startTime: '09:30', endTime: '10:00', workingStartTime: '08:00', workingEndTime: '12:00', remainingCapacity: 1 },
+    { startTime: '09:00', endTime: '09:30', workingStartTime: '08:00', workingEndTime: '12:00', remainingCapacity: 3 },
+    { startTime: '08:00', endTime: '08:30', remainingCapacity: 0 },
+  ];
+  const groups = groupAppointmentSlots(slots);
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups.map((group) => [group.startTime, group.endTime]), [['08:00', '12:00'], ['13:30', '18:30']]);
+  assert.deepEqual(groups[0].slots.map((slot) => slot.startTime), ['09:00', '09:30']);
+  assert.equal(groups[1].slots[0].remainingCapacity, 2);
+  assert.equal(slots[0].startTime, '14:00');
+});
 
 test('booking options retain free prices, species compatibility and real durations', () => {
   assert.equal(service.unitPrice, 0);

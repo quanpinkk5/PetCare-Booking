@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { vietnamToday } from "../../services/bookingFormData.js";
-import { CalendarDays, Calendar, Clock, FileText, Sun, Sunset, Moon, ChevronRight } from "lucide-react";
+import { vietnamToday, groupAppointmentSlots } from "../../services/bookingFormData.js";
+import { CalendarDays, Calendar, Clock, FileText, ChevronRight } from "lucide-react";
 
 // Generate next 7 days
 const getUpcomingDays = () => {
@@ -26,21 +26,6 @@ const getUpcomingDays = () => {
     return days;
 };
 
-const SHIFTS = {
-    morning: {
-        title: "Buổi sáng",
-        icon: Sun,
-    },
-    afternoon: {
-        title: "Buổi chiều",
-        icon: Sunset,
-    },
-    evening: {
-        title: "Buổi tối",
-        icon: Moon,
-    },
-};
-
 const NOTE_SUGGESTIONS = [
     "🐾 Bé hơi nhát người lạ",
     "✂️ Cắt tỉa gọn phần mặt",
@@ -54,6 +39,7 @@ const BookingDateTimeSelector = ({
     selectedTime,
     note,
     timeSlots = [],
+    durationMinutes,
     loading = false,
     error = '',
     bookingType,
@@ -65,6 +51,7 @@ const BookingDateTimeSelector = ({
     onNoteChange,
 }) => {
     const upcomingDays = getUpcomingDays();
+    const slotGroups = groupAppointmentSlots(timeSlots);
     const [showCustomPicker, setShowCustomPicker] = useState(false);
 
     const handleAddSuggestion = (text) => {
@@ -163,7 +150,7 @@ const BookingDateTimeSelector = ({
                         <input
                             type="date" min={vietnamToday()}
                             value={selectedDate}
-                            onChange={(e) => onDateSelect && onDateSelect(e.target.value)}
+                            onChange={(e) => e.target.value && onDateSelect?.(e.target.value)}
                             className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 outline-none"
                         />
                     </div>
@@ -184,36 +171,39 @@ const BookingDateTimeSelector = ({
                     <span>Khung giờ khả dụng</span>
                 </label>
 
+                <p className="mb-3 text-xs text-slate-500">
+                    Giờ hẹn theo lịch làm việc của chi nhánh{durationMinutes ? `, mỗi lượt ${durationMinutes} phút` : ''}.
+                </p>
+                <button type="button" onClick={onRetry} disabled={loading} className="mb-3 text-xs font-semibold text-emerald-700 underline disabled:opacity-50">Cập nhật giờ trống</button>
                 {loading && <p role="status" className="text-xs text-slate-500">Đang kiểm tra giờ trống...</p>}
                 {error && <p role="alert" className="text-xs text-red-600">{error} <button type="button" onClick={onRetry} className="underline">Thử lại</button></p>}
-                {!loading && !error && !timeSlots.length && <p className="text-xs text-slate-500">Chưa có giờ trống. Hãy chọn dịch vụ hoặc ngày khác.</p>}
+                {!loading && !error && !slotGroups.length && <p className="text-xs text-slate-500">Chưa có giờ trống. Hãy chọn dịch vụ hoặc ngày khác.</p>}
                 <div className="space-y-4">
-                    {Object.entries(SHIFTS).map(([key, shift]) => {
-                        const ShiftIcon = shift.icon;
-                        const available = loading ? [] : timeSlots.filter((time) => key === 'morning' ? time < '12:00' : key === 'afternoon' ? time >= '12:00' && time < '17:00' : time >= '17:00');
-                        if (!available.length) return null;
+                    {(!loading && !error ? slotGroups : []).map((group) => {
                         return (
-                            <div key={key} className="bg-slate-50/70 rounded-2xl p-3.5 border border-slate-200/60">
+                            <div key={group.key} className="bg-slate-50/70 rounded-2xl p-3.5 border border-slate-200/60">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2.5">
-                                    <ShiftIcon size={14} className="text-emerald-600" />
-                                    <span>{shift.title}</span>
+                                    <Clock size={14} className="text-emerald-600" />
+                                    <span>Giờ làm việc: {group.startTime} – {group.endTime}</span>
                                 </div>
 
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                    {available.map((time) => {
-                                        const isSelected = selectedTime === time;
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                    {group.slots.map((slot) => {
+                                        const isSelected = selectedTime === slot.startTime;
                                         return (
                                             <button
-                                                key={time}
+                                                key={slot.startTime}
                                                 type="button"
-                                                onClick={() => onTimeSelect(time)}
-                                                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                                aria-pressed={isSelected}
+                                                onClick={() => onTimeSelect(slot.startTime)}
+                                                className={`py-2 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                                                     isSelected
                                                         ? "border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 ring-2 ring-emerald-500/20 scale-105"
                                                         : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/30"
                                                 }`}
                                             >
-                                                <span>{time}</span>
+                                                <span>{slot.startTime} – {slot.endTime}</span>
+                                                <span className="text-[10px] font-normal">Còn {slot.remainingCapacity} chỗ</span>
                                             </button>
                                         );
                                     })}

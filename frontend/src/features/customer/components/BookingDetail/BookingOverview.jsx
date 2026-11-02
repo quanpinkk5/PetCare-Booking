@@ -1,3 +1,4 @@
+import { canPayBooking, canUseCompletedBookingActions } from "../../services/bookingPayment.js";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -68,29 +69,9 @@ const BookingOverview = ({ booking, onCancel }) => {
                     </div>
                 );
 
-            case "confirmed": // 2. Đã xác nhận: [ Thanh toán / Đã thanh toán ] & [ Chat ] & [ Hủy lịch có điều kiện ]
+            case "confirmed":
                 return (
                     <div className="flex flex-col gap-2 w-full">
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus === "PAID" || booking.paymentStatus === "REFUNDED"}
-                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
-                            className={`w-full font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs whitespace-nowrap ${
-                                booking.paymentStatus === "PAID" || booking.paymentStatus === "REFUNDED"
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                            }`}
-                        >
-                            <CreditCard size={15} />
-                            <span>
-                                {booking.paymentStatus === "PAID"
-                                    ? "✓ Đã thanh toán thành công"
-                                    : booking.paymentStatus === "REFUNDED"
-                                    ? "Đã hoàn tiền"
-                                    : "Thanh toán dịch vụ"}
-                            </span>
-                        </button>
-
                         <button
                             type="button"
                             disabled={!messageUrl}
@@ -153,32 +134,35 @@ const BookingOverview = ({ booking, onCancel }) => {
                             <span>Xem lại Pet Diary của bé</span>
                         </button>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
-                        >
-                            <Star size={15} className="fill-white" />
-                            <span>Đánh giá dịch vụ</span>
-                        </button>
+                        {canUseCompletedBookingActions('COMPLETED', booking.paymentStatus) && <>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
+                                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
+                            >
+                                <Star size={15} className="fill-white" />
+                                <span>Đánh giá dịch vụ</span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
-                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
-                        >
-                            <Receipt size={14} />
-                            <span>Xem hóa đơn điện tử</span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
+                                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                            >
+                                <Receipt size={14} />
+                                <span>Xem hóa đơn điện tử</span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate("/booking")}
-                            className="w-full bg-white hover:bg-teal-50 text-teal-700 border border-teal-300 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
-                        >
-                            <RotateCcw size={14} />
-                            <span>Đặt lại lịch này</span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate("/booking")}
+                                className="w-full bg-white hover:bg-teal-50 text-teal-700 border border-teal-300 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                            >
+                                <RotateCcw size={14} />
+                                <span>Đặt lại lịch này</span>
+                            </button>
+                        </>}
+                        {booking.paymentStatus === 'UNPAID' && <p className="text-xs text-amber-700">Vui lòng thanh toán để đánh giá dịch vụ, xem hóa đơn và đặt lại lịch.</p>}
                     </div>
                 );
 
@@ -284,6 +268,22 @@ const BookingOverview = ({ booking, onCancel }) => {
                         <span className="text-emerald-700 text-base">{booking.totalPrice}</span>
                     </div>
                 </div>
+
+                {canPayBooking(statusType.toUpperCase().replaceAll('-', '_'), booking.paymentStatus) && (
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
+                        className="mb-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
+                    >
+                        <CreditCard size={15} />
+                        <span>Thanh toán dịch vụ</span>
+                    </button>
+                )}
+                {['PAID', 'REFUNDED'].includes(booking.paymentStatus) && (
+                    <p role="status" className="mb-3 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700">
+                        {booking.paymentStatus === 'PAID' ? 'Đã thanh toán thành công' : 'Đã hoàn tiền'}
+                    </p>
+                )}
 
                 {/* Action buttons */}
                 {renderActionButtons()}

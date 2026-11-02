@@ -15,10 +15,11 @@ const STATUS_STYLE = {
   BLOCKED: "bg-amber-50 text-amber-700",
   MAINTENANCE: "bg-orange-50 text-orange-700",
   OFF: "bg-slate-100 text-slate-500",
+  UNCONFIGURED: "bg-slate-100 text-slate-500",
 };
 
 const formatDay = (date) => {
-  const [year, month, day] = date.split("-");
+  const [, month, day] = date.split("-");
   return `${day}/${month}`;
 };
 
@@ -32,8 +33,10 @@ const getSlotLabel = (slot) => {
       return "Nghỉ / Đóng";
     case "FULL":
       return "Đã đầy";
+    case "UNCONFIGURED":
+      return "Chưa cấu hình sức chứa";
     default:
-      return `${slot.bookedCount}/${slot.capacity} chỗ`;
+      return "Còn chỗ";
   }
 };
 
@@ -100,14 +103,14 @@ export default function WeeklyAvailabilityTable({
                   Khung giờ
                 </th>
 
-                {days.map((day, index) => (
+                {days.map((day) => (
                   <th
                     key={day.date}
                     className="min-w-[110px] px-2 py-3 font-semibold"
                   >
                     <div>
                       {viewMode === "week"
-                        ? WEEK_DAYS[index]
+                        ? WEEK_DAYS[(new Date(`${day.date}T00:00:00Z`).getUTCDay() + 6) % 7]
                         : "Ngày làm việc"}
                     </div>
                     <div className="mt-1 font-normal text-slate-400">
@@ -159,7 +162,7 @@ export default function WeeklyAvailabilityTable({
                             </span>
 
                             <div className="mt-0.5 text-[10px] opacity-80">
-                              {slot.bookedCount}/{slot.capacity} đã đặt
+                              {slot.capacity == null ? `${slot.bookedCount} đã đặt` : `${slot.bookedCount}/${slot.capacity} đã đặt`}
                             </div>
                           </div>
                         </td>

@@ -17,7 +17,9 @@ import {
   getTodayLocal,
   getWeekStart,
   getWeekDates,
-} from "../../components/schedule/ScheduleViewControls";
+  scheduleSlotKey,
+  scheduleSlotPayload,
+} from "../../services/scheduleData";
 
 import { branchServiceApi } from "../../services/branchServiceApi";
 import { scheduleApi } from "../../services/scheduleApi";
@@ -34,7 +36,7 @@ export default function SchedulePage() {
   const [branchServices, setBranchServices] = useState([]);
 
   const [branchId, setBranchId] = useState("");
-  const [branchServiceId, setBranchServiceId] = useState("");
+  const [selectedServiceId, setBranchServiceId] = useState("");
 
   // Mặc định xem lịch thực tế theo tuần hiện tại
   const [viewMode, setViewMode] = useState("week");
@@ -53,7 +55,12 @@ export default function SchedulePage() {
   // ==============================
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [branchesLoading, setBranchesLoading] = useState(false);
   const [error, setError] = useState("");
+  const [branchError, setBranchError] = useState("");
+  const [scheduleError, setScheduleError] = useState("");
+  const [exceptionError, setExceptionError] = useState("");
+  const [optionsReloadKey, setOptionsReloadKey] = useState(0);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -88,8 +95,8 @@ export default function SchedulePage() {
 
     const loadBranchServices = async () => {
       try {
-        setLoading(true);
-        setError("");
+        setBranchesLoading(true);
+        setBranchError("");
 
         const response = await branchServiceApi.list(controller.signal);
 
@@ -107,15 +114,15 @@ export default function SchedulePage() {
         setBranchServices(allBranchServices);
 
         if (allBranches.length > 0) {
-          setBranchId(allBranches[0]._id);
+          setBranchId((current) => allBranches.some((branch) => branch._id === current) ? current : allBranches[0]._id);
         }
       } catch (err) {
         if (!controller.signal.aborted) {
-          setError(err.message || "Không thể tải dịch vụ.");
+          setBranchError(err.message || "Không thể tải dịch vụ.");
         }
       } finally {
         if (!controller.signal.aborted) {
-          setLoading(false);
+          setBranchesLoading(false);
         }
       }
     };
@@ -123,7 +130,7 @@ export default function SchedulePage() {
     loadBranchServices();
 
     return () => controller.abort();
-  }, []);
+  }, [optionsReloadKey]);
 
   // ==============================
   // 6. LỌC DỊCH VỤ THEO CHI NHÁNH
@@ -135,17 +142,8 @@ export default function SchedulePage() {
     );
   }, [branchServices, branchId]);
 
-  // Khi đổi chi nhánh:
-  // chỉ đổi dịch vụ nếu dịch vụ hiện tại không thuộc chi nhánh mới
-  useEffect(() => {
-    const currentServiceIsValid = filteredServices.some(
-      (item) => String(item._id) === String(branchServiceId),
-    );
-
-    if (!currentServiceIsValid) {
-      setBranchServiceId(filteredServices[0]?._id || "");
-    }
-  }, [filteredServices, branchServiceId]);
+  const branchServiceId = filteredServices.some((item) => item._id === selectedServiceId)
+    ? selectedServiceId : filteredServices[0]?._id || "";
 
   // ==============================
   // 7. TẢI LỊCH LẶP HẰNG TUẦN
@@ -153,12 +151,9 @@ export default function SchedulePage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    if (!branchServiceId) {
-      setSchedules([]);
-      return () => controller.abort();
-    }
-
     const loadSchedules = async () => {
+      setScheduleError("");
+      if (!branchServiceId) { setSchedules([]); setLoading(false); return; }
       try {
         setLoading(true);
         setError("");
@@ -174,7 +169,7 @@ export default function SchedulePage() {
         }
       } catch (err) {
         if (!controller.signal.aborted) {
-          setError(err.message || "Không thể tải lịch làm việc.");
+          setScheduleError(err.message || "Không thể tải lịch làm việc.");
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -194,12 +189,9 @@ export default function SchedulePage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    if (!branchServiceId) {
-      setExceptions([]);
-      return () => controller.abort();
-    }
-
     const loadExceptions = async () => {
+      setExceptionError("");
+      if (!branchServiceId) { setExceptions([]); setExceptionsLoading(false); return; }
       try {
         setExceptionsLoading(true);
         setExceptions([]);
@@ -214,7 +206,7 @@ export default function SchedulePage() {
         }
       } catch (err) {
         if (!controller.signal.aborted) {
-          setError(err.message || "Không thể tải ngoại lệ lịch.");
+          setExceptionError(err.message || "Không thể tải ngoại lệ lịch.");
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -234,20 +226,12 @@ export default function SchedulePage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    // Không có dịch vụ hoặc không ở tab khung giờ
-    if (!branchServiceId || activeTab !== "slots") {
-      setWeeklyAvailability([]);
-      setAvailabilityLoading(false);
-      return () => controller.abort();
-    }
-
-    // Khi đang sửa lịch mẫu thì không cần tải lịch thực tế
-    if (showWeeklyTemplate) {
-      setAvailabilityLoading(false);
-      return () => controller.abort();
-    }
-
     const loadAvailability = async () => {
+      if (!branchServiceId || activeTab !== "slots" || showWeeklyTemplate) {
+        setWeeklyAvailability([]);
+        setAvailabilityLoading(false);
+        return;
+      }
       setAvailabilityLoading(true);
       setAvailabilityError("");
       setWeeklyAvailability([]);
@@ -295,7 +279,7 @@ export default function SchedulePage() {
     activeTab,
     showWeeklyTemplate,
     viewMode,
-    weekStart,
+    weekDates,
     selectedDate,
     reloadKey,
     exceptionsReloadKey,
@@ -343,12 +327,7 @@ export default function SchedulePage() {
 
       if (existingSchedule) {
         // Giữ slot cũ và thêm các slot mới
-        const existingSlots = existingSchedule.slots.map((slot) => ({
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          capacity: slot.capacity,
-          status: slot.status,
-        }));
+        const existingSlots = existingSchedule.slots.map(scheduleSlotPayload);
 
         await scheduleApi.update(existingSchedule._id, {
           slots: [...existingSlots, ...formData.slots],
@@ -390,13 +369,8 @@ export default function SchedulePage() {
     }
 
     const updatedSlots = schedule.slots.map((slot) => {
-      if (String(slot._id) !== String(selectedSlot._id)) {
-        return {
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          capacity: slot.capacity,
-          status: slot.status,
-        };
+      if (scheduleSlotKey(slot) !== scheduleSlotKey(selectedSlot)) {
+        return scheduleSlotPayload(slot);
       }
 
       return updatedSlot;
@@ -436,7 +410,7 @@ export default function SchedulePage() {
     if (!confirmed) return;
 
     const remainingSlots = schedule.slots.filter(
-      (slot) => String(slot._id) !== String(selectedSlot._id),
+      (slot) => scheduleSlotKey(slot) !== scheduleSlotKey(selectedSlot),
     );
 
     setSaving(true);
@@ -448,19 +422,12 @@ export default function SchedulePage() {
         await scheduleApi.remove(schedule._id);
       } else {
         await scheduleApi.update(schedule._id, {
-          slots: remainingSlots.map((slot) => ({
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            capacity: slot.capacity,
-            status: slot.status,
-          })),
+          slots: remainingSlots.map(scheduleSlotPayload),
         });
       }
 
       setSelectedSlot(null);
       setReloadKey((current) => current + 1);
-    } catch (err) {
-      throw err;
     } finally {
       setSaving(false);
     }
@@ -496,8 +463,6 @@ export default function SchedulePage() {
 
       setSelectedSlot(null);
       setReloadKey((current) => current + 1);
-    } catch (err) {
-      throw err;
     } finally {
       setSaving(false);
     }
@@ -593,14 +558,33 @@ export default function SchedulePage() {
   // ==============================
   return (
     <main className="w-full min-w-0 space-y-5 px-5 py-6 xl:px-8">
+      <div className="flex justify-end">
+        <button type="button" disabled={saving || exceptionSaving || loading || branchesLoading || availabilityLoading}
+          onClick={() => { setOptionsReloadKey((key) => key + 1); setReloadKey((key) => key + 1); setExceptionsReloadKey((key) => key + 1); }}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 disabled:opacity-50">Làm mới</button>
+      </div>
       {/* BỘ LỌC */}
       <ScheduleFilterBar
+        disabled={saving || exceptionSaving}
+        loading={loading || branchesLoading}
         branches={branches}
         services={filteredServices}
         branchId={branchId}
         branchServiceId={branchServiceId}
-        onBranchChange={setBranchId}
-        onServiceChange={setBranchServiceId}
+        onBranchChange={(id) => {
+          setBranchId(id);
+          setSelectedSlot(null);
+          setSelectedException(null);
+          setShowAddModal(false);
+          setShowAddExceptionModal(false);
+        }}
+        onServiceChange={(id) => {
+          setBranchServiceId(id);
+          setSelectedSlot(null);
+          setSelectedException(null);
+          setShowAddModal(false);
+          setShowAddExceptionModal(false);
+        }}
         onAddSchedule={handleAddSchedule}
         onAddException={handleAddException}
         viewMode={viewMode}
@@ -610,14 +594,14 @@ export default function SchedulePage() {
       />
 
       {/* LỖI CHUNG */}
-      {error && (
+      {(error || branchError || scheduleError || exceptionError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-          {error}
+          {error || branchError || scheduleError || exceptionError}
         </div>
       )}
 
       {/* LOADING LỊCH MẪU */}
-      {loading && (
+      {(loading || branchesLoading) && (
         <p className="text-sm text-slate-500">
           Đang tải dữ liệu lịch làm việc...
         </p>
@@ -650,14 +634,14 @@ export default function SchedulePage() {
                 // Lịch lặp hằng tuần:
                 // dùng để thêm/sửa/xóa khung giờ
                 <ScheduleTable
-                  schedules={schedules}
+                  schedules={branchServiceId ? schedules : []}
                   onSelectSlot={handleSelectSlot}
                 />
               ) : (
                 // Lịch thực tế:
                 // có Booking, ngoại lệ, sức chứa
                 <WeeklyAvailabilityTable
-                  days={weeklyAvailability}
+                  days={branchServiceId ? weeklyAvailability : []}
                   loading={availabilityLoading}
                   error={availabilityError}
                   viewMode={viewMode}
@@ -668,7 +652,7 @@ export default function SchedulePage() {
             {/* NGOẠI LỆ SẮP TỚI: GIỮ NGUYÊN */}
             <div className="min-w-0 space-y-4 lg:col-span-3">
               <UpcomingExceptions
-                exceptions={exceptions}
+                exceptions={branchServiceId ? exceptions : []}
                 loading={exceptionsLoading}
                 onViewAll={() => setActiveTab("exceptions")}
               />
@@ -678,7 +662,7 @@ export default function SchedulePage() {
       ) : (
         // TAB QUẢN LÝ NGOẠI LỆ: GIỮ NGUYÊN
         <ExceptionManagement
-          exceptions={exceptions}
+          exceptions={branchServiceId ? exceptions : []}
           loading={exceptionsLoading}
           saving={exceptionSaving}
           onAdd={handleAddException}
@@ -704,7 +688,7 @@ export default function SchedulePage() {
       {/* MODAL SỬA / XÓA SLOT */}
       {selectedSlot && (
         <EditScheduleModal
-          key={selectedSlot._id}
+          key={`${selectedSlot.scheduleId}:${scheduleSlotKey(selectedSlot)}`}
           slot={selectedSlot}
           saving={saving}
           onClose={() => setSelectedSlot(null)}

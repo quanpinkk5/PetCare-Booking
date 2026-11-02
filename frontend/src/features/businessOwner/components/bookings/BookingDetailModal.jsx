@@ -492,7 +492,7 @@ export default function BookingDetailModal({ booking, onClose, onChanged }) {
               </span>
 
               <div className="flex items-center gap-3 pt-1">
-                <InfoAvatar src={booking.customerImg} alt={customerName} />
+                <InfoAvatar src={data.customerId?.avatar ?? booking.customerImg} alt={customerName} />
 
                 <div className="min-w-0">
                   <h4 className="font-semibold text-slate-800">
@@ -521,7 +521,7 @@ export default function BookingDetailModal({ booking, onClose, onChanged }) {
               </span>
 
               <div className="flex items-center gap-3 pt-1">
-                <InfoAvatar src={booking.petImg} alt={petName} kind="pet" />
+                <InfoAvatar src={data.petId?.avatar ?? booking.petImg} alt={petName} kind="pet" />
 
                 <div>
                   <h4 className="font-semibold text-slate-800">{petName}</h4>

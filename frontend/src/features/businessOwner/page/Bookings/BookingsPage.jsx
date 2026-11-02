@@ -92,10 +92,12 @@ const normalizeBooking = (booking) => {
       booking.customerId?.fullName || booking.customerId?.name || "Khách hàng",
 
     phone: booking.customerId?.phone || "",
+    customerImg: booking.customerId?.avatar || "",
 
     pet: booking.petId?.name || "—",
 
     breed: booking.petId?.breed || "",
+    petImg: booking.petId?.avatar || "",
 
     service: serviceName,
     branch: branchName,
