@@ -3,18 +3,31 @@ const router = express.Router();
 
 const authenticate = require("../../middlewares/authMiddleware");
 
-const schedulesController = require("../../controllers/businessOwner/schedulesController");
+const {
+  getSchedules,
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
+} = require("../../controllers/businessOwner/schedulesController");
 
-// POST - Tạo lịch dịch vụ
-router.post("/schedules", authenticate, schedulesController.createSchedule);
+// Tất cả API đều yêu cầu đăng nhập
+router.use(authenticate);
 
-// PATCH - Cập nhật lịch dịch vụ
-router.patch("/schedules/:id", authenticate, schedulesController.updateSchedule);
+// Chỉ BUSINESS_OWNER được quản lý lịch
+router.use((req, res, next) => {
+  if (req.user?.role !== "BUSINESS_OWNER") {
+    return res.status(403).json({
+      success: false,
+      message: "Bạn không có quyền quản lý lịch làm việc",
+    });
+  }
 
-// GET - Lấy tất cả lịch dịch vụ
-router.get("/schedules", authenticate, schedulesController.getAllSchedules);
+  next();
+});
 
-// GET - Lấy chi tiết lịch dịch vụ
-router.get("/schedules/:id", authenticate, schedulesController.getScheduleById);
+router.get("/", getSchedules);
+router.post("/", createSchedule);
+router.patch("/:id", updateSchedule);
+router.delete("/:id", deleteSchedule);
 
 module.exports = router;

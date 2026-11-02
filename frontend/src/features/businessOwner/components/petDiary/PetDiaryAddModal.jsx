@@ -1,95 +1,39 @@
+import PetDiaryAvatar from "./PetDiaryAvatar.jsx";
 import { useState } from "react";
 import {
   X,
   BookHeart,
-  Utensils,
-  Pill,
-  Activity,
-  HeartPulse,
-  Sparkles,
   Camera,
   Clock,
   CheckCircle2,
-  Footprints,
-  Moon,
-  Scissors,
 } from "lucide-react";
 
-const ACTIVITY_TYPES = [
-  {
-    id: "meal",
-    label: "Ăn uống",
-    icon: Utensils,
-    iconBg: "bg-amber-100 text-amber-600",
-    actionColor: "bg-amber-50 text-amber-700 border-amber-200",
-    defaultTitle: "Bữa ăn theo khẩu phần",
-  },
-  {
-    id: "med",
-    label: "Uống thuốc",
-    icon: Pill,
-    iconBg: "bg-rose-100 text-rose-600",
-    actionColor: "bg-rose-50 text-rose-700 border-rose-200",
-    defaultTitle: "Uống thuốc theo chỉ định",
-  },
-  {
-    id: "exercise",
-    label: "Vận động",
-    icon: Footprints,
-    iconBg: "bg-blue-100 text-blue-600",
-    actionColor: "bg-blue-50 text-blue-700 border-blue-200",
-    defaultTitle: "Vận động sân cỏ ngoài trời",
-  },
-  {
-    id: "grooming",
-    label: "Grooming & Vệ sinh",
-    icon: Scissors,
-    iconBg: "bg-purple-100 text-purple-600",
-    actionColor: "bg-purple-50 text-purple-700 border-purple-200",
-    defaultTitle: "Tắm sấy & chải lông",
-  },
-  {
-    id: "rest",
-    label: "Nghỉ ngơi",
-    icon: Moon,
-    iconBg: "bg-indigo-100 text-indigo-600",
-    actionColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    defaultTitle: "Nghỉ ngơi trong phòng ấm",
-  },
-  {
-    id: "health",
-    label: "Kiểm tra sức khỏe",
-    icon: HeartPulse,
-    iconBg: "bg-emerald-100 text-emerald-600",
-    actionColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    defaultTitle: "Đo thân nhiệt & kiểm tra thể trạng",
-  },
-];
+import { DIARY_ACTIVITIES as ACTIVITY_TYPES, diaryLocalDateTime, diaryPayload } from "../../data/petDiaryApiData.js";
 
-export default function PetDiaryAddModal({ pet, onClose, onSave }) {
-  const [selectedType, setSelectedType] = useState(ACTIVITY_TYPES[0]);
-  const [time, setTime] = useState(() => {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  });
+export default function PetDiaryAddModal({ pet, onClose: closeModal, onSave }) {
+  const [selectedType, setSelectedType] = useState(() => ACTIVITY_TYPES.find((type) => type.id === pet.activityType) || ACTIVITY_TYPES[0]);
+  const [time, setTime] = useState(() => diaryLocalDateTime());
   const [note, setNote] = useState("");
-  const [hasPhoto, setHasPhoto] = useState(true);
+  const [hasPhoto, setHasPhoto] = useState(false);
+  const [imageUrls, setImageUrls] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const onClose = () => { if (!saving) closeModal(); };
 
-  if (!pet) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onSave?.({
-      petId: pet.id,
-      actionType: selectedType.label,
-      actionIcon: selectedType.icon,
-      actionColor: selectedType.actionColor,
-      actionTime: `${time} - Hôm nay`,
-      note: note.trim() || selectedType.defaultTitle,
-      photos: hasPhoto ? 1 : 0,
-    });
-    onClose();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    setError("");
+    try {
+      const payload = diaryPayload({ activityType: selectedType.id, description: note, activityTime: time, images: hasPhoto ? imageUrls : "" });
+      setSaving(true);
+      await onSave(payload);
+      closeModal();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -128,10 +72,12 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+        <form aria-busy={saving} onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+          {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-rose-700">{error}</p>}
+          <fieldset disabled={saving} className="space-y-4 border-0 p-0 min-w-0">
           {/* Thông tin thú cưng tóm tắt */}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <img
+            <PetDiaryAvatar
               src={pet.img}
               alt={pet.name}
               className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
@@ -185,7 +131,10 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
             <div className="relative">
               <Clock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="text"
+                type="datetime-local"
+                step="0.001"
+                required
+                max={diaryLocalDateTime()}
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 placeholder="HH:MM"
@@ -201,6 +150,7 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
             </label>
             <textarea
               rows={3}
+              maxLength={3000}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="VD: Bé ăn ngoan hết 1 bát hạt, tinh thần vui vẻ, uống đủ nước..."
@@ -215,7 +165,7 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
               <Camera size={16} className="text-slate-500" />
               <div>
                 <p className="font-semibold text-slate-700 text-[11px]">Đính kèm ảnh minh họa</p>
-                <p className="text-[10px] text-slate-400">Thông báo và ảnh sẽ gửi tới chủ nuôi</p>
+                <p className="text-[10px] text-slate-400">Tối đa 5 URL ảnh HTTP/HTTPS, mỗi dòng một URL</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -229,6 +179,17 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
             </label>
           </div>
 
+          {hasPhoto && (
+            <textarea
+              aria-label="URL ảnh đính kèm"
+              value={imageUrls}
+              onChange={(event) => setImageUrls(event.target.value)}
+              placeholder="https://example.com/photo.jpg"
+              rows={3}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-emerald-500"
+            />
+          )}
+
           {/* Footer nút hành động */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button
@@ -240,12 +201,14 @@ export default function PetDiaryAddModal({ pet, onClose, onSave }) {
             </button>
             <button
               type="submit"
+              disabled={saving}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition cursor-pointer shadow-sm shadow-emerald-200"
             >
               <CheckCircle2 size={14} />
-              <span>Lưu cập nhật</span>
+              <span>{saving ? "Đang lưu..." : "Lưu cập nhật"}</span>
             </button>
           </div>
+          </fieldset>
         </form>
       </div>
     </div>

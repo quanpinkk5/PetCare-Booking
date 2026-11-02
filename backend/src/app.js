@@ -36,6 +36,9 @@ const customerBookingRoutes = require("./routes/customer/bookingRoutes");
 // Review
 const customerReviewRoutes = require("./routes/customer/reviewRoutes");
 const publicReviewRoutes = require("./routes/public/reviewRoutes");
+const availabilityRoutes = require("./routes/public/availabilityRoutes");
+const bookingsRoutes = require("./routes/businessOwner/bookingsRoutes");
+const boardingRoutes = require("./routes/businessOwner/boardingRoutes");
 const app = express();
 
 // Message
@@ -91,11 +94,16 @@ app.use("/api/businessOwner", servicesRoutes);
 app.use("/api/businessOwner", branchServicesRoutes);
 
 // Schedules API
-app.use("/api/businessOwner", schedulesRoutes);
-
+app.use("/api/business-owner/schedules", schedulesRoutes);
 // Schedule Exceptions API
-app.use("/api/businessOwner", scheduleExceptionsRoutes);
-
+app.use("/api/business-owner/schedule-exceptions", scheduleExceptionsRoutes);
+// api lấy khung giờ khả dụng
+app.use("/api/public/availability", availabilityRoutes);
+// api booking
+app.use("/api/business-owner/bookings", bookingsRoutes);
+//api boarding
+app.use("/api/business-owner/boarding", boardingRoutes);
+app.use("/api/business-owner/pet-diaries", require("./routes/businessOwner/petDiaryRoutes"));
 // Phân dành cho customer- Public API
 // Businesses API
 app.use("/api/customer", customerBusinessesRoutes);

@@ -1,4 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 import BusinessOwnerLayout from "../layouts/businessOwner/BusinessOwnerLayout";
 import BusinessDashboard from "../features/businessOwner/page/Dashboard/BusinessDashboard";
 import FacilityProfile from "../features/businessOwner/page/FacilityProfile/FacilityProfile";
@@ -15,10 +17,36 @@ import ReviewManagement from "../features/businessOwner/page/Reviews/ReviewManag
 import NotificationsPage from "../features/businessOwner/page/Notifications/NotificationsPage";
 
 const BusinessOwnerRoutes = () => {
+  const { user, isAuthenticated, isAuthLoading } = useAuth();
+  const location = useLocation();
+
+  // Đợi AuthContext khôi phục phiên đăng nhập
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Đang kiểm tra phiên đăng nhập...
+      </div>
+    );
+  }
+
+  // Chưa đăng nhập -> chuyển về Login
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Không phải Business Owner -> không cho truy cập
+  if (user.role !== "BUSINESS_OWNER") {
+    const redirectPath = user.role === "ADMIN" ? "/admin" : "/";
+
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  // Business Owner hợp lệ -> hiển thị các trang quản lý
   return (
     <Routes>
       <Route element={<BusinessOwnerLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
+
         <Route path="dashboard" element={<BusinessDashboard />} />
         <Route path="profile" element={<FacilityProfile />} />
         <Route path="branches" element={<BranchesPage />} />
@@ -32,6 +60,7 @@ const BusinessOwnerRoutes = () => {
         <Route path="messages" element={<MessagesPage />} />
         <Route path="reviews" element={<ReviewManagement />} />
         <Route path="notifications" element={<NotificationsPage />} />
+
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
