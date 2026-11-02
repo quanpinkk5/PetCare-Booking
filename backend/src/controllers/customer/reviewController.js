@@ -55,6 +55,7 @@ const createReview = async (req, res, next) => {
     const booking = await Booking.findOne({ _id: bookingId, customerId }).lean();
     if (!booking) return res.status(404).json({ success: false, message: 'Không tìm thấy lịch đặt của bạn' });
     if (booking.status !== 'COMPLETED') throw invalid('Chỉ được đánh giá lịch đặt đã hoàn thành');
+    if (booking.paymentStatus !== 'PAID') throw invalid('Vui lòng thanh toán lịch đặt trước khi đánh giá dịch vụ');
     if (await Review.findOne({ bookingId }).lean()) return res.status(409).json({ success: false, message: 'Lịch đặt này đã được đánh giá' });
     const offering = await BranchService.findById(booking.branchServiceId).lean();
     const branch = offering && await Branch.findById(offering.branchId).lean();
@@ -97,7 +98,7 @@ const getPendingReviews = async (req, res, next) => {
     const customerId = req.user._id || req.user.id;
     // Include hidden reviews in this exclusion: one booking cannot receive a second review.
     const reviewed = await Review.find({ customerId }).select('bookingId').lean();
-    const bookings = await Booking.find({ customerId, status: 'COMPLETED', _id: { $nin: reviewed.map((review) => review.bookingId) } })
+    const bookings = await Booking.find({ customerId, status: 'COMPLETED', paymentStatus: 'PAID', _id: { $nin: reviewed.map((review) => review.bookingId) } })
       .populate('petId', 'name breed gender avatar')
       .populate({ path: 'branchServiceId', select: 'branchId serviceId', populate: [
         { path: 'branchId', select: 'name address businessId', populate: { path: 'businessId', select: 'name logo' } },

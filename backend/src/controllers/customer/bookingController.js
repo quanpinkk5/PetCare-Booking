@@ -11,6 +11,7 @@ const Service = require("../../models/Service");
 const Schedule = require("../../models/Schedule");
 const ScheduleException = require("../../models/ScheduleException");
 const ownerNotifications = require("../../utils/ownerNotificationEvents");
+const { getAppointmentRanges, getAppointmentCapacity } = require("../../utils/appointmentSchedule");
 
 const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "IN_PROGRESS"];
 
@@ -84,19 +85,6 @@ const getVietnamNow = () => {
 
 const nextDay = (date) => new Date(date.getTime() + DAY);
 
-const getRanges = (items = []) =>
-  items.flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const start = timeToMinutes(item.startTime);
-    const end = timeToMinutes(item.endTime);
-
-    return start !== null && end !== null && start < end
-      ? [{ start, end, capacity: item.capacity }]
-      : [];
-  });
-
-const hasCapacity = (value) => Number.isInteger(value) && value >= 0;
-
 // ============================================
 // Kiểm tra APPOINTMENT
 // ============================================
@@ -152,12 +140,13 @@ const validateAppointment = async ({
     .session(session)
     .lean();
 
+  const bookingStart = new Date(`${bookingDate}T00:00:00.000+07:00`);
   const bookings = await Booking.find({
     branchServiceId: branchService._id,
     bookingType: "APPOINTMENT",
     bookingDate: {
-      $gte: date,
-      $lt: nextDay(date),
+      $gte: bookingStart,
+      $lt: nextDay(bookingStart),
     },
     status: { $in: ACTIVE_STATUSES },
   })
@@ -168,57 +157,18 @@ const validateAppointment = async ({
     throw badRequest("Dịch vụ nghỉ vào ngày này", 409);
   }
 
-  const customHours = getRanges(
-    exceptions.filter((e) => e.type === "CUSTOM_HOURS"),
-  );
+  const ranges = getAppointmentRanges(schedule, exceptions, branchService.capacity);
+  const range = ranges.find((item) => start >= item.start && end <= item.end
+    && (start - item.start) % duration === 0);
 
-  const blocked = getRanges(exceptions.filter((e) => e.type === "BLOCK_SLOT"));
-
-  const ranges = customHours.length
-    ? customHours
-    : getRanges(schedule?.slots || []);
-
-  // Chỉ cho phép đặt đúng slot mà availableSlots sinh ra
-  const validSlot = ranges.some((range) => {
-    if (start < range.start || end > range.end) {
-      return false;
-    }
-
-    return (start - range.start) % duration === 0;
-  });
-
-  if (!validSlot) {
+  if (!range) {
     throw badRequest("Khung giờ không thuộc lịch hoạt động", 409);
   }
 
-  let capacity = branchService.capacity;
-
-  if (!Number.isInteger(capacity) || capacity <= 0) {
-    throw badRequest("Sức chứa dịch vụ không hợp lệ");
+  const capacity = getAppointmentCapacity(range, start, end, exceptions);
+  if (capacity === null) {
+    throw badRequest("Sức chứa khung giờ chưa được cấu hình hợp lệ");
   }
-
-  for (const range of customHours) {
-    if (
-      overlap(start, end, range.start, range.end) &&
-      hasCapacity(range.capacity)
-    ) {
-      capacity = Math.min(capacity, range.capacity);
-    }
-  }
-
-  for (const range of blocked) {
-    if (!overlap(start, end, range.start, range.end)) {
-      continue;
-    }
-
-    // Phương án A
-    if (!hasCapacity(range.capacity)) {
-      capacity = 0;
-    } else {
-      capacity = Math.min(capacity, range.capacity);
-    }
-  }
-
   if (capacity <= 0) {
     throw badRequest("Khung giờ đã bị chặn", 409);
   }

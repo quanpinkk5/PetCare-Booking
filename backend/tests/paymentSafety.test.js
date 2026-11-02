@@ -77,7 +77,7 @@ const cancel = () => invoke(cancelBooking, {
   user: { _id: customerId }, params: { id: bookingId }, body: { reason: 'busy' },
 });
 
-for (const status of ['PENDING', 'CANCELLED', 'IN_PROGRESS', 'COMPLETED']) {
+for (const status of ['PENDING', 'CANCELLED']) {
   test(`${status} bookings cannot create or retry payments through the API`, async (t) => {
     const state = setup(t);
     state.booking.status = status;
@@ -228,7 +228,7 @@ test('creation rechecks the booking inside the transaction after a racing cancel
   t.mock.method(BranchService, 'findById', async () => ({ branchId: 'branch' }));
   t.mock.method(Branch, 'findById', async () => ({ businessId: 'business' }));
   t.mock.method(Booking, 'updateOne', async (filter, update, options) => {
-    assert.equal(filter.status, 'CONFIRMED');
+    assert.deepEqual(filter.status, { $in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] });
     assert.equal(filter.paymentStatus, 'UNPAID');
     assert.equal(filter.totalPrice, 10000);
     assert.equal(options.session, state.session);
@@ -244,3 +244,16 @@ test('creation rechecks the booking inside the transaction after a racing cancel
   assert.equal(create.mock.callCount(), 0);
   assert.equal(state.ended, 1);
 });
+
+for (const status of ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED']) {
+  test(`successful IPN settles an unpaid ${status} booking`, async (t) => {
+    const state = setup(t);
+    state.booking.status = status;
+    assert.equal((await ipn()).RspCode, '00');
+    assert.equal(state.booking.paymentStatus, 'PAID');
+    assert.equal(state.payment.status, 'PAID');
+    assert.equal(state.booking.status, status);
+    assert.equal((await ipn()).RspCode, '02');
+    assert.equal(state.bookingSaves, 1);
+  });
+}

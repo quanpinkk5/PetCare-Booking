@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const mongoose = require('mongoose');
 const { createBooking } = require('../src/controllers/customer/bookingController');
+const { getAvailableSlots } = require('../src/controllers/customer/availableSlotsController');
 const Pet = require('../src/models/Pet');
 const BranchService = require('../src/models/BranchService');
 const Branch = require('../src/models/Branch');
@@ -56,8 +57,10 @@ const setup = (t, options = {}) => {
     async endSession() { state.ended += 1; },
   };
   const query = (result) => ({
-    session(value) { assert.equal(value, session); return this; },
+    select() { return this; },
+    session(value) { assert.equal(value, session); this.inTransaction = true; return this; },
     async lean() {
+      if (!this.inTransaction) return result;
       assert.equal(state.activeQuery, false, 'Transaction queries must run sequentially');
       state.activeQuery = true;
       await Promise.resolve();
@@ -95,10 +98,18 @@ const setup = (t, options = {}) => {
     assert.equal(filter.dayOfWeek, 'MONDAY');
     return query(options.noSchedule ? null : { slots: options.slots || [{ startTime: '09:00', endTime: '12:00' }] });
   });
-  t.mock.method(ScheduleException, 'find', () => query(options.exceptions || []));
+  t.mock.method(ScheduleException, 'find', (filter) => {
+    assert.equal(filter.date.$gte.toISOString(), '2099-01-05T00:00:00.000Z');
+    assert.equal(filter.date.$lt.toISOString(), '2099-01-06T00:00:00.000Z');
+    return query(options.exceptions || []);
+  });
   t.mock.method(Booking, 'find', (filter) => {
     assert.equal(filter.branchServiceId, ids.offering);
     assert.deepEqual(filter.status, { $in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] });
+    if (filter.bookingType === 'APPOINTMENT') {
+      assert.equal(filter.bookingDate.$gte.toISOString(), '2099-01-04T17:00:00.000Z');
+      assert.equal(filter.bookingDate.$lt.toISOString(), '2099-01-05T17:00:00.000Z');
+    }
     return query(options.bookings || []);
   });
   t.mock.method(Booking, 'create', async (documents, config) => {
@@ -236,6 +247,99 @@ test('custom hours replace normal schedule; adjacent bookings do not occupy the 
     bookings: [{ startTime: '08:00', endTime: '09:00' }, { startTime: '10:00', endTime: '11:00' }],
   });
   assert.equal((await invoke()).status, 201);
+});
+
+async function customerSlots(t, options = {}) {
+  t.mock.method(BranchService, 'findOne', (filter) => {
+    assert.deepEqual(filter, { _id: ids.offering, status: 'ACTIVE' });
+    return { select() { return this; }, lean: async () => ({
+      _id: ids.offering, branchId: ids.branch, serviceId: ids.service,
+      durationMinutes: 60, capacity: 1, ...options.offering,
+    }) };
+  });
+  let result;
+  await getAvailableSlots({ params: { id: ids.offering }, query: { date: appointment.bookingDate } }, {
+    status(code) { assert.equal(code, 200); return this; },
+    json(body) { result = body.data.availableSlots; },
+  }, (error) => { throw error; });
+  return result;
+}
+
+test('customer slots follow owner working ranges, duration, per-range capacity and unavailable statuses', async (t) => {
+  const options = { offering: { durationMinutes: 30, capacity: 5 }, slots: [
+    { startTime: '09:00', endTime: '10:00', capacity: 2, status: 'AVAILABLE' },
+    { startTime: '10:00', endTime: '11:00', capacity: 5, status: 'OFF' },
+    { startTime: '11:00', endTime: '12:00', capacity: 5, status: 'MAINTENANCE' },
+    { startTime: '13:30', endTime: '14:45', capacity: 1, status: 'AVAILABLE' },
+  ], bookings: [{ startTime: '09:00', endTime: '09:30' }] };
+  setup(t, options);
+  const slots = await customerSlots(t, options);
+  assert.deepEqual(slots.map((slot) => [slot.startTime, slot.endTime, slot.capacity, slot.remainingCapacity]), [
+    ['09:00', '09:30', 2, 1], ['09:30', '10:00', 2, 2],
+    ['13:30', '14:00', 1, 1], ['14:00', '14:30', 1, 1],
+  ]);
+  assert.equal(slots[0].workingStartTime, '09:00');
+  assert.equal(slots[0].workingEndTime, '10:00');
+  for (const slot of slots) {
+    assert.equal((await invoke({ ...appointment, startTime: slot.startTime })).status, 201);
+  }
+  for (const startTime of ['10:00', '11:00', '12:00', '14:30', '09:15']) {
+    assert.equal((await invoke({ ...appointment, startTime })).status, 409);
+  }
+});
+
+for (const status of ['OFF', 'MAINTENANCE']) test(`owner changes selected range to ${status}: hide it and reject a stale booking`, async (t) => {
+  const options = { slots: [{ startTime: '09:00', endTime: '12:00', capacity: 3, status }] };
+  const state = setup(t, options);
+  assert.deepEqual(await customerSlots(t, options), []);
+  assert.equal((await invoke()).status, 409);
+  assert.equal(state.created.length, 0);
+});
+
+test('owner range limit overrides offering capacity in both availability and booking creation', async (t) => {
+  const options = { offering: { capacity: 5 },
+    slots: [{ startTime: '09:00', endTime: '12:00', capacity: 1 }],
+    bookings: [{ startTime: '09:00', endTime: '10:00' }] };
+  const state = setup(t, options);
+  const slots = await customerSlots(t, options);
+  assert.ok(!slots.some((slot) => slot.startTime === '09:00'));
+  assert.ok(slots.some((slot) => slot.startTime === '10:00'));
+  assert.equal((await invoke()).status, 409);
+  assert.equal(state.created.length, 0);
+});
+
+test('owner custom hours can increase capacity and replace an OFF template', async (t) => {
+  const options = { slots: [{ startTime: '09:00', endTime: '12:00', status: 'OFF' }],
+    exceptions: [{ type: 'CUSTOM_HOURS', startTime: '09:00', endTime: '11:00', capacity: 3 }],
+    bookings: [{ startTime: '09:00', endTime: '10:00' }] };
+  setup(t, options);
+  const slots = await customerSlots(t, options);
+  assert.equal(slots[0].capacity, 3);
+  assert.equal(slots[0].remainingCapacity, 2);
+  assert.equal((await invoke()).status, 201);
+  assert.equal((await invoke({ ...appointment, startTime: '11:00' })).status, 409);
+});
+
+test('partial blocked periods remove touching appointments and reject forged selection', async (t) => {
+  const options = { offering: { durationMinutes: 30 },
+    exceptions: [{ type: 'BLOCK_SLOT', startTime: '09:15', endTime: '09:45', capacity: 5 }] };
+  setup(t, options);
+  const slots = await customerSlots(t, options);
+  assert.ok(!slots.some((slot) => ['09:00', '09:30'].includes(slot.startTime)));
+  assert.ok(slots.some((slot) => slot.startTime === '10:00'));
+  assert.equal((await invoke()).status, 409);
+});
+
+test('closed exceptions and explicit zero capacity cannot be bypassed at submission', async (t) => {
+  const options = { slots: [{ startTime: '09:00', endTime: '12:00', capacity: 0 }] };
+  setup(t, options);
+  assert.deepEqual(await customerSlots(t, options), []);
+  assert.equal((await invoke()).status, 409);
+  t.mock.method(ScheduleException, 'find', () => ({
+    select() { return this; }, session() { return this; }, lean: async () => [{ type: 'CLOSED' }],
+  }));
+  assert.deepEqual(await customerSlots(t, options), []);
+  assert.equal((await invoke()).status, 409);
 });
 
 test('boarding calculates days and total from the locked daily price', async (t) => {

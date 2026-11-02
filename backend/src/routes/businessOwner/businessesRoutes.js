@@ -33,4 +33,6 @@ router.get(
   businessesController.getBusinessesById
 );
 
+router.patch('/profile/avatar', authenticate, require('../../middlewares/roleMiddleware')('BUSINESS_OWNER'), require('../../controllers/businessOwner/profileController').updateAvatar);
+
 module.exports = router;

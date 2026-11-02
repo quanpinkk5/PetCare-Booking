@@ -185,11 +185,11 @@ const populateBooking = (query, includeHistory = false) => {
   let result = query
     .populate({
       path: "customerId",
-      select: "fullName name email phone",
+      select: "fullName name email phone avatar",
     })
     .populate({
       path: "petId",
-      select: "name species breed gender dateOfBirth",
+      select: "name species breed gender dateOfBirth avatar",
     })
     .populate({
       path: "branchServiceId",

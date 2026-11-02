@@ -30,12 +30,12 @@ test('my reviews only returns visible owned reviews and derives persisted helpfu
 test('pending reviews require owned completed bookings and exclude all existing reviews including hidden', async (t) => {
   t.mock.method(Review, 'find', (filter) => { assert.deepEqual(filter, { customerId: userId }); return chain([{ bookingId }]); });
   t.mock.method(Booking, 'find', (filter) => {
-    assert.deepEqual(filter, { customerId: userId, status: 'COMPLETED', _id: { $nin: [bookingId] } }); return chain([]);
+    assert.deepEqual(filter, { customerId: userId, status: 'COMPLETED', paymentStatus: 'PAID', _id: { $nin: [bookingId] } }); return chain([]);
   });
   assert.deepEqual((await call(controller.getPendingReviews)).data, []);
 });
 test('create validates and resolves the authenticated completed booking before writing', async (t) => {
-  t.mock.method(Booking, 'findOne', (filter) => { assert.deepEqual(filter, { _id: bookingId, customerId: userId }); return chain({ _id: bookingId, branchServiceId: 'offering', status: 'COMPLETED' }); });
+  t.mock.method(Booking, 'findOne', (filter) => { assert.deepEqual(filter, { _id: bookingId, customerId: userId }); return chain({ _id: bookingId, branchServiceId: 'offering', status: 'COMPLETED', paymentStatus: 'PAID' }); });
   t.mock.method(Review, 'findOne', () => chain(null));
   t.mock.method(BranchService, 'findById', () => chain({ branchId: 'branch', serviceId: 'service' }));
   t.mock.method(Branch, 'findById', () => chain({ _id: 'branch', businessId: 'business' }));
@@ -62,7 +62,7 @@ test('another customer booking, incomplete booking and duplicate reviews cannot 
   assert.equal((await call(controller.createReview, { bookingId, rating: 5 })).status, 404);
   booking.mock.mockImplementation(() => chain({ _id: bookingId, status: 'PENDING' }));
   assert.equal((await call(controller.createReview, { bookingId, rating: 5 })).status, 400);
-  booking.mock.mockImplementation(() => chain({ _id: bookingId, status: 'COMPLETED' }));
+  booking.mock.mockImplementation(() => chain({ _id: bookingId, status: 'COMPLETED', paymentStatus: 'PAID' }));
   t.mock.method(Review, 'findOne', () => chain({ _id: reviewId }));
   assert.equal((await call(controller.createReview, { bookingId, rating: 5 })).status, 409);
 });
@@ -82,3 +82,14 @@ test('helpful sets a desired state atomically instead of double toggling on retr
   });
   assert.equal((await call(controller.setHelpful, { liked: true })).data.isLiked, true);
 });
+
+for (const paymentStatus of ['UNPAID', 'REFUNDED', undefined]) {
+  test(`completed bookings with payment status ${paymentStatus} cannot be reviewed through the API`, async (t) => {
+    t.mock.method(Booking, 'findOne', () => chain({ _id: bookingId, status: 'COMPLETED', paymentStatus }));
+    const create = t.mock.method(Review, 'create', () => { throw new Error('Unexpected review write'); });
+    const result = await call(controller.createReview, { bookingId, rating: 5 });
+    assert.equal(result.status, 400);
+    assert.match(result.message, /thanh toán/);
+    assert.equal(create.mock.callCount(), 0);
+  });
+}

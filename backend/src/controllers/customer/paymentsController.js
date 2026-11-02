@@ -13,6 +13,8 @@ const {
   verifyVnpay,
 } = require("../../utils/vnpay");
 
+const PAYABLE_BOOKING_STATUSES = ["CONFIRMED", "IN_PROGRESS", "COMPLETED"];
+
 const ACTIVE_STATUSES = ["PENDING", "PROCESSING"];
 
 // Only expose transactions owned by the authenticated customer. Metadata and
@@ -103,7 +105,7 @@ const createVnpayPayment = async (req, res, next) => {
       });
     }
 
-    if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "UNPAID") {
+    if (!PAYABLE_BOOKING_STATUSES.includes(booking.status) || booking.paymentStatus !== "UNPAID") {
       return res.status(400).json({
         success: false,
         code: "BOOKING_NOT_PAYABLE",
@@ -187,7 +189,7 @@ const createVnpayPayment = async (req, res, next) => {
           {
             _id: booking._id,
             customerId: getCustomerId(req),
-            status: "CONFIRMED",
+            status: { $in: PAYABLE_BOOKING_STATUSES },
             paymentStatus: "UNPAID",
             totalPrice: booking.totalPrice,
           },
@@ -375,7 +377,7 @@ const vnpayIpn = async (req, res) => {
         if (success) {
           if (
             booking.paymentStatus !== "UNPAID" ||
-            booking.status !== "CONFIRMED"
+            !PAYABLE_BOOKING_STATUSES.includes(booking.status)
           ) {
             // Persist the verified payment evidence without overwriting a
             // cancelled/settled booking or permitting another payment attempt.
@@ -578,7 +580,7 @@ const retryVnpayPayment = async (req, res, next) => {
       return alreadyPaidReply(res, booking);
     }
 
-    if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "UNPAID") {
+    if (!PAYABLE_BOOKING_STATUSES.includes(booking.status) || booking.paymentStatus !== "UNPAID") {
       return res.status(409).json({
         success: false,
         code: "BOOKING_NOT_PAYABLE",
@@ -682,7 +684,7 @@ const retryVnpayPayment = async (req, res, next) => {
 
           if (
             !["PENDING", "PROCESSING"].includes(currentPayment.status) ||
-            currentBooking.status !== "CONFIRMED" ||
+            !PAYABLE_BOOKING_STATUSES.includes(currentBooking.status) ||
             currentBooking.paymentStatus !== "UNPAID" ||
             currentBooking.totalPrice !== currentPayment.amount ||
             currentPayment.amount !== activePayment.amount ||

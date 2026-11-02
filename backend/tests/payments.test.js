@@ -11,7 +11,8 @@ const Branch = require('../src/models/Branch');
 const Payment = require('../src/models/Payment');
 const { verifyVnpay } = require('../src/utils/vnpay');
 
-test('payment creation and retry parse JSON and apply CORS before handling the request', async (t) => {
+for (const bookingStatus of ["CONFIRMED", "IN_PROGRESS", "COMPLETED"]) {
+test(`payment creation and retry support an unpaid ${bookingStatus} booking through the authenticated routes`, async (t) => {
   const config = {
     JWT_SECRET: 'payment-test-secret',
     VNP_TMN_CODE: 'TESTCODE',
@@ -37,7 +38,7 @@ test('payment creation and retry parse JSON and apply CORS before handling the r
     assert.deepEqual(filter, { _id: bookingId, customerId });
     return {
       _id: bookingId, customerId, bookingCode: 'BK-TEST',
-      branchServiceId: 'offering', status: 'CONFIRMED', paymentStatus: 'UNPAID', totalPrice: 150000,
+      branchServiceId: 'offering', status: bookingStatus, paymentStatus: 'UNPAID', totalPrice: 150000,
     };
   });
   t.mock.method(BranchService, 'findById', async () => ({ branchId: 'branch' }));
@@ -90,3 +91,5 @@ test('payment creation and retry parse JSON and apply CORS before handling the r
   assert.equal((await retry.json()).data.bookingId, bookingId);
   assert.equal(update.mock.callCount(), 2);
 });
+
+}

@@ -4,6 +4,7 @@ const Schedule = require("../../models/Schedule");
 const ScheduleException = require("../../models/ScheduleException");
 const BranchService = require("../../models/BranchService");
 const Booking = require("../../models/Booking");
+const { normalizeScheduleSlot } = require("../../utils/scheduleSlots");
 
 const DAY_NAMES = [
   "SUNDAY",
@@ -162,7 +163,8 @@ const getAvailableSlots = async (req, res) => {
         (slot) =>
           slot.startTime && slot.endTime && slot.startTime < slot.endTime,
       )
-      .map((slot) => {
+      .map((baseSlot) => {
+        const slot = normalizeScheduleSlot(baseSlot, branchService.capacity);
         const isBlocked = blockedSlots.some((exception) =>
           overlaps(
             slot.startTime,
@@ -187,7 +189,7 @@ const getAvailableSlots = async (req, res) => {
           );
         }).length;
 
-        const capacity = Number(slot.capacity) || 0;
+        const capacity = slot.capacity;
 
         const availableCapacity = Math.max(0, capacity - bookedCount);
 
@@ -202,6 +204,8 @@ const getAvailableSlots = async (req, res) => {
           displayStatus = "MAINTENANCE";
         } else if (slot.status === "OFF") {
           displayStatus = "OFF";
+        } else if (capacity === null) {
+          displayStatus = "UNCONFIGURED";
         } else if (availableCapacity === 0) {
           displayStatus = "FULL";
         }

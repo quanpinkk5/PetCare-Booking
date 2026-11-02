@@ -7,6 +7,7 @@ const BranchService = require("../../models/BranchService");
 const Schedule = require("../../models/Schedule");
 const ScheduleException = require("../../models/ScheduleException");
 const Booking = require("../../models/Booking");
+const { getAppointmentRanges, getAppointmentCapacity } = require("../../utils/appointmentSchedule");
 
 // ==========================================
 // CẤU HÌNH
@@ -117,73 +118,6 @@ const getVietnamNow = () => {
     date: `${values.year}-${values.month}-${values.day}`,
     minutes: Number(values.hour) * 60 + Number(values.minute),
   };
-};
-
-// ==========================================
-// HELPER - Đọc các khoảng thời gian
-// ==========================================
-
-const parseScheduleSlots = (slots) => {
-  if (!Array.isArray(slots)) {
-    return [];
-  }
-
-  return slots
-    .map(parseTimeRange)
-    .filter(Boolean)
-    .sort((a, b) => a.start - b.start);
-};
-
-// ==========================================
-// HELPER - Kiểm tra capacity
-// ==========================================
-
-const hasValidCapacity = (value) => {
-  return Number.isInteger(value) && value >= 0;
-};
-
-// Tính sức chứa hiệu lực của một slot.
-//
-// Quy tắc:
-// - Mặc định: BranchService.capacity
-// - CUSTOM_HOURS.capacity: giới hạn sức chứa
-// - BLOCK_SLOT.capacity: giới hạn sức chứa
-// - BLOCK_SLOT không có capacity: chặn hoàn toàn
-// - Nhiều ngoại lệ: lấy mức nhỏ nhất
-const calculateEffectiveCapacity = ({
-  start,
-  end,
-  defaultCapacity,
-  customHours,
-  blockedSlots,
-}) => {
-  let effectiveCapacity = defaultCapacity;
-
-  // CUSTOM_HOURS có thể giới hạn sức chứa
-  for (const item of customHours) {
-    if (
-      isOverlapping(start, end, item.start, item.end) &&
-      hasValidCapacity(item.capacity)
-    ) {
-      effectiveCapacity = Math.min(effectiveCapacity, item.capacity);
-    }
-  }
-
-  // BLOCK_SLOT giới hạn hoặc chặn hoàn toàn
-  for (const item of blockedSlots) {
-    if (!isOverlapping(start, end, item.start, item.end)) {
-      continue;
-    }
-
-    if (!hasValidCapacity(item.capacity)) {
-      // Không khai báo capacity => chặn hoàn toàn
-      return 0;
-    }
-
-    effectiveCapacity = Math.min(effectiveCapacity, item.capacity);
-  }
-
-  return effectiveCapacity;
 };
 
 // ==========================================
@@ -335,6 +269,10 @@ const getAvailableSlots = async (req, res, next) => {
 
     // Ngày tiếp theo theo quy ước date-only UTC
     const nextDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
+    // Match the owner's calendar: exceptions are date-only UTC, bookings are
+    // looked up within the selected Vietnam calendar day.
+    const bookingStart = new Date(`${dateString}T00:00:00.000+07:00`);
+    const bookingEnd = new Date(bookingStart.getTime() + 86400000);
 
     // --------------------------------------
     // 9. Lấy Schedule, Exception và Booking
@@ -363,8 +301,8 @@ const getAvailableSlots = async (req, res, next) => {
         branchServiceId: branchService._id,
         bookingType: "APPOINTMENT",
         bookingDate: {
-          $gte: selectedDate,
-          $lt: nextDate,
+          $gte: bookingStart,
+          $lt: bookingEnd,
         },
         status: {
           $in: BLOCKING_BOOKING_STATUSES,
@@ -396,57 +334,10 @@ const getAvailableSlots = async (req, res, next) => {
     }
 
     // --------------------------------------
-    // 11. Đọc CUSTOM_HOURS
+    // 11. Áp dụng khung giờ và ngoại lệ do Business Owner cấu hình
     // --------------------------------------
 
-    const customHours = exceptions
-      .filter((item) => item.type === "CUSTOM_HOURS")
-      .map((item) => {
-        const range = parseTimeRange(item);
-
-        if (!range) return null;
-
-        return {
-          ...range,
-          capacity: item.capacity,
-        };
-      })
-      .filter(Boolean);
-
-    // --------------------------------------
-    // 12. Xác định khoảng giờ làm việc
-    // --------------------------------------
-
-    let workingRanges;
-
-    if (customHours.length > 0) {
-      // CUSTOM_HOURS thay thế Schedule cố định
-      workingRanges = customHours;
-    } else {
-      workingRanges = parseScheduleSlots(schedule?.slots);
-    }
-
-    // --------------------------------------
-    // 13. Đọc BLOCK_SLOT
-    // --------------------------------------
-
-    const blockedSlots = exceptions
-      .filter((item) => item.type === "BLOCK_SLOT")
-      .map((item) => {
-        const range = parseTimeRange(item);
-
-        if (!range) return null;
-
-        return {
-          ...range,
-          capacity: item.capacity,
-        };
-      })
-      .filter(Boolean);
-
-    // --------------------------------------
-    // 14. Đọc các Booking đang chiếm chỗ
-    // --------------------------------------
+    const workingRanges = getAppointmentRanges(schedule, exceptions, defaultCapacity);
 
     const bookingRanges = bookings.map(parseTimeRange).filter(Boolean);
 
@@ -470,16 +361,10 @@ const getAvailableSlots = async (req, res, next) => {
         }
 
         // Tính capacity sau khi áp dụng ngoại lệ
-        const effectiveCapacity = calculateEffectiveCapacity({
-          start,
-          end,
-          defaultCapacity,
-          customHours,
-          blockedSlots,
-        });
+        const effectiveCapacity = getAppointmentCapacity(range, start, end, exceptions);
 
         // Capacity = 0 => không thể đặt
-        if (effectiveCapacity <= 0) {
+        if (effectiveCapacity === null || effectiveCapacity <= 0) {
           continue;
         }
 
@@ -501,6 +386,8 @@ const getAvailableSlots = async (req, res, next) => {
           capacity: effectiveCapacity,
           bookedCount,
           remainingCapacity,
+          workingStartTime: range.startTime,
+          workingEndTime: range.endTime,
         });
       }
     }

@@ -5,6 +5,7 @@ const BranchService = require("../../models/BranchService");
 const Branch = require("../../models/Branch");
 const Business = require("../../models/Business");
 const Booking = require("../../models/Booking");
+const { normalizeScheduleSlot } = require("../../utils/scheduleSlots");
 
 const DAYS = [
   "MONDAY",
@@ -296,7 +297,11 @@ const getSchedules = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        schedules,
+        schedules: schedules.map((schedule) => ({
+          ...schedule,
+          slots: (schedule.slots || []).map((slot) =>
+            normalizeScheduleSlot(slot, branchService.capacity)),
+        })),
       },
     });
   } catch (error) {
