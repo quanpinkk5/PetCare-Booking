@@ -1,6 +1,7 @@
 import { apiRequest } from '../../auth/services/authApi.js';
 
 export const paymentApi = {
+  history: (options = {}) => apiRequest('/customer/payments', options),
   create: (bookingId) => apiRequest('/customer/payments/vnpay/create', {
     method: 'POST', body: JSON.stringify({ bookingId }),
   }),

@@ -34,6 +34,8 @@ const NotificationDetailModal = ({
   onClose,
   onToggleRead,
   onDelete,
+  busy,
+  error,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -85,6 +87,7 @@ const NotificationDetailModal = ({
                 {notification.createdAt && (
                   <span className="text-slate-400 ml-1">
                     • {new Date(notification.createdAt).toLocaleDateString("vi-VN", {
+                      timeZone: "Asia/Ho_Chi_Minh",
                       hour: "2-digit",
                       minute: "2-digit",
                       day: "2-digit",
@@ -218,11 +221,13 @@ const NotificationDetailModal = ({
           )}
         </div>
 
+        {error && <p role="alert" className="px-6 py-3 text-sm text-rose-700">{error}</p>}
         {/* Modal Footer */}
         <div className="p-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={() => onToggleRead(notification.id)}
+              disabled={busy}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition-colors cursor-pointer"
             >
               {notification.isRead ? (
@@ -239,10 +244,8 @@ const NotificationDetailModal = ({
             </button>
 
             <button
-              onClick={() => {
-                onDelete(notification.id);
-                onClose();
-              }}
+              onClick={() => onDelete(notification.id)}
+              disabled={busy}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 hover:bg-rose-100/60 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />

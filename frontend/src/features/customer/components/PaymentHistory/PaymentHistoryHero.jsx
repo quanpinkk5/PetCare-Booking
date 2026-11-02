@@ -5,14 +5,12 @@ import {
     CheckCircle2,
     Clock,
     RotateCcw,
-    CreditCard,
     FileSpreadsheet,
     Wallet,
-    TrendingUp,
 } from "lucide-react";
 import { formatCurrency } from "../../data/paymentHistoryData";
 
-export default function PaymentHistoryHero({ summary, onExportCSV }) {
+export default function PaymentHistoryHero({ summary, onExportCSV, exportDisabled }) {
     const statsCards = [
         {
             id: "spent",
@@ -30,7 +28,7 @@ export default function PaymentHistoryHero({ summary, onExportCSV }) {
             id: "completed",
             label: "Giao dịch thành công",
             value: summary.completedCount,
-            subtext: "Hoàn tất 100% dịch vụ",
+            subtext: "Thanh toán đã được xác nhận",
             icon: CheckCircle2,
             color: "text-teal-600",
             bg: "bg-teal-50",
@@ -47,7 +45,7 @@ export default function PaymentHistoryHero({ summary, onExportCSV }) {
             color: "text-amber-500",
             bg: "bg-amber-50",
             borderColor: "hover:border-amber-300",
-            pill: summary.pendingCount > 0 ? "Cần xử lý" : "0 hóa đơn",
+            pill: summary.pendingCount > 0 ? "Cần xử lý" : "0 giao dịch",
             pillBg: summary.pendingCount > 0 ? "bg-amber-100 text-amber-800 animate-pulse" : "bg-slate-100 text-slate-600",
         },
         {
@@ -59,7 +57,7 @@ export default function PaymentHistoryHero({ summary, onExportCSV }) {
             color: "text-purple-600",
             bg: "bg-purple-50",
             borderColor: "hover:border-purple-300",
-            pill: "Chính sách 24h",
+            pill: "Đã hoàn trả",
             pillBg: "bg-purple-100 text-purple-800",
         },
     ];
@@ -93,11 +91,11 @@ export default function PaymentHistoryHero({ summary, onExportCSV }) {
                         </nav>
 
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                            Lịch sử thanh toán & <span className="text-emerald-600">Hóa đơn</span>
+                            Lịch sử thanh toán & <span className="text-emerald-600">Chứng từ</span>
                         </h1>
 
                         <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            Quản lý, tra cứu hóa đơn điện tử và đối soát toàn bộ các giao dịch thanh toán dịch vụ thú cưng một cách minh bạch, an toàn và tức thì.
+                            Quản lý, tra cứu chứng từ thanh toán và đối soát toàn bộ các giao dịch thanh toán dịch vụ thú cưng một cách minh bạch, an toàn và tức thì.
                         </p>
                     </div>
 
@@ -106,7 +104,8 @@ export default function PaymentHistoryHero({ summary, onExportCSV }) {
                         <button
                             type="button"
                             onClick={onExportCSV}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold shadow-xs hover:border-emerald-300 hover:text-emerald-700 transition cursor-pointer"
+                            disabled={exportDisabled}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold shadow-xs hover:border-emerald-300 hover:text-emerald-700 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <FileSpreadsheet size={16} className="text-emerald-600" />
                             <span>Xuất dữ liệu (CSV)</span>

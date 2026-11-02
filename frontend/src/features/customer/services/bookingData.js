@@ -33,6 +33,7 @@ export const bookingCardData = (booking) => {
     genderColor: pet.gender === 'MALE' ? 'text-blue-500' : 'text-pink-500',
     img: pet.avatar || '', service: service.name || 'Dịch vụ không còn tồn tại', serviceDesc: service.description || '',
     location: branch.name || 'Chi nhánh không còn tồn tại',
+    businessId: String(branch.businessId?._id || branch.businessId || ''),
     date: booking.bookingType === 'BOARDING' ? `${dateLabel(booking.checkInDate)} – ${dateLabel(booking.checkOutDate)}` : dateLabel(booking.bookingDate),
     time: booking.bookingType === 'BOARDING' ? `${booking.numberOfDays || 0} ngày lưu trú` : `${booking.startTime || '—'} - ${booking.endTime || '—'}`,
     price: money(booking.totalPrice), statusType, status, statusStep, statusBadge: badges[color],

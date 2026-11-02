@@ -4,14 +4,9 @@ import {
     Printer,
     CreditCard,
     ExternalLink,
-    Calendar,
     Clock,
     Building2,
     PawPrint,
-    CheckCircle2,
-    RotateCcw,
-    XCircle,
-    AlertCircle,
 } from "lucide-react";
 import {
     formatCurrency,
@@ -52,7 +47,7 @@ export default function PaymentHistoryTable({
                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[11px] tracking-wider">
-                                <th className="py-4 px-4 w-44">Mã GD / Hóa đơn</th>
+                                <th className="py-4 px-4 w-44">Mã GD / Chứng từ</th>
                                 <th className="py-4 px-4">Dịch vụ & Cơ sở</th>
                                 <th className="py-4 px-4 w-36">Thời gian</th>
                                 <th className="py-4 px-4 w-44">Phương thức</th>
@@ -66,7 +61,6 @@ export default function PaymentHistoryTable({
                                 const method = PAYMENT_METHODS[tx.method] || PAYMENT_METHODS.vnpay;
                                 const status = PAYMENT_STATUSES[tx.status] || PAYMENT_STATUSES.completed;
                                 const MethodIcon = method.icon;
-                                const StatusIcon = status.icon;
 
                                 return (
                                     <tr
@@ -89,7 +83,7 @@ export default function PaymentHistoryTable({
                                                 </span>
 
                                                 <Link
-                                                    to={`/my-bookings/${tx.bookingId}`}
+                                                    to={`/my-bookings/${tx.bookingObjectId}`}
                                                     className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 hover:text-emerald-800 hover:underline"
                                                 >
                                                     <span>Mã hẹn: {tx.bookingId}</span>
@@ -147,7 +141,7 @@ export default function PaymentHistoryTable({
                                                     className={`font-black text-sm ${
                                                         tx.status === "completed"
                                                             ? "text-slate-900"
-                                                            : tx.status === "pending"
+                                                            : tx.canPay && tx.status !== "completed" && tx.status !== "refunded"
                                                             ? "text-amber-600"
                                                             : tx.status === "refunded"
                                                             ? "text-purple-600 line-through"
@@ -185,24 +179,10 @@ export default function PaymentHistoryTable({
                                         <td className="py-4 px-4 align-top text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 {/* Pending action */}
-                                                {tx.status === "pending" && (
+                                                {tx.canPay && tx.status !== "completed" && tx.status !== "refunded" && (
                                                     <button
                                                         type="button"
-                                                        onClick={() =>
-                                                            navigate(`/payment/${tx.bookingId}`, {
-                                                                state: {
-                                                                    booking: {
-                                                                        bookingCode: tx.bookingId,
-                                                                        petName: tx.petName,
-                                                                        petBreed: tx.petBreed,
-                                                                        serviceName: tx.serviceName,
-                                                                        facilityName: tx.facilityName,
-                                                                        basePrice: tx.basePrice,
-                                                                        platformFee: tx.platformFee,
-                                                                    },
-                                                                },
-                                                            })
-                                                        }
+                                                        onClick={() => navigate(`/payment/${tx.bookingObjectId}`)}
                                                         className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
                                                         title="Thanh toán ngay"
                                                     >
@@ -216,10 +196,10 @@ export default function PaymentHistoryTable({
                                                     type="button"
                                                     onClick={() => onViewInvoice(tx)}
                                                     className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-semibold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer"
-                                                    title="Xem hóa đơn chi tiết"
+                                                    title="Xem giao dịch chi tiết"
                                                 >
                                                     <FileText size={13} className="text-emerald-600" />
-                                                    <span>Hóa đơn</span>
+                                                    <span>Chứng từ</span>
                                                 </button>
 
                                                 {/* Print button */}
@@ -317,10 +297,10 @@ export default function PaymentHistoryTable({
 
                             {/* Actions cluster */}
                             <div className="flex items-center gap-2 pt-1">
-                                {tx.status === "pending" && (
+                                {tx.canPay && tx.status !== "completed" && tx.status !== "refunded" && (
                                     <button
                                         type="button"
-                                        onClick={() => navigate(`/payment/${tx.bookingId}`)}
+                                        onClick={() => navigate(`/payment/${tx.bookingObjectId}`)}
                                         className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1 cursor-pointer"
                                     >
                                         <CreditCard size={14} />
@@ -334,11 +314,11 @@ export default function PaymentHistoryTable({
                                     className="flex-1 py-2 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                                 >
                                     <FileText size={14} className="text-emerald-600" />
-                                    <span>Xem hóa đơn</span>
+                                    <span>Xem giao dịch</span>
                                 </button>
 
                                 <Link
-                                    to={`/my-bookings/${tx.bookingId}`}
+                                    to={`/my-bookings/${tx.bookingObjectId}`}
                                     className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition flex items-center justify-center cursor-pointer shadow-2xs"
                                     title="Xem chi tiết lịch đặt"
                                 >

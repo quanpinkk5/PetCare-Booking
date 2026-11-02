@@ -4,18 +4,13 @@ import {
   Bell,
   CheckCheck,
   Settings,
-  Sparkles,
-  CalendarCheck,
-  HeartPulse
 } from "lucide-react";
 
 const NotificationsHero = ({
-  totalCount = 0,
   unreadCount = 0,
-  bookingCount = 0,
-  petCareCount = 0,
   onMarkAllAsRead,
-  onResetNotifications,
+  onRefresh,
+  busy,
 }) => {
   return (
     <section className="relative bg-gradient-to-b from-[#E7F8F2] via-[#EEF9F5] to-[#F6FAF8] pt-8 pb-10 overflow-hidden border-b border-teal-50/60">
@@ -51,7 +46,7 @@ const NotificationsHero = ({
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/70 border border-emerald-200/60 text-emerald-800 text-xs font-semibold shadow-2xs">
               <Bell size={14} className="text-emerald-600 animate-pulse" />
-              <span>Trung tâm cập nhật thời gian thực</span>
+              <span>Trung tâm thông báo</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -71,6 +66,7 @@ const NotificationsHero = ({
             {unreadCount > 0 && (
               <button
                 onClick={onMarkAllAsRead}
+                disabled={busy}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-medium text-sm shadow-xs transition-all hover:shadow-md cursor-pointer"
               >
                 <CheckCheck size={16} />
@@ -87,11 +83,12 @@ const NotificationsHero = ({
             </Link>
 
             <button
-              onClick={onResetNotifications}
-              title="Khôi phục thông báo mặc định ban đầu"
+              onClick={onRefresh}
+              disabled={busy}
+              title="Tải lại thông báo từ hệ thống"
               className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 ml-1 cursor-pointer"
             >
-              Làm mới mẫu
+              Làm mới
             </button>
           </div>
         </div>

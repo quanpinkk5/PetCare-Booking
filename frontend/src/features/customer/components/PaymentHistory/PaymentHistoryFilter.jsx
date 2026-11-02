@@ -1,4 +1,4 @@
-import { Search, X, Filter, RotateCcw, ArrowUpDown } from "lucide-react";
+import { Search, X, RotateCcw } from "lucide-react";
 
 export default function PaymentHistoryFilter({
     activeStatusTab,
@@ -83,7 +83,7 @@ export default function PaymentHistoryFilter({
                         className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white text-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                     >
                         <option value="all">Tất cả phương thức</option>
-                        <option value="vnpay">VNPAY-QR</option>
+                        <option value="vnpay">VNPAY</option>
                         <option value="momo">Ví MoMo</option>
                         <option value="bank_transfer">Chuyển khoản ngân hàng</option>
                         <option value="cash">Tiền mặt tại cơ sở</option>
@@ -99,8 +99,8 @@ export default function PaymentHistoryFilter({
                         className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white text-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                     >
                         <option value="all">Tất cả thời gian</option>
-                        <option value="this_month">Tháng 8/2026</option>
-                        <option value="last_month">Tháng 7/2026</option>
+                        <option value="this_month">Tháng này</option>
+                        <option value="last_month">Tháng trước</option>
                         <option value="older">Trước đó</option>
                     </select>
                 </div>

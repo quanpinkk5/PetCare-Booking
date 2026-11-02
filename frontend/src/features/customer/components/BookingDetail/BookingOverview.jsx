@@ -18,6 +18,7 @@ import {
 const BookingOverview = ({ booking, onCancel }) => {
     const navigate = useNavigate();
     const bookingId = booking.recordId || booking.id;
+    const messageUrl = booking.businessId ? `/messages?businessId=${encodeURIComponent(booking.businessId)}` : null;
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState("busy");
     const [isCancelling, setIsCancelling] = useState(false);
@@ -92,8 +93,10 @@ const BookingOverview = ({ booking, onCancel }) => {
 
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={14} />
                             <span>Nhắn tin với cơ sở</span>
@@ -124,8 +127,10 @@ const BookingOverview = ({ booking, onCancel }) => {
 
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={15} />
                             <span>Chat với cơ sở</span>
@@ -191,8 +196,10 @@ const BookingOverview = ({ booking, onCancel }) => {
 
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={14} />
                             <span>Chat với cơ sở</span>
@@ -205,8 +212,10 @@ const BookingOverview = ({ booking, onCancel }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={15} />
                             <span>Chat với cơ sở</span>

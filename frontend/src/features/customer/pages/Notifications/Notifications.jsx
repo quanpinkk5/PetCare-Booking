@@ -23,7 +23,9 @@ const Notifications = () => {
     markAsUnread,
     markAllAsRead,
     deleteNotification,
-    resetNotifications,
+    refreshNotifications,
+    clearReadNotifications,
+    loading, error, busy,
   } = useNotifications();
 
   // Read URL params
@@ -32,36 +34,20 @@ const Notifications = () => {
   const paramNotifId = searchParams.get("id");
 
   // State
-  const [activeCategory, setActiveCategory] = useState(paramCategory);
-  const [readFilter, setReadFilter] = useState(paramFilter);
+  const activeCategory = NOTIFICATION_CATEGORIES.some((item) => item.id === paramCategory) ? paramCategory : "all";
+  const readFilter = ["unread", "read"].includes(paramFilter) ? paramFilter : "all";
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDetail, setSelectedDetail] = useState(() => {
-    if (!paramNotifId) return null;
-    return (
-      notifications.find(
-        (n) => n.id.toLowerCase() === paramNotifId.toLowerCase()
-      ) || null
-    );
-  });
+  const [detailSelection, setDetailSelection] = useState({ param: paramNotifId, id: paramNotifId });
+  const detailId = detailSelection.param === paramNotifId ? detailSelection.id : paramNotifId;
+  const setDetailId = (id) => setDetailSelection({ param: paramNotifId, id });
+  const selectedDetail = notifications.find((item) => item.id === detailId) || null;
 
   // Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-
-  // Sync selected detail if param ID changes
-  const [prevNotifId, setPrevNotifId] = useState(paramNotifId);
-  if (prevNotifId !== paramNotifId) {
-    setPrevNotifId(paramNotifId);
-    if (paramNotifId) {
-      const match = notifications.find(
-        (n) => n.id.toLowerCase() === paramNotifId.toLowerCase()
-      );
-      if (match) setSelectedDetail(match);
-    }
-  }
 
   // Compute Category Counts
   const categoryCounts = useMemo(() => {
@@ -132,7 +118,7 @@ const Notifications = () => {
       .sort((a, b) => {
         if (sortBy === "priority") {
           const priorityScore = { high: 2, normal: 1, low: 0 };
-          const diff = (priorityScore[b.priority] || 1) - (priorityScore[a.priority] || 1);
+          const diff = (priorityScore[b.priority] ?? 1) - (priorityScore[a.priority] ?? 1);
           if (diff !== 0) return diff;
         }
         if (sortBy === "oldest") {
@@ -146,17 +132,18 @@ const Notifications = () => {
   // Pagination calculation
   const totalItems = filteredNotifications.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
   const paginatedNotifications = useMemo(() => {
     return filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredNotifications, startIndex]);
 
   // Reset page to 1 when filters change
   const handleCategoryChange = (catId) => {
-    setActiveCategory(catId);
     setCurrentPage(1);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
+      next.delete("type");
       if (catId === "all") next.delete("category");
       else next.set("category", catId);
       return next;
@@ -164,7 +151,6 @@ const Notifications = () => {
   };
 
   const handleReadFilterChange = (val) => {
-    setReadFilter(val);
     setCurrentPage(1);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -180,22 +166,14 @@ const Notifications = () => {
   };
 
   const handleResetFilters = () => {
-    setActiveCategory("all");
-    setReadFilter("all");
     setSearchQuery("");
     setSortBy("newest");
     setCurrentPage(1);
     setSearchParams({});
   };
 
-  const handleClearReadNotifications = () => {
-    const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
-    if (readIds.length === 0) return;
-    readIds.forEach((id) => deleteNotification(id));
-  };
-
   const handleOpenDetail = (notif) => {
-    setSelectedDetail(notif);
+    setDetailId(notif.id);
     if (!notif.isRead) {
       markAsRead(notif.id);
     }
@@ -213,12 +191,14 @@ const Notifications = () => {
         bookingCount={stats.booking}
         petCareCount={stats.petCare}
         onMarkAllAsRead={markAllAsRead}
-        onResetNotifications={resetNotifications}
+        onRefresh={refreshNotifications}
+        busy={busy || loading}
       />
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-5 relative z-20 space-y-6">
         {/* Filter and Search Bar */}
+        <fieldset disabled={busy || loading} className="min-w-0">
         <NotificationsFilterBar
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
@@ -231,12 +211,18 @@ const Notifications = () => {
           sortBy={sortBy}
           onSortByChange={setSortBy}
           onMarkAllAsRead={markAllAsRead}
-          onClearReadNotifications={handleClearReadNotifications}
+          onClearReadNotifications={clearReadNotifications}
           unreadCount={unreadCount}
           isFiltered={isFiltered}
           onResetFilters={handleResetFilters}
         />
+        </fieldset>
 
+        {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          {error} <button type="button" onClick={refreshNotifications} className="underline">Thử lại</button>
+        </div>}
+        {loading && <p role="status" className="text-center text-sm text-slate-500">Đang đồng bộ thông báo...</p>}
+        <fieldset disabled={busy || loading} className="min-w-0 space-y-3 disabled:opacity-70">
         {/* Notifications List */}
         {paginatedNotifications.length > 0 ? (
           <div className="space-y-3">
@@ -253,7 +239,7 @@ const Notifications = () => {
 
             {/* Pagination Controls */}
             <NotificationsPagination
-              currentPage={currentPage}
+              currentPage={safePage}
               totalPages={totalPages}
               totalItems={totalItems}
               startIndex={startIndex}
@@ -264,31 +250,25 @@ const Notifications = () => {
               }}
             />
           </div>
-        ) : (
+        ) : !loading && !error ? (
           <NotificationsEmptyState
             isFiltered={isFiltered}
             onResetFilters={handleResetFilters}
           />
-        )}
+        ) : null}
+        </fieldset>
       </div>
 
       {/* Detail Modal */}
       <NotificationDetailModal
         notification={selectedDetail}
+        busy={busy}
+        error={error}
         isOpen={Boolean(selectedDetail)}
-        onClose={() => setSelectedDetail(null)}
-        onToggleRead={(id) => {
-          if (selectedDetail?.isRead) {
-            markAsUnread(id);
-            setSelectedDetail((prev) => prev ? { ...prev, isRead: false } : null);
-          } else {
-            markAsRead(id);
-            setSelectedDetail((prev) => prev ? { ...prev, isRead: true } : null);
-          }
-        }}
-        onDelete={(id) => {
-          deleteNotification(id);
-          setSelectedDetail(null);
+        onClose={() => setDetailId(null)}
+        onToggleRead={(id) => selectedDetail?.isRead ? markAsUnread(id) : markAsRead(id)}
+        onDelete={async (id) => {
+          if (await deleteNotification(id)) setDetailId(null);
         }}
       />
     </div>

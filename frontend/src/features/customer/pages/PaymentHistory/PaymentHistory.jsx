@@ -8,10 +8,11 @@ import PaymentPagination from "../../components/PaymentHistory/PaymentPagination
 import PaymentInvoiceModal from "../../components/PaymentHistory/PaymentInvoiceModal";
 
 import {
-    PAYMENT_TRANSACTIONS,
     getPaymentSummary,
-    formatCurrency,
 } from "../../data/paymentHistoryData";
+
+import { paymentApi } from "../../services/paymentApi";
+import { mapPaymentTransaction, matchesPaymentTimeRange } from "../../services/paymentHistory";
 
 const STATUS_TABS = [
     { id: "all", label: "Tất cả", count: null },
@@ -22,6 +23,11 @@ const STATUS_TABS = [
 ];
 
 export default function PaymentHistory() {
+    const [searchParams] = useSearchParams();
+    return <PaymentHistoryContent key={searchParams.toString()} />;
+}
+
+function PaymentHistoryContent() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Initial state from URL parameters if available
@@ -29,28 +35,55 @@ export default function PaymentHistory() {
     const initialStatus = searchParams.get("status") || "all";
     const initialTxn = searchParams.get("txn") || "";
 
-    const [activeStatusTab, setActiveStatusTab] = useState(initialStatus);
+    const [activeStatusTab, setActiveStatusTab] = useState(STATUS_TABS.some((tab) => tab.id === initialStatus) ? initialStatus : "all");
     const [searchQuery, setSearchQuery] = useState(initialBookingId || initialTxn);
     const [selectedMethod, setSelectedMethod] = useState("all");
     const [selectedTimeRange, setSelectedTimeRange] = useState("all");
     const [sortBy, setSortBy] = useState("newest");
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [invoiceSelection, setSelectedInvoice] = useState(undefined);
+
+    const [transactions, setTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const load = async () => {
+            setLoading(true);
+            setError("");
+            try {
+                const response = await paymentApi.history({ signal: controller.signal });
+                if (!controller.signal.aborted) setTransactions(response.data.map(mapPaymentTransaction));
+            } catch (err) {
+                if (!controller.signal.aborted) setError(err.message || "Không thể tải lịch sử thanh toán.");
+            } finally {
+                if (!controller.signal.aborted) setLoading(false);
+            }
+        };
+        load();
+        const refresh = () => {
+            if (document.visibilityState === "visible") setRefreshKey((key) => key + 1);
+        };
+        window.addEventListener("focus", refresh);
+        document.addEventListener("visibilitychange", refresh);
+        const timer = window.setInterval(refresh, 30000);
+        return () => {
+            controller.abort();
+            window.removeEventListener("focus", refresh);
+            document.removeEventListener("visibilitychange", refresh);
+            window.clearInterval(timer);
+        };
+    }, [refreshKey]);
 
     const itemsPerPage = 6;
 
-    // Check if initial URL param matched an invoice directly
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: "instant" });
-
-        if (initialTxn) {
-            const found = PAYMENT_TRANSACTIONS.find((t) => t.id.toLowerCase() === initialTxn.toLowerCase());
-            if (found) setSelectedInvoice(found);
-        } else if (initialBookingId) {
-            const found = PAYMENT_TRANSACTIONS.find((t) => t.bookingId.toLowerCase() === initialBookingId.toLowerCase());
-            if (found) setSelectedInvoice(found);
-        }
-    }, [initialTxn, initialBookingId]);
+    const selectedInvoice = invoiceSelection === undefined
+        ? transactions.find((tx) => initialTxn
+            ? [tx.id, tx.paymentId].includes(initialTxn)
+            : initialBookingId && [tx.bookingId, tx.bookingObjectId].includes(initialBookingId)) || null
+        : transactions.find((tx) => tx.paymentId === invoiceSelection?.paymentId) || null;
 
     // Check if any filter is active
     const isFiltered = useMemo(() => {
@@ -65,7 +98,7 @@ export default function PaymentHistory() {
 
     // Filter and sort transactions
     const filteredTransactions = useMemo(() => {
-        let result = [...PAYMENT_TRANSACTIONS];
+        let result = [...transactions];
 
         // 1. Status Tab filter
         if (activeStatusTab !== "all") {
@@ -80,6 +113,8 @@ export default function PaymentHistory() {
                     tx.id.toLowerCase().includes(q) ||
                     tx.invoiceNo.toLowerCase().includes(q) ||
                     tx.bookingId.toLowerCase().includes(q) ||
+                    tx.bookingObjectId.toLowerCase().includes(q) ||
+                    tx.paymentId.toLowerCase().includes(q) ||
                     tx.serviceName.toLowerCase().includes(q) ||
                     tx.facilityName.toLowerCase().includes(q) ||
                     tx.petName.toLowerCase().includes(q) ||
@@ -95,13 +130,7 @@ export default function PaymentHistory() {
         }
 
         // 4. Time range filter
-        if (selectedTimeRange === "this_month") {
-            result = result.filter((tx) => tx.rawDate.startsWith("2026-08"));
-        } else if (selectedTimeRange === "last_month") {
-            result = result.filter((tx) => tx.rawDate.startsWith("2026-07"));
-        } else if (selectedTimeRange === "older") {
-            result = result.filter((tx) => !tx.rawDate.startsWith("2026-08") && !tx.rawDate.startsWith("2026-07"));
-        }
+        result = result.filter((tx) => matchesPaymentTimeRange(tx.rawDate, selectedTimeRange));
 
         // 5. Sorting
         result.sort((a, b) => {
@@ -121,27 +150,28 @@ export default function PaymentHistory() {
         });
 
         return result;
-    }, [activeStatusTab, searchQuery, selectedMethod, selectedTimeRange, sortBy]);
+    }, [transactions, activeStatusTab, searchQuery, selectedMethod, selectedTimeRange, sortBy]);
 
     // Dynamic tabs with updated counts
     const dynamicStatusTabs = useMemo(() => {
         return STATUS_TABS.map((tab) => {
             if (tab.id === "all") {
-                return { ...tab, count: PAYMENT_TRANSACTIONS.length };
+                return { ...tab, count: transactions.length };
             }
-            const count = PAYMENT_TRANSACTIONS.filter((tx) => tx.status === tab.id).length;
+            const count = transactions.filter((tx) => tx.status === tab.id).length;
             return { ...tab, count };
         });
-    }, []);
+    }, [transactions]);
 
     // Summary calculation
     const summary = useMemo(() => {
-        return getPaymentSummary(PAYMENT_TRANSACTIONS);
-    }, []);
+        return getPaymentSummary(transactions);
+    }, [transactions]);
 
     // Pagination calculations
     const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / itemsPerPage));
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * itemsPerPage;
     const paginatedTransactions = filteredTransactions.slice(
         startIndex,
         startIndex + itemsPerPage
@@ -194,7 +224,7 @@ export default function PaymentHistory() {
     const handleExportCSV = () => {
         const headers = [
             "Mã giao dịch",
-            "Số hóa đơn",
+            "Mã chứng từ",
             "Mã đặt lịch",
             "Thời gian tạo",
             "Dịch vụ",
@@ -210,23 +240,17 @@ export default function PaymentHistory() {
             "Thời gian thanh toán",
         ];
 
+        const csvCell = (value) => {
+            const text = String(value ?? "");
+            const safe = /^[=+@\-\t\r]/.test(text) ? "'" + text : text;
+            return '"' + safe.replace(/"/g, '""') + '"';
+        };
         const rows = filteredTransactions.map((tx) => [
-            `"${tx.id}"`,
-            `"${tx.invoiceNo}"`,
-            `"${tx.bookingId}"`,
-            `"${tx.createdAt}"`,
-            `"${tx.serviceName.replace(/"/g, '""')}"`,
-            `"${tx.facilityName.replace(/"/g, '""')}"`,
-            `"${tx.petName} (${tx.petBreed})"`,
-            `"${tx.methodLabel}"`,
-            tx.basePrice,
-            tx.platformFee,
-            tx.discount || 0,
-            `"${tx.discountCode || ""}"`,
-            tx.totalAmount,
-            `"${tx.statusLabel}"`,
-            `"${tx.paidAt || "Chưa"}"`,
-        ]);
+            tx.id, tx.invoiceNo, tx.bookingId, tx.createdAt, tx.serviceName,
+            tx.facilityName, tx.petName + ' (' + tx.petBreed + ')', tx.methodLabel,
+            tx.basePrice, tx.platformFee, tx.discount, tx.discountCode,
+            tx.totalAmount, tx.statusLabel, tx.paidAt || "Chưa",
+        ].map(csvCell));
 
         const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -246,6 +270,7 @@ export default function PaymentHistory() {
             <PaymentHistoryHero
                 summary={summary}
                 onExportCSV={handleExportCSV}
+                exportDisabled={loading || !!error || !filteredTransactions.length}
             />
 
             {/* 2. Main Content Container */}
@@ -268,6 +293,18 @@ export default function PaymentHistory() {
                         isFiltered={isFiltered}
                     />
 
+                    <div className="flex justify-end">
+                        <button type="button" onClick={() => setRefreshKey((key) => key + 1)} disabled={loading}
+                            className="text-sm font-semibold text-emerald-700 disabled:opacity-50">
+                            {loading ? "Đang đồng bộ..." : "Làm mới dữ liệu"}
+                        </button>
+                    </div>
+                    {loading && <p role="status" className="p-8 text-center text-slate-500">Đang tải lịch sử thanh toán...</p>}
+                    {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-700">
+                        {error}
+                        <button type="button" onClick={() => setRefreshKey((key) => key + 1)} className="ml-3 underline">Thử lại</button>
+                    </div>}
+                    {!loading && !error && <>
                     {/* Transaction List Table & Mobile Cards */}
                     <PaymentHistoryTable
                         transactions={paginatedTransactions}
@@ -282,13 +319,14 @@ export default function PaymentHistory() {
 
                     {/* Pagination */}
                     <PaymentPagination
-                        currentPage={currentPage}
+                        currentPage={safePage}
                         totalPages={totalPages}
                         totalItems={filteredTransactions.length}
                         startIndex={startIndex}
                         itemsPerPage={itemsPerPage}
                         onPageChange={handlePageChange}
                     />
+                    </>}
                 </div>
             </main>
 
