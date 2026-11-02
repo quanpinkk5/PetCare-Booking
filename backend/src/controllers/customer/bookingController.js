@@ -10,6 +10,7 @@ const Business = require("../../models/Business");
 const Service = require("../../models/Service");
 const Schedule = require("../../models/Schedule");
 const ScheduleException = require("../../models/ScheduleException");
+const ownerNotifications = require("../../utils/ownerNotificationEvents");
 
 const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "IN_PROGRESS"];
 
@@ -383,8 +384,10 @@ const createBooking = async (req, res, next) => {
 
     session = await mongoose.startSession();
     let createdBooking;
+    let createdNotification;
     await session.withTransaction(
       async () => {
+        createdNotification = null;
         // Increment a dedicated field: updatedAt can be unchanged within a millisecond.
         // Every retry locks the current offering before reading capacity or configuration.
         const locked = await BranchService.findOneAndUpdate(
@@ -516,9 +519,19 @@ const createBooking = async (req, res, next) => {
           { session },
         );
         createdBooking = booking;
+        createdNotification = await ownerNotifications.create({
+          ownerId: business.ownerId, preference: 'notifyNewBooking', session,
+          type: bookingType === 'BOARDING' ? 'BOARDING_REQUESTED' : 'BOOKING_REQUESTED',
+          title: 'Có yêu cầu đặt lịch mới cần xác nhận',
+          message: `Khách hàng vừa gửi yêu cầu đặt lịch ${booking.bookingCode}${service.name ? ` cho dịch vụ ${service.name}` : ''}. Vui lòng kiểm tra và xác nhận.`,
+          referenceType: 'BOOKING', referenceId: booking._id,
+          branch: branch.name || '',
+          metadata: { bookingId: booking.bookingCode, service: service.name || '', totalPrice: booking.totalPrice },
+        });
       },
       { readConcern: { level: "snapshot" }, writeConcern: { w: "majority" } },
     );
+    ownerNotifications.publish(req.app?.get("io"), createdNotification);
     return res.status(201).json({
       success: true,
       message: "Tạo Booking thành công",

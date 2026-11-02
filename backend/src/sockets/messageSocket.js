@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Message = require("../models/Message");
 const Conversation = require("../models/Conversation");
 const Business = require("../models/Business");
+const ownerNotifications = require("../utils/ownerNotificationEvents");
 
 const registerMessageSocket = (io, socket) => {
   socket.on("message:send", async (data, callback) => {
@@ -131,6 +132,7 @@ const registerMessageSocket = (io, socket) => {
           conversationData,
         );
       }
+      await ownerNotifications.customerMessage({ io, business, conversation, message: messageData, senderId: user._id });
 
       // Phản hồi cho người gửi
       return callback?.({

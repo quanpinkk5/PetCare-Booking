@@ -10,6 +10,8 @@ const Service = require('../src/models/Service');
 const Schedule = require('../src/models/Schedule');
 const ScheduleException = require('../src/models/ScheduleException');
 const Booking = require('../src/models/Booking');
+const Notification = require('../src/models/Notification');
+const NotificationSettings = require('../src/models/BusinessNotificationSettings');
 
 const ids = {
   user: '507f1f77bcf86cd799439011', pet: '507f1f77bcf86cd799439012',
@@ -20,20 +22,20 @@ const user = { _id: ids.user, role: 'CUSTOMER' };
 const appointment = { petId: ids.pet, branchServiceId: ids.offering, bookingDate: '2099-01-05', startTime: '09:00' };
 const boarding = { petId: ids.pet, branchServiceId: ids.offering, checkInDate: '2099-01-05', checkOutDate: '2099-01-08' };
 
-const invoke = async (body = appointment, auth = user) => {
+const invoke = async (body = appointment, auth = user, app) => {
   let response;
   let unexpected;
   const res = {
     code: 200, status(code) { this.code = code; return this; },
     json(data) { response = { status: this.code, ...data }; return this; },
   };
-  await createBooking({ body, user: auth }, res, (error) => { unexpected = error; });
+  await createBooking({ body, user: auth, app }, res, (error) => { unexpected = error; });
   if (unexpected) throw unexpected;
   return response;
 };
 
 const setup = (t, options = {}) => {
-  const state = { activeQuery: false, created: [], ended: 0, locks: 0 };
+  const state = { activeQuery: false, created: [], ended: 0, locks: 0, committed: false };
   const offering = {
     _id: ids.offering, branchId: ids.branch, serviceId: ids.service, status: 'ACTIVE',
     petTypes: ['DOG'], price: 150000, pricingUnit: 'PER_SERVICE', durationMinutes: 60,
@@ -49,6 +51,7 @@ const setup = (t, options = {}) => {
         offering.price = 250000;
         await callback();
       }
+      state.committed = true;
     },
     async endSession() { state.ended += 1; },
   };
@@ -81,7 +84,7 @@ const setup = (t, options = {}) => {
   });
   t.mock.method(Business, 'findOne', (filter) => {
     assert.deepEqual(filter, { _id: ids.business, status: 'APPROVED' });
-    return query(options.missingBusiness ? null : { _id: ids.business });
+    return query(options.missingBusiness ? null : { _id: ids.business, ownerId: options.ownerId });
   });
   t.mock.method(Service, 'findOne', (filter) => {
     assert.deepEqual(filter, { _id: ids.service, businessId: ids.business, status: 'ACTIVE' });
@@ -103,10 +106,58 @@ const setup = (t, options = {}) => {
     if (options.retry && state.locks === 1) throw Object.assign(new Error('Write conflict'), { code: 112 });
     if (options.createError) throw options.createError;
     state.created.push(documents[0]);
-    return documents;
+    return documents.map((document) => ({ _id: '507f1f77bcf86cd799439018', ...document }));
   });
   return state;
 };
+
+test('new booking stores an owner notification in its transaction and emits only after commit', async (t) => {
+  const ownerId = '507f1f77bcf86cd799439017';
+  const state = setup(t, { ownerId, retry: true });
+  let transaction;
+  t.mock.method(NotificationSettings, 'findOne', (filter) => {
+    assert.deepEqual(filter, { userId: ownerId });
+    return { select(field) { assert.equal(field, 'notifyNewBooking'); return this; },
+      session(session) { transaction = session; return this; }, lean: async () => null };
+  });
+  t.mock.method(Notification, 'create', async ([data], options) => {
+    assert.equal(options.session, transaction);
+    assert.equal(state.committed, false);
+    assert.equal(data.userId, ownerId);
+    assert.equal(data.type, 'BOOKING_REQUESTED');
+    assert.equal(data.referenceId, '507f1f77bcf86cd799439018');
+    assert.equal(data.metadata.bookingId, state.created[0].bookingCode);
+    assert.equal(data.metadata.totalPrice, 250000);
+    return [{ _id: 'notification-id', ...data }];
+  });
+  const events = [];
+  const io = { to(room) { return { emit(event, data) {
+    assert.equal(state.committed, true);
+    events.push({ room, event, data });
+  } }; } };
+  assert.equal((await invoke(appointment, user, { get: () => io })).status, 201);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].room, `user:${ownerId}`);
+  assert.equal(events[0].event, 'notification:new');
+});
+
+test('disabled booking preference suppresses notifications without rejecting the booking', async (t) => {
+  const ownerId = '507f1f77bcf86cd799439017';
+  setup(t, { ownerId });
+  t.mock.method(NotificationSettings, 'findOne', () => ({ select() { return this; }, session() { return this; }, lean: async () => ({ notifyNewBooking: false }) }));
+  const create = t.mock.method(Notification, 'create', () => { throw new Error('must not create disabled notification'); });
+  assert.equal((await invoke()).status, 201);
+  assert.equal(create.mock.callCount(), 0);
+});
+
+test('failure to store booking notification fails the transaction and never publishes a phantom event', async (t) => {
+  setup(t, { ownerId: '507f1f77bcf86cd799439017' });
+  t.mock.method(NotificationSettings, 'findOne', () => ({ select() { return this; }, session() { return this; }, lean: async () => null }));
+  const failure = new Error('notification insert failed');
+  t.mock.method(Notification, 'create', async () => { throw failure; });
+  const io = { to() { throw new Error('must not publish'); } };
+  await assert.rejects(invoke(appointment, user, { get: () => io }), failure);
+});
 
 test('missing auth and malformed or client-controlled booking fields fail before opening a session', async (t) => {
   const start = t.mock.method(mongoose, 'startSession', () => { throw new Error('Unexpected transaction'); });

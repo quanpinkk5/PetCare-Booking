@@ -1,0 +1,15 @@
+const router = require('express').Router();
+const authenticate = require('../../middlewares/authMiddleware');
+const authorize = require('../../middlewares/roleMiddleware');
+const controller = require('../../controllers/businessOwner/notificationsController');
+router.use(authenticate, authorize('BUSINESS_OWNER'));
+router.get('/', controller.list);
+router.get('/settings', controller.getSettings);
+router.patch('/settings', controller.updateSettings);
+router.patch('/read-all', controller.markAllRead);
+router.patch('/read-selected', controller.markMultipleRead);
+router.post('/delete-selected', controller.removeMultiple);
+router.delete('/read', controller.clearRead);
+router.patch('/:id/read', controller.setRead);
+router.delete('/:id', controller.remove);
+module.exports = router;

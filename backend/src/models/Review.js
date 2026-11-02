@@ -81,6 +81,8 @@ const reviewSchema = new mongoose.Schema(
       enum: ["VISIBLE", "HIDDEN"],
       default: "VISIBLE",
     },
+    // An owner's management preference must not override public moderation.
+    ownerHidden: { type: Boolean, default: false },
   },
   {
     timestamps: true,

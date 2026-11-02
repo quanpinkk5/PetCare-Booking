@@ -4,6 +4,7 @@ const Message = require("../../models/Message");
 const Conversation = require("../../models/Conversation");
 const Business = require("../../models/Business");
 const { notifyMessage, notifyRead } = require("../../utils/messageEvents");
+const ownerNotifications = require("../../utils/ownerNotificationEvents");
 
 // ============================================
 // KHÁCH HÀNG GỬI TIN NHẮN VĂN BẢN
@@ -96,6 +97,7 @@ const sendMessage = async (req, res, next) => {
 
     await conversation.save();
     notifyMessage(req, conversation, business, message);
+    await ownerNotifications.customerMessage({ io: req.app?.get("io"), business, conversation, message, senderId: customerId });
 
     return res.status(201).json({
       success: true,

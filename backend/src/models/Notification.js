@@ -11,6 +11,10 @@ const notificationSchema = new mongoose.Schema(
     referenceId: mongoose.Schema.Types.ObjectId,
     isRead: Boolean,
     readAt: Date,
+    priority: { type: String, enum: ['low', 'normal', 'high'], default: 'normal' },
+    branch: String,
+    detail: String,
+    metadata: mongoose.Schema.Types.Mixed,
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

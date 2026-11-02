@@ -76,6 +76,8 @@ module.exports = app;
 
 // BusinessOwner API
 app.use("/api/businessOwner", businessesRoutes);
+app.use("/api/businessOwner/notifications", require("./routes/businessOwner/notificationsRoutes"));
+app.use("/api/businessOwner", require("./routes/businessOwner/reviewRoutes"));
 app.use("/api/businessOwner", require("./routes/businessOwner/messageRoutes"));
 app.use("/api/businessOwner", require("./routes/businessOwner/paymentsRoutes"));
 
