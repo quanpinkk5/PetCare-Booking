@@ -61,7 +61,7 @@ test("profile trims and persists editable fields and returns the shared user sha
     assert.equal(options.runValidators, true);
     assert.equal(options.new, true);
     assert.deepEqual(operation.$set, {
-      fullName: "Nguyễn An", phone: "0901234567", avatar, gender: "Nữ",
+      fullName: "Nguyễn An", phone: "0901234567", avatar, gender: "FEMALE",
       birthday: "2000-02-29", bio: "Ghi chú", "address.detail": "123 Đường A",
     });
     return { select: async () => ({ ...customer, ...operation.$set, address: { detail: "123 Đường A" } }) };
@@ -75,7 +75,36 @@ test("profile trims and persists editable fields and returns the shared user sha
   assert.equal(data.user.name, "Nguyễn An");
   assert.equal(data.user.fullName, "Nguyễn An");
   assert.equal(data.user.birthday, "2000-02-29");
+  assert.equal(data.user.gender, "Nữ");
   assert.equal(data.user.password, undefined);
+});
+
+for (const [label, stored] of [["Nam", "MALE"], ["Nữ", "FEMALE"], ["Khác", "OTHER"], ["", null]]) {
+  test(`profile gender ${label || '(empty)'} passes the actual User schema and round trips`, async (t) => {
+    t.mock.method(User, "findById", async () => customer);
+    t.mock.method(User, "findOneAndUpdate", (_filter, operation) => ({
+      select: async () => {
+        assert.equal(operation.$set.gender, stored);
+        const document = new User({ ...customer, password: 'test-password', ...operation.$set });
+        await document.validate();
+        return document;
+      },
+    }));
+    const response = await patch({ gender: label });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).data.user.gender, label);
+  });
+}
+
+test('restoring a canonical stored gender returns the Vietnamese profile label', async () => {
+  const { getMe } = require('../src/controllers/auth/authController');
+  for (const [gender, expected] of [['MALE', 'Nam'], ['FEMALE', 'Nữ'], ['OTHER', 'Khác'], [null, '']]) {
+    let response;
+    await getMe({ user: { ...customer, gender } }, {
+      status() { return this; }, json(data) { response = data; },
+    });
+    assert.equal(response.data.user.gender, expected);
+  }
 });
 
 test("partial address update preserves other address fields", async (t) => {

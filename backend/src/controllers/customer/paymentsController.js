@@ -20,6 +20,15 @@ const getCustomerId = (req) => req.user._id || req.user.id;
 const isSuccess = (params) =>
   params.vnp_ResponseCode === "00" && params.vnp_TransactionStatus === "00";
 
+// Only explicit failures may release the active-payment lock. In particular,
+// response 07 can mean the customer was debited and must be reconciled.
+const FAILURE_RESPONSE_CODES = new Set([
+  "09", "10", "11", "12", "13", "24", "51", "65", "75", "79",
+]);
+const isConfirmedFailure = (params) =>
+  params.vnp_TransactionStatus === "02" &&
+  FAILURE_RESPONSE_CODES.has(params.vnp_ResponseCode);
+
 const isValidAmount = (amount) =>
   Number.isSafeInteger(amount) &&
   amount > 0 &&
@@ -62,10 +71,11 @@ const createVnpayPayment = async (req, res, next) => {
       });
     }
 
-    if (booking.status !== "PENDING" || booking.paymentStatus !== "UNPAID") {
+    if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "UNPAID") {
       return res.status(400).json({
         success: false,
-        message: "Booking không thể thanh toán",
+        code: "BOOKING_NOT_PAYABLE",
+        message: "Chỉ lịch đặt đã được cơ sở xác nhận và chưa thanh toán mới có thể thanh toán.",
       });
     }
 
@@ -136,23 +146,54 @@ const createVnpayPayment = async (req, res, next) => {
 
     let payment;
 
+    const creationSession = await mongoose.startSession();
     try {
-      payment = await Payment.create({
-        paymentCode,
-        bookingId: booking._id,
-        customerId: booking.customerId,
-        businessId: branch.businessId,
-        amount: booking.totalPrice,
-        currency: "VND",
-        method: "VNPAY",
-        provider: "VNPAY",
-        status: "PENDING",
-        expiresAt,
-        metadata: {
-          vnpCreateDate: formatVnpDate(now),
-        },
+      await creationSession.withTransaction(async () => {
+        // Both payment creation and cancellation write this Booking. A racing
+        // cancellation causes a write conflict and a fresh state check on retry.
+        const locked = await Booking.updateOne(
+          {
+            _id: booking._id,
+            customerId: getCustomerId(req),
+            status: "CONFIRMED",
+            paymentStatus: "UNPAID",
+            totalPrice: booking.totalPrice,
+          },
+          { $inc: { __v: 1 } },
+          { session: creationSession },
+        );
+        if (locked.matchedCount !== 1) {
+          throw Object.assign(new Error("Booking không còn có thể thanh toán"), {
+            code: "BOOKING_NOT_PAYABLE",
+          });
+        }
+        [payment] = await Payment.create(
+          [{
+            paymentCode,
+            bookingId: booking._id,
+            customerId: booking.customerId,
+            businessId: branch.businessId,
+            amount: booking.totalPrice,
+            currency: "VND",
+            method: "VNPAY",
+            provider: "VNPAY",
+            status: "PENDING",
+            expiresAt,
+            metadata: {
+              vnpCreateDate: formatVnpDate(now),
+            },
+          }],
+          { session: creationSession },
+        );
       });
     } catch (error) {
+      if (error.code === "BOOKING_NOT_PAYABLE") {
+        return res.status(409).json({
+          success: false,
+          code: error.code,
+          message: error.message,
+        });
+      }
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
@@ -161,6 +202,8 @@ const createVnpayPayment = async (req, res, next) => {
       }
 
       throw error;
+    } finally {
+      await creationSession.endSession();
     }
 
     const params = {
@@ -255,9 +298,12 @@ const vnpayIpn = async (req, res) => {
 
     try {
       await session.withTransaction(async () => {
-        const currentPayment = await Payment.findById(payment._id).session(
-          session,
-        );
+        // withTransaction may rerun the callback after a write conflict.
+        resultCode = "00";
+        resultMessage = "Confirm Success";
+        const currentPayment = await Payment.findById(payment._id)
+          .select("+metadata")
+          .session(session);
 
         if (
           !currentPayment ||
@@ -284,42 +330,44 @@ const vnpayIpn = async (req, res) => {
           return;
         }
 
+        currentPayment.metadata = {
+          ...(currentPayment.metadata || {}),
+          responseCode: params.vnp_ResponseCode,
+          transactionStatus: params.vnp_TransactionStatus,
+          bankCode: params.vnp_BankCode,
+          reconciliationRequired: false,
+        };
+        delete currentPayment.metadata.reconciliationReason;
+        currentPayment.transactionId = String(params.vnp_TransactionNo || "");
+
         if (success) {
           if (
             booking.paymentStatus !== "UNPAID" ||
-            booking.status === "CANCELLED"
+            booking.status !== "CONFIRMED"
           ) {
-            // Không được ghi đè Booking đã PAID
-            // hoặc Booking đã hủy.
-            // Cần đưa giao dịch này vào quy trình
-            // đối soát / hoàn tiền.
-            resultCode = "99";
-            resultMessage = "Payment reconciliation required";
+            // Persist the verified payment evidence without overwriting a
+            // cancelled/settled booking or permitting another payment attempt.
+            currentPayment.status = "PROCESSING";
+            currentPayment.metadata.reconciliationRequired = true;
+            currentPayment.metadata.reconciliationReason = "BOOKING_NOT_PAYABLE";
+            await currentPayment.save({ session });
             return;
           }
 
           currentPayment.status = "PAID";
           currentPayment.paidAt = new Date();
-          currentPayment.transactionId = String(params.vnp_TransactionNo || "");
-
-          currentPayment.metadata = {
-            responseCode: params.vnp_ResponseCode,
-            transactionStatus: params.vnp_TransactionStatus,
-            bankCode: params.vnp_BankCode,
-          };
 
           booking.paymentStatus = "PAID";
 
           await booking.save({ session });
-        } else {
+        } else if (isConfirmedFailure(params)) {
           currentPayment.status = "FAILED";
           currentPayment.failedAt = new Date();
           currentPayment.failureReason = `VNPAY response: ${params.vnp_ResponseCode}`;
-
-          currentPayment.metadata = {
-            responseCode: params.vnp_ResponseCode,
-            transactionStatus: params.vnp_TransactionStatus,
-          };
+        } else {
+          currentPayment.status = "PROCESSING";
+          currentPayment.metadata.reconciliationRequired = true;
+          currentPayment.metadata.reconciliationReason = "UNSETTLED_VNPAY_RESULT";
         }
 
         await currentPayment.save({ session });
@@ -447,21 +495,24 @@ const getPaymentStatus = async (req, res, next) => {
   }
 };
 
-const alreadyPaidReply = (res, booking, paymentId) => res.status(200).json({
-  success: true,
-  code: "PAYMENT_ALREADY_PAID",
-  message: "Booking đã được xác nhận thanh toán. Không tạo Payment mới.",
-  data: {
-    bookingId: booking._id,
-    ...(paymentId && { paymentId }),
-    paymentStatus: "PAID",
-  },
-});
+const alreadyPaidReply = (res, booking, paymentId) =>
+  res.status(200).json({
+    success: true,
+    code: "PAYMENT_ALREADY_PAID",
+    message: "Booking đã được xác nhận thanh toán. Không tạo Payment mới.",
+    data: {
+      bookingId: booking._id,
+      ...(paymentId && { paymentId }),
+      paymentStatus: "PAID",
+    },
+  });
 
 const retryVnpayPayment = async (req, res, next) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "Bạn chưa đăng nhập" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Bạn chưa đăng nhập" });
     }
     if (req.user.role !== "CUSTOMER") {
       return res.status(403).json({
@@ -495,11 +546,11 @@ const retryVnpayPayment = async (req, res, next) => {
       return alreadyPaidReply(res, booking);
     }
 
-    if (booking.status !== "PENDING" || booking.paymentStatus !== "UNPAID") {
+    if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "UNPAID") {
       return res.status(409).json({
         success: false,
         code: "BOOKING_NOT_PAYABLE",
-        message: "Booking không còn ở trạng thái có thể thanh toán",
+        message: "Chỉ lịch đặt đã được cơ sở xác nhận và chưa thanh toán mới có thể thanh toán.",
       });
     }
 
@@ -535,7 +586,12 @@ const retryVnpayPayment = async (req, res, next) => {
     try {
       result = await queryVnpayTransaction(activePayment, booking);
     } catch (error) {
-      console.error("QueryDR error:", error.code, error.message, error.cause?.cause?.code || error.cause?.code || "");
+      console.error(
+        "QueryDR error:",
+        error.code,
+        error.message,
+        error.cause?.cause?.code || error.cause?.code || "",
+      );
 
       // An IPN may have settled the booking while the QueryDR request failed.
       const refreshedBooking = await Booking.findOne({
@@ -549,9 +605,10 @@ const retryVnpayPayment = async (req, res, next) => {
       return res.status(503).json({
         success: false,
         code: "QUERYDR_UNAVAILABLE",
-        message: error.gatewayResponseCode === "99"
-          ? "VNPAY trả lỗi tra cứu 99. Chưa xác minh được giao dịch cũ; vui lòng thử lại sau hoặc liên hệ hỗ trợ đối soát."
-          : "Chưa xác minh được giao dịch cũ. Vui lòng thử lại sau.",
+        message:
+          error.gatewayResponseCode === "99"
+            ? "VNPAY trả lỗi tra cứu 99. Chưa xác minh được giao dịch cũ; vui lòng thử lại sau hoặc liên hệ hỗ trợ đối soát."
+            : "Chưa xác minh được giao dịch cũ. Vui lòng thử lại sau.",
         data: {
           bookingId: booking._id,
           paymentId: activePayment._id,
@@ -573,9 +630,9 @@ const retryVnpayPayment = async (req, res, next) => {
         await session.withTransaction(async () => {
           // MongoDB can run this callback again after a write conflict.
           outcome = "MANUAL_RECONCILIATION";
-          const currentPayment = await Payment.findById(
-            activePayment._id,
-          ).select("+metadata").session(session);
+          const currentPayment = await Payment.findById(activePayment._id)
+            .select("+metadata")
+            .session(session);
 
           const currentBooking = await Booking.findById(booking._id).session(
             session,
@@ -593,7 +650,7 @@ const retryVnpayPayment = async (req, res, next) => {
 
           if (
             !["PENDING", "PROCESSING"].includes(currentPayment.status) ||
-            currentBooking.status !== "PENDING" ||
+            currentBooking.status !== "CONFIRMED" ||
             currentBooking.paymentStatus !== "UNPAID" ||
             currentBooking.totalPrice !== currentPayment.amount ||
             currentPayment.amount !== activePayment.amount ||
@@ -612,7 +669,9 @@ const retryVnpayPayment = async (req, res, next) => {
             ...(currentPayment.metadata || {}),
             queryResponseCode: result.responseCode,
             queryTransactionStatus: result.transactionStatus,
+            reconciliationRequired: false,
           };
+          delete currentPayment.metadata.reconciliationReason;
 
           currentBooking.paymentStatus = "PAID";
 
@@ -656,7 +715,9 @@ const retryVnpayPayment = async (req, res, next) => {
             failureReason: "VNPAY QueryDR confirmed failed",
             "metadata.queryResponseCode": result.responseCode,
             "metadata.queryTransactionStatus": result.transactionStatus,
+            "metadata.reconciliationRequired": false,
           },
+          $unset: { "metadata.reconciliationReason": "" },
         },
         { new: true },
       );

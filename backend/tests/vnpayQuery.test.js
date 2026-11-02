@@ -20,7 +20,7 @@ const Payment = require("../src/models/Payment");
 const booking = {
   _id: "507f1f77bcf86cd799439012",
   bookingCode: "BK-TEST",
-  status: "PENDING",
+  status: "CONFIRMED",
   paymentStatus: "UNPAID",
 };
 
@@ -390,9 +390,10 @@ function setupRetry(t, response = makeSignedResponse()) {
   });
   t.mock.method(BranchService, 'findById', async () => ({ branchId: 'branch' }));
   t.mock.method(Branch, 'findById', async () => ({ businessId: 'business' }));
-  t.mock.method(Payment, 'create', async (data) => {
+  t.mock.method(Booking, 'updateOne', async () => ({ matchedCount: 1 }));
+  t.mock.method(Payment, 'create', async ([data]) => {
     state.created.push(data);
-    return { _id: 'new-payment', ...data };
+    return [{ _id: 'new-payment', ...data }];
   });
   t.mock.method(Payment, 'updateOne', async () => ({ modifiedCount: 1 }));
   return { state, session };
@@ -512,7 +513,7 @@ test('MongoDB transaction retry clears the previous callback outcome', async (t)
   session.withTransaction = async (callback) => {
     state.currentBooking.status = 'CANCELLED';
     await callback();
-    state.currentBooking.status = 'PENDING';
+    state.currentBooking.status = 'CONFIRMED';
     await callback();
   };
   assert.equal((await invokeRetry()).code, 'PAYMENT_ALREADY_PAID');

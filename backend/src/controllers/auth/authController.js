@@ -3,6 +3,7 @@ const AuthSession = require("../../models/AuthSession");
 const { sendResetPasswordEmail } = require("../../services/emailService");
 const User = require("../../models/User");
 const authService = require("../../services/authService");
+const { toProfileGender } = require("../../utils/profileGender");
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -27,7 +28,7 @@ const formatUser = (user) => ({
   role: user.role,
   status: user.status,
   address: user.address,
-  gender: user.gender || "",
+  gender: toProfileGender(user.gender),
   birthday: user.birthday || "",
   bio: user.bio || "",
 });

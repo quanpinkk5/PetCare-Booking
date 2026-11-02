@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { once } = require('node:events');
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const User = require('../src/models/User');
@@ -36,13 +37,16 @@ test('payment creation and retry parse JSON and apply CORS before handling the r
     assert.deepEqual(filter, { _id: bookingId, customerId });
     return {
       _id: bookingId, customerId, bookingCode: 'BK-TEST',
-      branchServiceId: 'offering', status: 'PENDING', paymentStatus: 'UNPAID', totalPrice: 150000,
+      branchServiceId: 'offering', status: 'CONFIRMED', paymentStatus: 'UNPAID', totalPrice: 150000,
     };
   });
   t.mock.method(BranchService, 'findById', async () => ({ branchId: 'branch' }));
   t.mock.method(Branch, 'findById', async () => ({ businessId: 'business' }));
   t.mock.method(Payment, 'findOne', async () => null);
-  t.mock.method(Payment, 'create', async (data) => ({ _id: 'payment', ...data }));
+  const session = { withTransaction: async (fn) => fn(), endSession: async () => {} };
+  t.mock.method(mongoose, 'startSession', async () => session);
+  t.mock.method(Booking, 'updateOne', async () => ({ matchedCount: 1 }));
+  t.mock.method(Payment, 'create', async ([data]) => [{ _id: 'payment', ...data }]);
   const update = t.mock.method(Payment, 'updateOne', async () => ({ modifiedCount: 1 }));
 
   const server = app.listen(0, '127.0.0.1');
