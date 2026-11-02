@@ -51,26 +51,10 @@ const BookingOverview = ({ booking, onCancel }) => {
 
     const renderActionButtons = () => {
         switch (statusType) {
-            case "pending": // 1. Chờ xác nhận: [ Thanh toán ngay ] & [ Hủy lịch ]
+            case "pending":
                 return (
                     <div className="flex flex-col gap-2 w-full">
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus === "PAID"}
-                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
-                            className={`w-full font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs whitespace-nowrap ${
-                                booking.paymentStatus === "PAID"
-                                    ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                            }`}
-                        >
-                            <CreditCard size={15} />
-                            <span>
-                                {booking.paymentStatus === "PAID"
-                                    ? "Đã thanh toán (Chờ xác nhận)"
-                                    : "Thanh toán ngay"}
-                            </span>
-                        </button>
+                        <p className="text-xs text-slate-500">{booking.paymentStatus === "PAID" ? "Đã thanh toán · Chờ cơ sở xác nhận lịch" : "Vui lòng chờ cơ sở xác nhận lịch đặt trước khi thanh toán."}</p>
 
                         <button
                             type="button"

@@ -2,12 +2,9 @@ import { useState } from "react";
 import {
     Check,
     Copy,
-    QrCode,
-    ShieldCheck,
     CreditCard,
     Smartphone,
     Info,
-    Sparkles,
     Landmark,
 } from "lucide-react";
 import { paymentMethods, bankTransferDetails } from "../../data/paymentData";
@@ -24,6 +21,8 @@ export default function PaymentMethods({
     onSelectMethod,
     bookingCode = "BK20260825001",
     finalTotal = 285000,
+    enabledMethods = ["vnpay"],
+    disabled = false,
 }) {
     const [copiedField, setCopiedField] = useState(null);
 
@@ -71,8 +70,9 @@ export default function PaymentMethods({
                             {/* Method Selection Row */}
                             <button
                                 type="button"
+                                disabled={disabled || !enabledMethods.includes(method.id)}
                                 onClick={() => onSelectMethod(method.id)}
-                                className="flex w-full items-center gap-3.5 p-4 text-left transition cursor-pointer"
+                                className="flex w-full items-center gap-3.5 p-4 text-left transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <div
                                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 shadow-2xs ${
@@ -98,7 +98,7 @@ export default function PaymentMethods({
                                         )}
                                     </div>
                                     <p className="text-xs text-slate-500 line-clamp-1 sm:line-clamp-none">
-                                        {method.description}
+                                        {enabledMethods.includes(method.id) ? method.description : "Sắp ra mắt — hiện chỉ hỗ trợ VNPay"}
                                     </p>
                                 </div>
 
@@ -130,7 +130,7 @@ export default function PaymentMethods({
                                                 </div>
                                             </div>
                                             <p className="text-slate-500 text-[11px]">
-                                                Sau khi bấm "Xác nhận thanh toán", mã QR thanh toán VNPay sẽ hiển thị để bạn quét và xác thực chuyển khoản ngay lập tức.
+                                                Sau khi bấm "Xác nhận thanh toán", bạn sẽ được chuyển đến cổng VNPay để hoàn tất giao dịch.
                                             </p>
                                         </div>
                                     )}

@@ -8,7 +8,6 @@ import {
     Check,
     Scissors,
     Phone,
-    ShieldAlert,
     Sparkles,
 } from "lucide-react";
 
@@ -58,7 +57,7 @@ export default function BookingSummary({ booking }) {
                     </div>
 
                     <span className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-700">
-                        Chờ thanh toán
+                        {booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
                     </span>
                 </div>
             </div>
@@ -90,7 +89,7 @@ export default function BookingSummary({ booking }) {
                     </p>
 
                     <p className="text-xs text-slate-500 leading-relaxed">
-                        Liệu trình bao gồm: Cắt tỉa tạo kiểu, tắm thảo dược khử mùi, vệ sinh tai móng & xịt dưỡng hương hoa lavender cao cấp.
+                        {booking.serviceDescription || "Chi tiết dịch vụ theo lịch đặt tại cơ sở."}
                     </p>
                 </div>
             </div>
@@ -107,7 +106,7 @@ export default function BookingSummary({ booking }) {
                         {booking.facilityName}
                     </p>
                     <p className="text-slate-500 text-[11px] leading-snug">
-                        {booking.facilityAddress || "123 Trần Thái Tông, Cầu Giấy, Hà Nội"}
+                        {booking.facilityAddress || "Chưa cập nhật địa chỉ"}
                     </p>
                     {booking.facilityPhone && (
                         <p className="text-emerald-700 font-semibold text-[11px] flex items-center gap-1 pt-1">

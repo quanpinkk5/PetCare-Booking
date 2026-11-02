@@ -26,6 +26,8 @@ export default function DiscountCode({
     discountSuccess,
     appliedDiscount = 0,
     onRemoveDiscount,
+    disabled = false,
+    coupons = availableCoupons,
 }) {
     const [showAllCoupons, setShowAllCoupons] = useState(false);
 
@@ -50,7 +52,7 @@ export default function DiscountCode({
                             Mã ưu đãi & Voucher
                         </h2>
                         <p className="text-xs text-slate-500">
-                            Áp dụng mã giảm giá để tiết kiệm chi phí dịch vụ
+                            {disabled ? "Mã giảm giá hiện chưa được hỗ trợ cho thanh toán VNPay" : "Áp dụng mã giảm giá để tiết kiệm chi phí dịch vụ"}
                         </p>
                     </div>
                 </div>
@@ -74,6 +76,7 @@ export default function DiscountCode({
                 <div className="relative flex-1">
                     <input
                         type="text"
+                        disabled={disabled}
                         value={discountCode}
                         onChange={(event) => onDiscountCodeChange(event.target.value.toUpperCase())}
                         placeholder="Nhập mã ưu đãi (Ví dụ: PETCARE10)"
@@ -95,6 +98,7 @@ export default function DiscountCode({
 
                 <button
                     type="submit"
+                    disabled={disabled}
                     className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition cursor-pointer shrink-0"
                 >
                     Áp dụng mã
@@ -139,13 +143,13 @@ export default function DiscountCode({
                         onClick={() => setShowAllCoupons(!showAllCoupons)}
                         className="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-0.5 cursor-pointer"
                     >
-                        <span>{showAllCoupons ? "Thu gọn" : "Xem tất cả (4)"}</span>
+                        <span>{showAllCoupons ? "Thu gọn" : `Xem tất cả (${coupons.length})`}</span>
                         {showAllCoupons ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {(showAllCoupons ? availableCoupons : availableCoupons.slice(0, 2)).map((coupon) => {
+                    {(showAllCoupons ? coupons : coupons.slice(0, 2)).map((coupon) => {
                         const isCurrentActive = discountCode.trim().toUpperCase() === coupon.code && appliedDiscount > 0;
 
                         return (
@@ -176,6 +180,7 @@ export default function DiscountCode({
 
                                 <button
                                     type="button"
+                                    disabled={disabled}
                                     onClick={() => handleSelectCoupon(coupon.code)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
                                         isCurrentActive
