@@ -23,6 +23,7 @@ const io = new Server(server, {
 });
 
 // Xác thực JWT trước khi kết nối
+app.set("io", io);
 io.use(socketAuth);
 
 io.on("connection", (socket) => {
