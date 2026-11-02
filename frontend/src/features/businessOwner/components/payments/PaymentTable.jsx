@@ -2,6 +2,8 @@ import { Eye } from "lucide-react";
 
 export default function PaymentTable({
     payments,
+    loading = false,
+    error = "",
     selectedPaymentId,
     onSelectPayment,
     currentPage,
@@ -11,7 +13,7 @@ export default function PaymentTable({
     const totalPages = Math.max(1, Math.ceil(payments.length / pageSize));
     const safePage = Math.min(currentPage, totalPages);
     const startIndex = (safePage - 1) * pageSize;
-    const visiblePayments = payments.slice(startIndex, startIndex + pageSize);
+    const visiblePayments = loading || error ? [] : payments.slice(startIndex, startIndex + pageSize);
 
     const handlePageChange = (page) => {
         setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -137,7 +139,7 @@ export default function PaymentTable({
                                     colSpan={9}
                                     className="px-4 py-10 text-center text-sm text-slate-400"
                                 >
-                                    Không tìm thấy giao dịch phù hợp.
+                                    {loading ? "Đang tải giao dịch..." : error || "Không tìm thấy giao dịch phù hợp."}
                                 </td>
                             </tr>
                         )}
@@ -147,7 +149,7 @@ export default function PaymentTable({
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-4 pt-3 text-[11px] text-slate-400">
                 <span>
-                    {payments.length === 0
+                    {loading || error ? "—" : payments.length === 0
                         ? "Không có giao dịch"
                         : `Hiển thị ${startIndex + 1} đến ${Math.min(
                             startIndex + pageSize,

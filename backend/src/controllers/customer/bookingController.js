@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 
 const Booking = require("../../models/Booking");
+const Payment = require("../../models/Payment");
 const Pet = require("../../models/Pet");
 const BranchService = require("../../models/BranchService");
 const Branch = require("../../models/Branch");
@@ -686,7 +687,7 @@ const getBookingById = async (req, res, next) => {
           // Thông tin chi nhánh
           {
             path: "branchId",
-            select: "name address phone email",
+            select: "name address phone email businessId",
           },
 
           // Thông tin dịch vụ
@@ -780,32 +781,56 @@ const cancelBooking = async (req, res, next) => {
       });
     }
 
-    // Cập nhật trạng thái bằng điều kiện để tránh
-    // ghi đè nếu trạng thái vừa thay đổi
-    const updatedBooking = await Booking.findOneAndUpdate(
-      {
-        _id: id,
-        customerId,
-        status: { $in: ["PENDING", "CONFIRMED"] },
-        paymentStatus: "UNPAID",
-      },
-      {
-        $set: {
-          status: "CANCELLED",
-        },
-        $push: {
-          statusHistory: {
-            status: "CANCELLED",
-            changedBy: customerId,
-            note: reason ? `Khách hàng hủy lịch đặt: ${reasons[reason]}` : "Khách hàng hủy lịch đặt",
+    let updatedBooking;
+    let activePayment;
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        updatedBooking = null;
+        // Expiry of the URL alone does not prove that no money was received.
+        activePayment = await Payment.findOne({
+          bookingId: id,
+          status: { $in: ["PENDING", "PROCESSING"] },
+        }).session(session);
+        if (activePayment) return;
+
+        updatedBooking = await Booking.findOneAndUpdate(
+          {
+            _id: id,
+            customerId,
+            status: { $in: ["PENDING", "CONFIRMED"] },
+            paymentStatus: "UNPAID",
           },
-        },
-      },
-      {
-        returnDocument: "after",
-        runValidators: true,
-      },
-    );
+          {
+            $set: {
+              status: "CANCELLED",
+            },
+            $push: {
+              statusHistory: {
+                status: "CANCELLED",
+                changedBy: customerId,
+                note: reason ? `Khách hàng hủy lịch đặt: ${reasons[reason]}` : "Khách hàng hủy lịch đặt",
+              },
+            },
+          },
+          {
+            returnDocument: "after",
+            runValidators: true,
+            session,
+          },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    if (activePayment) {
+      return res.status(409).json({
+        success: false,
+        code: "PAYMENT_IN_PROGRESS",
+        message: "Lịch đặt đang có giao dịch thanh toán chưa được xác minh. Vui lòng chờ kết quả hoặc liên hệ hỗ trợ đối soát trước khi hủy.",
+      });
+    }
 
     if (!updatedBooking) {
       return res.status(409).json({

@@ -49,19 +49,11 @@ const BookingCard = ({ booking }) => {
         );
 
         switch (statusType) {
-            case "pending": // Chờ xác nhận: [ Xem chi tiết ] & [ Thanh toán ngay ]
+            case "pending":
                 return (
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex flex-col gap-2 w-full">
                         {viewDetailButton}
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus !== "UNPAID"}
-                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
-                            className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                        >
-                            <CreditCard size={14} className="shrink-0" />
-                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
-                        </button>
+                        <p className="text-xs text-slate-500">{booking.paymentStatus === "PAID" ? "Đã thanh toán · Chờ cơ sở xác nhận lịch" : "Có thể thanh toán sau khi cơ sở xác nhận lịch."}</p>
                     </div>
                 );
 

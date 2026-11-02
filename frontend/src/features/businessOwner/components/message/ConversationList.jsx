@@ -1,31 +1,18 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { CHAT_LIST } from "../../data/messageData";
+import { filterOwnerChats } from "../../services/messageView";
 
-export default function ConversationList({ selectedId: externalSelectedId, onSelectChat }) {
+export default function ConversationList({ chats = [], loading = false, selectedId, onSelectChat }) {
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState("all");
-  const [internalSelectedId, setInternalSelectedId] = useState(1);
-
-  const selectedId = externalSelectedId !== undefined ? externalSelectedId : internalSelectedId;
 
   const handleSelect = (id) => {
-    setInternalSelectedId(id);
     onSelectChat?.(id);
   };
 
   const filteredChats = useMemo(() => {
-    return CHAT_LIST.filter((chat) => {
-      const searchText = `${chat.name} ${chat.lastMsg} ${chat.tags.join(" ")}`.toLowerCase();
-
-      const matchesKeyword = searchText.includes(keyword.toLowerCase());
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "unread" && chat.unread > 0);
-
-      return matchesKeyword && matchesFilter;
-    });
-  }, [keyword, filter]);
+    return filterOwnerChats(chats, keyword, filter);
+  }, [chats, keyword, filter]);
 
   return (
     <div className="col-span-12 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs lg:col-span-3 min-h-0">
@@ -88,7 +75,7 @@ export default function ConversationList({ selectedId: externalSelectedId, onSel
           >
             Chưa đọc
             <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
-              {CHAT_LIST.reduce((total, chat) => total + chat.unread, 0)}
+              {chats.reduce((total, chat) => total + chat.unread, 0)}
             </span>
           </button>
 
@@ -169,7 +156,7 @@ export default function ConversationList({ selectedId: externalSelectedId, onSel
 
         {filteredChats.length === 0 && (
           <div className="p-8 text-center text-xs text-slate-400">
-            Không tìm thấy hội thoại phù hợp.
+            {loading ? "Đang tải hội thoại..." : "Không tìm thấy hội thoại phù hợp."}
           </div>
         )}
       </div>

@@ -1,11 +1,9 @@
-import { X, CreditCard, User, Phone, MapPin, Calendar, Clock, CheckCircle2, FileText } from "lucide-react";
-import { TIMELINE_DATA } from "../../data/paymentData";
+import { X, CreditCard, User, Phone, MapPin, Clock, FileText } from "lucide-react";
 
 export default function PaymentDetailModal({ payment, onClose }) {
   if (!payment) return null;
 
-  const isPaid = payment.status === "Đã thanh toán";
-  const bookingCode = getBookingCode(payment.id);
+  const bookingCode = payment.bookingCode;
 
   return (
     <div
@@ -136,7 +134,7 @@ export default function PaymentDetailModal({ payment, onClose }) {
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Tạm tính dịch vụ</span>
-                <span className="font-medium text-slate-800">{payment.amount}</span>
+                <span className="font-medium text-slate-800">{payment.subtotal}</span>
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Phí nền tảng & dịch vụ</span>
@@ -148,7 +146,7 @@ export default function PaymentDetailModal({ payment, onClose }) {
               </div>
               <div className="flex justify-between border-t border-slate-100 pt-2 text-sm font-bold text-slate-900">
                 <span>Thực thu cơ sở</span>
-                <span className="text-emerald-700">{payment.amount}</span>
+                <span className="text-emerald-700">{payment.received}</span>
               </div>
             </div>
           </div>
@@ -160,7 +158,7 @@ export default function PaymentDetailModal({ payment, onClose }) {
             </h4>
 
             <div className="relative space-y-3 pl-2 before:absolute before:inset-y-0 before:left-3 before:w-0.5 before:bg-slate-200">
-              {TIMELINE_DATA.map((item) => (
+              {payment.timeline.map((item) => (
                 <div key={item.id} className="relative pl-6">
                   <span
                     className={`absolute left-2 top-1 h-2.5 w-2.5 rounded-full ring-4 ring-white ${item.color}`}
@@ -169,7 +167,7 @@ export default function PaymentDetailModal({ payment, onClose }) {
                     {item.date}
                   </div>
                   <div className="text-xs font-semibold text-slate-800">
-                    {isPaid ? item.title : item.id === 1 ? payment.status : item.title}
+                    {item.title}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
                     {item.desc}
@@ -183,7 +181,7 @@ export default function PaymentDetailModal({ payment, onClose }) {
         {/* Footer Modal */}
         <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3.5 bg-slate-50/70">
           <div className="text-[11px] text-slate-400">
-            Trạng thái đối soát: <strong className="text-emerald-700 font-semibold">Đã khớp hóa đơn</strong>
+            Trạng thái đối soát: <strong className="text-emerald-700 font-semibold">{payment.reconciliation}</strong>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -198,17 +196,4 @@ export default function PaymentDetailModal({ payment, onClose }) {
       </div>
     </div>
   );
-}
-
-function getBookingCode(paymentId) {
-  const bookingCodes = {
-    "PAY250522-001": "BK250522-031",
-    "PAY250522-002": "BK250522-032",
-    "PAY250522-003": "BK250522-033",
-    "PAY250522-004": "BK250522-034",
-    "PAY250522-005": "BK250522-035",
-    "PAY250521-001": "BK250521-018",
-  };
-
-  return bookingCodes[paymentId] || "BK250522-099";
 }

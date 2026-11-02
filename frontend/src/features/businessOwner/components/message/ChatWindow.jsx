@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-    Phone,
     MoreHorizontal,
     CalendarCheck,
     CheckCheck,
@@ -8,57 +7,31 @@ import {
     Smile,
     Send,
 } from "lucide-react";
-import { INITIAL_MESSAGES, CUSTOMER_DETAILS } from "../../data/messageData";
 
 export default function ChatWindow({
-    customer: propCustomer,
-    messages: propMessages,
-    onSendMessage: propOnSendMessage,
+    customer,
+    messages = [],
+    onSendMessage,
+    loading = false,
+    sending = false,
+    important = false,
+    onToggleImportant,
 }) {
-    const [internalMessages, setInternalMessages] = useState(INITIAL_MESSAGES);
     const [messageText, setMessageText] = useState("");
+    const [showBooking, setShowBooking] = useState(false);
     const messageEndRef = useRef(null);
-
-    useEffect(() => {
-        if (propMessages) {
-            setInternalMessages(propMessages);
-        }
-    }, [propMessages]);
-
-    const messages = propMessages || internalMessages;
-    const customer = propCustomer || CUSTOMER_DETAILS;
+    const latestMessageId = messages.at(-1)?.id;
 
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    }, [latestMessageId]);
 
-    const handleSendMessage = (event) => {
+    const handleSendMessage = async (event) => {
         event.preventDefault();
 
         const text = messageText.trim();
-        if (!text) return;
-
-        const now = new Date();
-        const time = now.toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-
-        const newMsg = {
-            id: Date.now(),
-            sender: "shop",
-            text,
-            time,
-            isRead: false,
-        };
-
-        if (propOnSendMessage) {
-            propOnSendMessage(newMsg);
-        } else {
-            setInternalMessages((previous) => [...previous, newMsg]);
-        }
-
-        setMessageText("");
+        if (!text || sending || loading || !customer) return;
+        if (await onSendMessage(text)) setMessageText((current) => current.trim() === text ? "" : current);
     };
 
     return (
@@ -74,19 +47,19 @@ export default function ChatWindow({
                         />
                     ) : (
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-300 bg-emerald-100 text-xs font-bold text-emerald-700">
-                            HP
+                            —
                         </div>
                     )}
 
                     <div className="min-w-0">
                         <h3 className="truncate text-sm font-bold text-slate-900 leading-tight">
-                            {customer?.name || "Khách hàng"}
+                            {customer?.name || "Chọn một hội thoại"}
                         </h3>
 
                         <div className="mt-0.5 flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="h-2 w-2 rounded-full bg-slate-300" />
                             <span className="text-xs font-medium text-slate-500">
-                                {customer?.type || "Đang hoạt động"}
+                                {customer?.type || "Chưa chọn khách hàng"}
                             </span>
                         </div>
                     </div>
@@ -95,8 +68,10 @@ export default function ChatWindow({
                 <div className="flex shrink-0 items-center gap-2">
                     <button
                         type="button"
-                        aria-label="Tùy chọn"
-                        onClick={() => window.alert(`Tùy chọn cho cuộc trò chuyện với ${customer?.name}`)}
+                        aria-label={important ? "Bỏ đánh dấu quan trọng" : "Đánh dấu quan trọng"}
+                        title={important ? "Bỏ đánh dấu quan trọng" : "Đánh dấu quan trọng"}
+                        disabled={!customer}
+                        onClick={onToggleImportant}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                     >
                         <MoreHorizontal size={15} />
@@ -127,7 +102,7 @@ export default function ChatWindow({
 
                     <button
                         type="button"
-                        onClick={() => window.alert(`Chi tiết lịch hẹn ${customer.booking.id} - ${customer.booking.service}`)}
+                        onClick={() => setShowBooking(true)}
                         className="shrink-0 rounded-lg border border-emerald-600 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-600 hover:text-white transition cursor-pointer"
                     >
                         Xem chi tiết
@@ -139,7 +114,7 @@ export default function ChatWindow({
             <div className="custom-scrollbar flex-1 space-y-4 overflow-y-auto bg-slate-50/40 px-5 py-4">
                 <div className="my-2 flex justify-center">
                     <span className="rounded-full bg-slate-200/60 px-3 py-1 text-xs font-medium text-slate-500">
-                        Hôm nay
+                        {loading ? "Đang tải tin nhắn..." : !customer ? "Chọn hội thoại để xem tin nhắn" : messages.length ? "Lịch sử hội thoại" : "Chưa có tin nhắn"}
                     </span>
                 </div>
 
@@ -174,11 +149,6 @@ export default function ChatWindow({
                                                 className="h-full w-full object-cover"
                                             />
 
-                                            {index === 2 && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-bold text-white">
-                                                    +2
-                                                </div>
-                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -209,7 +179,8 @@ export default function ChatWindow({
                 <button
                     type="button"
                     aria-label="Đính kèm tệp"
-                    onClick={() => window.alert("Đính kèm tệp hoặc hình ảnh đang được kết nối!")}
+                    title="Chưa hỗ trợ tải tệp đính kèm"
+                    disabled
                     className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                     <Paperclip size={18} />
@@ -218,6 +189,7 @@ export default function ChatWindow({
                 <button
                     type="button"
                     aria-label="Biểu tượng cảm xúc"
+                    disabled={!customer || loading || sending}
                     onClick={() => setMessageText((prev) => prev + " 🐶")}
                     className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
@@ -226,6 +198,8 @@ export default function ChatWindow({
 
                 <input
                     type="text"
+                    maxLength={10000}
+                    disabled={!customer || loading || sending}
                     value={messageText}
                     onChange={(event) => setMessageText(event.target.value)}
                     placeholder="Nhập tin nhắn phản hồi cho khách hàng..."
@@ -234,13 +208,24 @@ export default function ChatWindow({
 
                 <button
                     type="submit"
-                    disabled={!messageText.trim()}
+                    disabled={!messageText.trim() || !customer || loading || sending}
                     aria-label="Gửi tin nhắn"
                     className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 transition"
                 >
                     <Send size={14} className="-ml-0.5 mt-0.5" />
                 </button>
             </form>
+            {showBooking && customer?.booking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setShowBooking(false)}>
+                    <div role="dialog" aria-modal="true" aria-label="Thông tin lịch hẹn" className="w-full max-w-md space-y-3 rounded-2xl bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+                        <h3 className="text-sm font-bold">Thông tin lịch hẹn {customer.booking.id}</h3>
+                        <p>{customer.name} {customer.phone}</p>
+                        <p>{customer.booking.service}</p>
+                        <p>{customer.booking.date} {customer.booking.time}</p>
+                        <button type="button" onClick={() => setShowBooking(false)} className="rounded-lg border border-slate-200 px-3 py-2">Đóng</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

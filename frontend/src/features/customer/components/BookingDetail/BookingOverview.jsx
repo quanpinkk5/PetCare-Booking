@@ -12,11 +12,13 @@ import {
     Receipt,
     AlertTriangle,
     X,
+    BookOpen,
 } from "lucide-react";
 
 const BookingOverview = ({ booking, onCancel }) => {
     const navigate = useNavigate();
     const bookingId = booking.recordId || booking.id;
+    const messageUrl = booking.businessId ? `/messages?businessId=${encodeURIComponent(booking.businessId)}` : null;
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState("busy");
     const [isCancelling, setIsCancelling] = useState(false);
@@ -41,91 +43,94 @@ const BookingOverview = ({ booking, onCancel }) => {
         try {
             await onCancel(cancelReason);
             setIsCancelModalOpen(false);
-            navigate('/my-bookings');
-        } catch (error) {
-            alert(error.message || 'Không thể hủy lịch đặt. Vui lòng thử lại.');
-        } finally { setIsCancelling(false); }
+        } catch {
+            // Error handled by parent
+        } finally {
+            setIsCancelling(false);
+        }
     };
 
     const renderActionButtons = () => {
         switch (statusType) {
-            case "pending": // 1. Chờ xác nhận: "Thanh toán ngay", "Chat với cơ sở", "Hủy lịch"
+            case "pending":
                 return (
-                    <div className="flex flex-col gap-2.5 w-full">
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus !== "UNPAID"}
-                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
-                        >
-                            <CreditCard size={15} />
-                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
-                        </button>
+                    <div className="flex flex-col gap-2 w-full">
+                        <p className="text-xs text-slate-500">{booking.paymentStatus === "PAID" ? "Đã thanh toán · Chờ cơ sở xác nhận lịch" : "Vui lòng chờ cơ sở xác nhận lịch đặt trước khi thanh toán."}</p>
 
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
-                        >
-                            <MessageCircle size={15} />
-                            <span>Chat với cơ sở</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus !== "UNPAID"}
-                            title={booking.paymentStatus !== "UNPAID" ? "Lịch đã thanh toán cần được xử lý hoàn tiền trước khi hủy" : undefined}
                             onClick={() => setIsCancelModalOpen(true)}
-                            className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
+                            className="w-full bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
                         >
-                            <XCircle size={15} />
-                            <span>Hủy lịch</span>
+                            <XCircle size={14} />
+                            <span>Hủy lịch đặt</span>
                         </button>
                     </div>
                 );
 
-            case "confirmed": // 2. Đã xác nhận: "Thanh toán ngay" (xanh lá) trên cùng, "Chat" giữ nguyên, "Hủy lịch" chìm xuống (hài hòa, không vỡ layout)
-                return (
-                    <div className="flex flex-col gap-2.5 w-full">
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus !== "UNPAID"}
-                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
-                        >
-                            <CreditCard size={15} />
-                            <span>{booking.paymentStatus === "PAID" ? "Đã thanh toán" : booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Thanh toán ngay"}</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs"
-                        >
-                            <MessageCircle size={15} />
-                            <span>Chat với cơ sở</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            disabled={booking.paymentStatus !== "UNPAID"}
-                            title={booking.paymentStatus !== "UNPAID" ? "Lịch đã thanh toán cần được xử lý hoàn tiền trước khi hủy" : undefined}
-                            onClick={() => setIsCancelModalOpen(true)}
-                            className="w-full bg-slate-50/70 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-xs cursor-pointer group"
-                        >
-                            <XCircle size={14} className="text-slate-400 group-hover:text-rose-500 transition-colors" />
-                            <span>Hủy lịch hẹn</span>
-                        </button>
-                    </div>
-                );
-
-            case "in-progress": // 3. Đang thực hiện: Ẩn hoàn toàn "Hủy lịch", chỉ giữ lại duy nhất "Chat với cơ sở"
+            case "confirmed": // 2. Đã xác nhận: [ Thanh toán / Đã thanh toán ] & [ Chat ] & [ Hủy lịch có điều kiện ]
                 return (
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
+                            disabled={booking.paymentStatus === "PAID" || booking.paymentStatus === "REFUNDED"}
+                            onClick={() => navigate(`/payment/${bookingId}`, { state: { booking } })}
+                            className={`w-full font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs whitespace-nowrap ${
+                                booking.paymentStatus === "PAID" || booking.paymentStatus === "REFUNDED"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                            }`}
+                        >
+                            <CreditCard size={15} />
+                            <span>
+                                {booking.paymentStatus === "PAID"
+                                    ? "✓ Đã thanh toán thành công"
+                                    : booking.paymentStatus === "REFUNDED"
+                                    ? "Đã hoàn tiền"
+                                    : "Thanh toán dịch vụ"}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <MessageCircle size={14} />
+                            <span>Nhắn tin với cơ sở</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsCancelModalOpen(true)}
+                            className="w-full bg-transparent hover:bg-rose-50/60 text-slate-400 hover:text-rose-600 font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition text-[11px] cursor-pointer"
+                        >
+                            <XCircle size={13} />
+                            <span>Yêu cầu hủy lịch</span>
+                        </button>
+                    </div>
+                );
+
+            case "in-progress": // 3. Đang thực hiện: [ Xem Pet Diary ] & [ Chat với cơ sở ]
+                return (
+                    <div className="flex flex-col gap-2 w-full">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/my-bookings/${bookingId}/diary`)}
+                            className="w-full bg-[#009879] hover:bg-[#008066] text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition text-xs cursor-pointer"
+                        >
+                            <BookOpen size={15} />
+                            <span>Xem nhật ký Pet Diary</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={15} />
                             <span>Chat với cơ sở</span>
@@ -136,9 +141,18 @@ const BookingOverview = ({ booking, onCancel }) => {
                     </div>
                 );
 
-            case "completed": // 4. Hoàn thành: "Đánh giá dịch vụ", "Hóa đơn điện tử" & "Đặt lại lịch này"
+            case "completed": // 4. Hoàn thành: [ Xem Pet Diary ], [ Đánh giá dịch vụ ], [ Hóa đơn điện tử ] & [ Đặt lại ]
                 return (
                     <div className="flex flex-col gap-2 w-full">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/my-bookings/${bookingId}/diary`)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-[#009879] border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                        >
+                            <BookOpen size={15} />
+                            <span>Xem lại Pet Diary của bé</span>
+                        </button>
+
                         <button
                             type="button"
                             onClick={() => navigate(`/reviews?bookingId=${bookingId}&action=write`)}
@@ -151,7 +165,7 @@ const BookingOverview = ({ booking, onCancel }) => {
                         <button
                             type="button"
                             onClick={() => navigate(`/billing?bookingId=${bookingId}`)}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
+                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-2xs transition text-xs cursor-pointer"
                         >
                             <Receipt size={14} />
                             <span>Xem hóa đơn điện tử</span>
@@ -182,8 +196,10 @@ const BookingOverview = ({ booking, onCancel }) => {
 
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={14} />
                             <span>Chat với cơ sở</span>
@@ -196,8 +212,10 @@ const BookingOverview = ({ booking, onCancel }) => {
                     <div className="flex flex-col gap-2 w-full">
                         <button
                             type="button"
-                            onClick={() => navigate("/messages")}
-                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer"
+                            disabled={!messageUrl}
+                            title={messageUrl ? "Nhắn tin với cơ sở của lịch đặt" : "Không còn thông tin cơ sở để nhắn tin"}
+                            onClick={() => messageUrl && navigate(messageUrl)}
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <MessageCircle size={15} />
                             <span>Chat với cơ sở</span>
@@ -258,143 +276,111 @@ const BookingOverview = ({ booking, onCancel }) => {
                         <span className="text-emerald-600 font-semibold">Miễn phí</span>
                     </div>
                     <div className="flex items-center justify-between text-slate-600">
-                        <span>Ưu đãi thành viên:</span>
-                        <span className="text-slate-500">-0đ</span>
+                        <span>Ưu đãi áp dụng:</span>
+                        <span className="text-slate-400">0đ</span>
                     </div>
-                    <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="font-bold text-slate-800 text-sm">Tổng thanh toán:</span>
-                        <span className="font-extrabold text-emerald-600 text-lg">
-                            {booking.totalPrice}
-                        </span>
+                    <div className="pt-2 border-t border-dashed border-slate-200 flex items-center justify-between font-bold text-sm">
+                        <span className="text-slate-800">Tổng thanh toán:</span>
+                        <span className="text-emerald-700 text-base">{booking.totalPrice}</span>
                     </div>
                 </div>
 
-                {/* Actions cluster */}
-                <div className="pt-1 mb-3">
-                    {renderActionButtons()}
-                </div>
+                {/* Action buttons */}
+                {renderActionButtons()}
 
-                {/* Security pledge */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                {/* Guarantee note */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-[11px] text-slate-400">
                     <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-                    <span>Bảo chứng bởi PetCare Booking</span>
+                    <span>Cam kết chất lượng dịch vụ & hoàn tiền nếu có sự cố</span>
                 </div>
             </section>
 
-            {/* Cancel Booking Modal */}
+            {/* Modal xác nhận hủy lịch */}
             {isCancelModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
+                    onClick={() => setIsCancelModalOpen(false)}
+                >
                     <div
-                        className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto"
+                        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                                    <AlertTriangle size={18} />
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-slate-800 text-base leading-tight">
-                                        Xác nhận hủy lịch hẹn
-                                    </h3>
-                                    <p className="text-[11px] text-slate-400">
-                                        Mã lịch hẹn: {booking.id}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsCancelModalOpen(false)}
-                                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsCancelModalOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition"
+                        >
+                            <X size={18} />
+                        </button>
 
-                        {/* Modal Body */}
-                        <div className="space-y-3.5 text-xs text-slate-600">
-                            {/* Summary info */}
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-[11px]">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Dịch vụ:</span>
-                                    <span className="font-semibold text-slate-800">{booking.service?.name || "Chăm sóc thú cưng"}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Thời gian:</span>
-                                    <span className="font-semibold text-slate-800">{booking.time} - {booking.date}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Cơ sở:</span>
-                                    <span className="font-semibold text-slate-800">{booking.facility?.name || "Hệ thống PetCare"}</span>
-                                </div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                                <AlertTriangle size={20} />
                             </div>
-
-                            {/* Policy reminder box */}
-                            <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/80 text-amber-800 text-[11px] leading-relaxed">
-                                <p className="font-semibold mb-1 flex items-center gap-1.5">
-                                    <AlertTriangle size={13} className="text-amber-600 shrink-0" />
-                                    Chính sách hủy đơn:
-                                </p>
-                                <span>
-                                    {statusType === "confirmed"
-                                        ? "Bạn có thể hủy lịch chưa thanh toán. Lịch đã thanh toán cần liên hệ cơ sở để được hỗ trợ xử lý."
-                                        : "Đơn hàng đang chờ cơ sở duyệt. Bạn có thể hủy miễn phí ngay bây giờ."}
-                                </span>
-                            </div>
-
-                            {/* Reason select */}
                             <div>
-                                <label className="block font-semibold text-slate-700 text-xs mb-2">
-                                    Vui lòng chọn lý do hủy lịch:
-                                </label>
-                                <div className="space-y-2">
-                                    {[
-                                        { id: "busy", label: "Có việc bận đột xuất / Thay đổi kế hoạch" },
-                                        { id: "reschedule", label: "Muốn dời sang ngày hoặc khung giờ khác" },
-                                        { id: "pet_sick", label: "Thú cưng gặp vấn đề sức khỏe chưa thể đi" },
-                                        { id: "other_branch", label: "Đặt nhầm cơ sở hoặc tìm được chỗ gần hơn" },
-                                        { id: "other", label: "Lý do khác" },
-                                    ].map((reason) => (
-                                        <label
-                                            key={reason.id}
-                                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition cursor-pointer ${
-                                                cancelReason === reason.id
-                                                    ? "bg-rose-50/60 border-rose-300 text-slate-800"
-                                                    : "bg-slate-50/60 border-slate-200/80 text-slate-600 hover:bg-slate-100/60"
-                                            }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="cancelReason"
-                                                value={reason.id}
-                                                checked={cancelReason === reason.id}
-                                                onChange={(e) => setCancelReason(e.target.value)}
-                                                className="accent-rose-600 text-rose-600 cursor-pointer"
-                                            />
-                                            <span className="text-xs font-medium">{reason.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                                <h4 className="font-bold text-slate-800 text-base">
+                                    Xác nhận hủy lịch đặt #{booking.id}
+                                </h4>
+                                <p className="text-xs text-slate-500">
+                                    Hành động này không thể hoàn tác sau khi xác nhận
+                                </p>
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <div className="mb-4">
+                            <label className="block text-xs font-semibold text-slate-700 mb-2">
+                                Lý do hủy lịch:
+                            </label>
+                            <div className="space-y-2">
+                                {[
+                                    { value: "busy", label: "Tôi bận việc đột xuất không thể đến" },
+                                    { value: "changed_mind", label: "Muốn đổi ngày/giờ hẹn khác" },
+                                    { value: "pet_sick", label: "Thú cưng không khỏe/không phù hợp" },
+                                    { value: "other", label: "Lý do khác" },
+                                ].map((opt) => (
+                                    <label
+                                        key={opt.value}
+                                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                                            cancelReason === opt.value
+                                                ? "border-rose-300 bg-rose-50/50 text-rose-900 font-semibold"
+                                                : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="cancel_reason"
+                                            value={opt.value}
+                                            checked={cancelReason === opt.value}
+                                            onChange={(e) => setCancelReason(e.target.value)}
+                                            className="text-rose-600 focus:ring-rose-500"
+                                        />
+                                        <span>{opt.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-50 rounded-xl p-3 border border-amber-200/80 mb-5 text-[11px] text-amber-800 space-y-1">
+                            <p className="font-bold">Chính sách hủy lịch:</p>
+                            <p>• Hủy trước 24h: Hoàn tiền 100% về ví/tài khoản thanh toán ban đầu.</p>
+                            <p>• Hủy sau 24h hoặc vắng mặt: Có thể áp dụng phí hủy dịch vụ 20%.</p>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5">
                             <button
                                 type="button"
                                 onClick={() => setIsCancelModalOpen(false)}
-                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer"
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
                             >
-                                Giữ lại lịch hẹn
+                                Đóng lại
                             </button>
                             <button
                                 type="button"
-                                disabled={isCancelling}
                                 onClick={confirmCancel}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                disabled={isCancelling}
+                                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition disabled:opacity-50 cursor-pointer"
                             >
-                                {isCancelling ? "Đang xử lý..." : "Xác nhận hủy lịch"}
+                                {isCancelling ? "Đang xử lý..." : "Xác nhận hủy"}
                             </button>
                         </div>
                     </div>

@@ -1,14 +1,15 @@
 import {
     Calendar,
-    ChevronDown,
     Download,
     RotateCcw,
     Search,
 } from "lucide-react";
 
-import { PAYMENT_FILTER_OPTIONS } from "../../data/paymentData";
+import { PAYMENT_METHODS, PAYMENT_STATUSES } from "../../services/paymentView";
 
 export default function PaymentFilters({
+    branches = [],
+    disabled = false,
     filters,
     setFilters,
     searchTerm,
@@ -33,29 +34,36 @@ export default function PaymentFilters({
 
                     <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700">
                         <Calendar size={14} className="text-slate-400" />
-                        <span>01/05/2025 - 22/05/2025</span>
-                        <ChevronDown size={12} className="ml-1 text-slate-400" />
+                        <input type="date" aria-label="Từ ngày" value={filters.fromDate}
+                            max={filters.toDate || undefined}
+                            onChange={(event) => updateFilter("fromDate", event.target.value)}
+                            className="w-28 bg-transparent text-xs outline-none" />
+                        <span>-</span>
+                        <input type="date" aria-label="Đến ngày" value={filters.toDate}
+                            min={filters.fromDate || undefined}
+                            onChange={(event) => updateFilter("toDate", event.target.value)}
+                            className="w-28 bg-transparent text-xs outline-none" />
                     </div>
                 </div>
 
                 <FilterSelect
                     label="Chi nhánh"
                     value={filters.branch}
-                    options={PAYMENT_FILTER_OPTIONS.branches}
+                    options={[{ value: "Tất cả", label: "Tất cả" }, ...branches.map((branch) => ({ value: branch._id, label: branch.name }))]}
                     onChange={(value) => updateFilter("branch", value)}
                 />
 
                 <FilterSelect
                     label="Trạng thái"
                     value={filters.status}
-                    options={PAYMENT_FILTER_OPTIONS.statuses}
+                    options={["Tất cả", ...Object.values(PAYMENT_STATUSES)]}
                     onChange={(value) => updateFilter("status", value)}
                 />
 
                 <FilterSelect
                     label="Phương thức"
                     value={filters.method}
-                    options={PAYMENT_FILTER_OPTIONS.methods}
+                    options={["Tất cả", ...Object.values(PAYMENT_METHODS)]}
                     onChange={(value) => updateFilter("method", value)}
                 />
 
@@ -94,6 +102,7 @@ export default function PaymentFilters({
                 <button
                     type="button"
                     onClick={onExport}
+                    disabled={disabled}
                     className="flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-800"
                 >
                     <Download size={14} />
@@ -117,8 +126,8 @@ function FilterSelect({ label, value, options, onChange }) {
                 className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
             >
                 {options.map((option) => (
-                    <option key={option} value={option}>
-                        {option}
+                    <option key={option.value ?? option} value={option.value ?? option}>
+                        {option.label ?? option}
                     </option>
                 ))}
             </select>

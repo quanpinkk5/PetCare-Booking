@@ -1,18 +1,11 @@
 import { useRef } from "react";
+import { createPortal } from "react-dom";
 import {
     X,
     Printer,
     Download,
-    CheckCircle2,
-    Clock,
-    RotateCcw,
-    XCircle,
     PawPrint,
     Building2,
-    Calendar,
-    Phone,
-    Mail,
-    Share2,
     ShieldCheck,
 } from "lucide-react";
 import {
@@ -39,8 +32,8 @@ export default function PaymentInvoiceModal({ transaction, onClose }) {
     const handleDownload = () => {
         const invoiceContent = `
 =====================================================
-PETCARE BOOKING - HÓA ĐƠN DỊCH VỤ ĐIỆN TỬ
-Số hóa đơn: ${transaction.invoiceNo}
+PETCARE BOOKING - CHI TIẾT GIAO DỊCH
+Mã chứng từ: ${transaction.id}
 Mã giao dịch: ${transaction.id}
 Mã đặt lịch: ${transaction.bookingId}
 Ngày lập: ${transaction.createdAt}
@@ -50,7 +43,7 @@ KHÁCH HÀNG:
 - Họ và tên: ${transaction.customerName}
 - Số điện thoại: ${transaction.customerPhone}
 - Email: ${transaction.customerEmail}
-- Địa chỉ: ${transaction.customerAddress || "Hà Nội"}
+- Địa chỉ: ${transaction.customerAddress || "—"}
 - Thú cưng: ${transaction.petName} (${transaction.petBreed})
 
 CƠ SỞ THỰC HIỆN:
@@ -73,20 +66,25 @@ CHI TIẾT THANH TOÁN:
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `HoaDon_${transaction.invoiceNo}.txt`;
+        link.download = `HoaDon_${transaction.id}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 md:p-6 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white"
+            className="payment-invoice-modal fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 md:p-6 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
+            <style>{`@media print {
+                body > :not(.payment-invoice-modal) { display: none !important; }
+                .payment-invoice-modal { position: static !important; display: block !important; overflow: visible !important; }
+                .payment-invoice-modal > div { max-width: none !important; overflow: visible !important; }
+            }`}</style>
             <div
                 ref={printRef}
                 className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col print:shadow-none print:border-none print:max-h-none print:w-full"
@@ -94,9 +92,9 @@ CHI TIẾT THANH TOÁN:
                 {/* Modal Top Control Bar (Hidden when printing) */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 shrink-0 print:hidden">
                     <div className="flex items-center gap-2 text-slate-700">
-                        <span className="font-bold text-sm sm:text-base">Hóa đơn điện tử</span>
+                        <span className="font-bold text-sm sm:text-base">Chi tiết giao dịch</span>
                         <span className="text-xs px-2.5 py-0.5 rounded-full font-mono font-semibold bg-emerald-100 text-emerald-800">
-                            {transaction.invoiceNo}
+                            {transaction.id}
                         </span>
                     </div>
 
@@ -105,10 +103,10 @@ CHI TIẾT THANH TOÁN:
                             type="button"
                             onClick={handlePrint}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 transition cursor-pointer shadow-xs"
-                            title="In hóa đơn"
+                            title="In giao dịch"
                         >
                             <Printer size={14} />
-                            <span className="hidden sm:inline">In hóa đơn</span>
+                            <span className="hidden sm:inline">In giao dịch</span>
                         </button>
 
                         <button
@@ -151,25 +149,16 @@ CHI TIẾT THANH TOÁN:
                                 </div>
                             </div>
 
-                            <p className="text-xs font-bold text-slate-800 pt-2">
-                                CÔNG TY CỔ PHẦN CÔNG NGHỆ & DỊCH VỤ PETCARE VIỆT NAM
-                            </p>
-                            <p className="text-[11px] text-slate-500">
-                                MST: 0109886622 • Trụ sở: Tòa nhà PetCare Tower, 123 Trần Thái Tông, Hà Nội
-                            </p>
-                            <p className="text-[11px] text-slate-500">
-                                Hotline CSKH: 1900 6868 • Email: support@petcare.vn
-                            </p>
+                            <p className="text-xs text-slate-500 pt-2">Thông tin thanh toán dịch vụ thú cưng</p>
                         </div>
 
                         {/* Invoice Meta */}
                         <div className="sm:text-right space-y-1 bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-2xl w-full sm:w-auto border sm:border-0 border-slate-100">
                             <h3 className="text-base sm:text-lg font-black text-emerald-800 uppercase tracking-wide">
-                                HÓA ĐƠN ĐIỆN TỬ
+                                CHỨNG TỪ GIAO DỊCH
                             </h3>
-                            <p className="text-xs text-slate-400 italic">Mẫu số: 01GTKT0/001 - Ký hiệu: PC/26E</p>
                             <p className="text-xs text-slate-600">
-                                Số hóa đơn: <strong className="text-slate-900 font-mono text-sm">{transaction.invoiceNo}</strong>
+                                Mã chứng từ: <strong className="text-slate-900 font-mono text-sm">{transaction.id}</strong>
                             </p>
                             <p className="text-xs text-slate-600">
                                 Mã giao dịch: <strong className="font-mono">{transaction.id}</strong>
@@ -204,7 +193,7 @@ CHI TIẾT THANH TOÁN:
                                 ? "⏳ CHỜ THANH TOÁN"
                                 : transaction.status === "refunded"
                                 ? "↩ ĐÃ HOÀN TIỀN"
-                                : "✖ ĐÃ HỦY"}
+                                : "✖ KHÔNG THÀNH CÔNG"}
                         </div>
                     </div>
 
@@ -398,42 +387,17 @@ CHI TIẾT THANH TOÁN:
                         </div>
                     </div>
 
-                    {/* Electronic Signatures */}
-                    <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-200 text-center text-xs">
-                        <div className="space-y-1">
-                            <p className="font-bold text-slate-800 uppercase">Người mua hàng</p>
-                            <p className="text-[11px] text-slate-400 italic">(Ký, ghi rõ họ tên)</p>
-                            <div className="h-16 flex items-center justify-center">
-                                <span className="text-xs text-slate-400 italic">Đã xác nhận điện tử</span>
-                            </div>
-                            <p className="font-semibold text-slate-700">{transaction.customerName}</p>
-                        </div>
-
-                        <div className="space-y-1">
-                            <p className="font-bold text-slate-800 uppercase">Đơn vị bán hàng</p>
-                            <p className="text-[11px] text-slate-400 italic">(Chữ ký số điện tử hợp lệ)</p>
-                            <div className="h-16 flex items-center justify-center">
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-[11px] font-bold shadow-2xs">
-                                    <ShieldCheck size={14} className="text-emerald-600" />
-                                    <span>Signed by PetCare Booking JSC</span>
-                                </div>
-                            </div>
-                            <p className="font-semibold text-slate-700">Hệ thống PetCare Booking</p>
-                        </div>
-                    </div>
-
-                    {/* Small print notice */}
-                    <div className="pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
-                        Hóa đơn điện tử này được khởi tạo và lưu trữ an toàn theo tiêu chuẩn Nghị định 123/2020/NĐ-CP và Thông tư 78/2021/TT-BTC.
-                        Mọi thắc mắc xin vui lòng liên hệ hotline 1900 6868 hoặc gửi email tới billing@petcare.vn.
-                    </div>
+                    <p className="pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+                        Thông tin được tổng hợp từ giao dịch thanh toán trên hệ thống PetCare Booking.
+                        Chứng từ này không thay thế hóa đơn giá trị gia tăng.
+                    </p>
                 </div>
 
                 {/* Modal Footer Controls (Hidden when printing) */}
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 print:hidden">
                     <span className="text-xs text-slate-400 flex items-center gap-1">
                         <ShieldCheck size={14} className="text-emerald-600" />
-                        <span>Bảo chứng bởi PetCare Security 256-bit</span>
+                        <span>Thông tin giao dịch PetCare Booking</span>
                     </span>
 
                     <div className="flex items-center gap-2.5">
@@ -443,7 +407,7 @@ CHI TIẾT THANH TOÁN:
                             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition cursor-pointer shadow-xs"
                         >
                             <Printer size={14} />
-                            <span>In hóa đơn</span>
+                            <span>In giao dịch</span>
                         </button>
 
                         <button
@@ -456,6 +420,6 @@ CHI TIẾT THANH TOÁN:
                     </div>
                 </div>
             </div>
-        </div>
+        </div>, document.body
     );
 }

@@ -56,9 +56,6 @@ const NotificationCard = ({
   const handleCardClick = (e) => {
     // If clicking on an action button, link or menu, ignore card click
     if (e.target.closest("button") || e.target.closest("a")) return;
-    if (!notification.isRead) {
-      onMarkAsRead(notification.id);
-    }
     onOpenDetail(notification);
   };
 

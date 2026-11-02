@@ -1,8 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
-import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate, useParams, Link, Navigate } from "react-router-dom";
+import { ArrowLeft, Loader2, Lock, ShieldCheck } from "lucide-react";
 
-import PaymentBanner from "../../components/Payment/PaymentBanner";
 import BookingSummary from "../../components/Payment/BookingSummary";
 import PaymentStepper from "../../components/Payment/PaymentStepper";
 import PaymentMethods from "../../components/Payment/PaymentMethods";
@@ -10,12 +9,10 @@ import DiscountCode from "../../components/Payment/DiscountCode";
 import PaymentBreakdown from "../../components/Payment/PaymentBreakdown";
 import PaymentSidebar from "../../components/Payment/PaymentSidebar";
 import PaymentModal from "../../components/Payment/PaymentModal";
-import { getBookingById } from "../../services/mockBookings";
-
-import {
-  bookingData as defaultBookingData,
-  discountCodes,
-} from "../../data/paymentData";
+import { bookingApi } from "../../services/bookingApi.js";
+import { bookingDetailData } from "../../services/bookingData.js";
+import { paymentApi, startVnpayPayment } from "../../services/paymentApi.js";
+import { useAuth } from "../../../../context/AuthContext";
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat("vi-VN", {
@@ -25,141 +22,87 @@ function formatCurrency(amount) {
 }
 
 export default function Payment() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams();
+  const location = useLocation();
+  const { user, isAuthLoading } = useAuth();
+  const bookingId = id || new URLSearchParams(location.search).get("bookingId")
+    || location.state?.booking?.recordId || location.state?.booking?._id || location.state?.booking?.id || "";
+  if (isAuthLoading) return <main className="p-8" role="status">Đang khôi phục phiên đăng nhập…</main>;
+  if (!user) return <Navigate to="/login" replace state={{ from: { pathname: location.pathname + location.search } }} />;
+  if (user.role !== "CUSTOMER") return <Navigate to="/" replace />;
+  if (!/^[a-f\d]{24}$/i.test(bookingId)) return <main className="p-8"><p role="alert">Vui lòng chọn lịch đặt cần thanh toán.</p><Link to="/my-bookings" className="text-teal-700">Lịch đặt của tôi</Link></main>;
+  return <BookingPayment key={(user._id || user.id) + ':' + bookingId} bookingId={bookingId} />;
+}
+
+function BookingPayment({ bookingId }) {
+  const navigate = useNavigate();
+  const [result, setResult] = useState({ booking: null, status: null, error: "" });
+  const [attempt, setAttempt] = useState(0);
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountError, setDiscountError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [modalInfo, setModalInfo] = useState(null);
+  const submission = useRef(false);
+  const selectedMethod = "vnpay";
+  const appliedDiscount = 0;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [id]);
-
-  const [selectedMethod, setSelectedMethod] = useState("vnpay");
-
-  const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
-
-  const [discountError, setDiscountError] = useState("");
-  const [discountSuccess, setDiscountSuccess] = useState("");
-
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [modalInfo, setModalInfo] = useState(null);
-
-  // Resolve booking data from navigation state, route params, or default mock
-  const booking = useMemo(() => {
-    if (location.state?.booking) {
-      const stateBooking = location.state.booking;
-      return {
-        bookingCode: stateBooking.bookingCode || stateBooking.id || defaultBookingData.bookingCode,
-        petName: stateBooking.petName || stateBooking.pet?.name || defaultBookingData.petName,
-        petBreed: stateBooking.petBreed || stateBooking.pet?.breed || stateBooking.breed || defaultBookingData.petBreed,
-        serviceName: stateBooking.serviceName || stateBooking.service?.name || stateBooking.service || defaultBookingData.serviceName,
-        facilityName: stateBooking.facilityName || stateBooking.facility?.name || stateBooking.location || defaultBookingData.facilityName,
-        facilityAddress: stateBooking.facilityAddress || stateBooking.facility?.address || defaultBookingData.facilityAddress,
-        facilityPhone: stateBooking.facilityPhone || stateBooking.facility?.phone || defaultBookingData.facilityPhone,
-        bookingDate: stateBooking.bookingDate || stateBooking.date || defaultBookingData.bookingDate,
-        bookingTime: stateBooking.bookingTime || stateBooking.time || defaultBookingData.bookingTime,
-        customerName: stateBooking.customerName || defaultBookingData.customerName,
-        customerPhone: stateBooking.customerPhone || defaultBookingData.customerPhone,
-        customerEmail: stateBooking.customerEmail || defaultBookingData.customerEmail,
-        basePrice: stateBooking.basePrice || (stateBooking.totalPrice || stateBooking.price ? parseInt(String(stateBooking.totalPrice || stateBooking.price).replace(/\D/g, ""), 10) : defaultBookingData.basePrice),
-        platformFee: stateBooking.platformFee ?? defaultBookingData.platformFee,
-      };
-    }
-
-    if (id) {
-      const found = getBookingById(id);
-      if (found) {
-        return {
-          bookingCode: found.id || id,
-          petName: found.pet?.name || defaultBookingData.petName,
-          petBreed: found.pet?.breed || defaultBookingData.petBreed,
-          serviceName: found.service?.name || defaultBookingData.serviceName,
-          facilityName: found.facility?.name || defaultBookingData.facilityName,
-          facilityAddress: found.facility?.address || defaultBookingData.facilityAddress,
-          facilityPhone: found.facility?.phone || defaultBookingData.facilityPhone,
-          bookingDate: found.date || defaultBookingData.bookingDate,
-          bookingTime: found.time || defaultBookingData.bookingTime,
-          customerName: defaultBookingData.customerName,
-          customerPhone: defaultBookingData.customerPhone,
-          customerEmail: defaultBookingData.customerEmail,
-          basePrice: found.totalPrice ? parseInt(found.totalPrice.replace(/\D/g, ""), 10) : defaultBookingData.basePrice,
-          platformFee: defaultBookingData.platformFee,
-        };
-      }
-    }
-
-    return defaultBookingData;
-  }, [location.state, id]);
-
-  const { basePrice, platformFee } = booking;
-
-  const finalTotal = Math.max(
-    0,
-    basePrice + platformFee - appliedDiscount
-  );
-
-  const handleApplyDiscount = (overrideCode) => {
-    const codeToTest = (overrideCode || discountCode).trim().toUpperCase();
-
-    setDiscountError("");
-    setDiscountSuccess("");
-
-    if (!codeToTest) {
-      setDiscountError("Vui lòng nhập hoặc chọn mã giảm giá.");
-      return;
-    }
-
-    const discount = discountCodes[codeToTest];
-
-    if (discount === undefined) {
-      setAppliedDiscount(0);
-      setDiscountError("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
-      return;
-    }
-
-    const actualDiscount = Math.min(discount, basePrice + platformFee);
-
-    setAppliedDiscount(actualDiscount);
-    setDiscountCode(codeToTest);
-    setDiscountSuccess(
-      `Áp dụng mã ${codeToTest} thành công! Bạn tiết kiệm được ${formatCurrency(actualDiscount)}.`
-    );
-  };
-
-  const handleRemoveDiscount = () => {
-    setAppliedDiscount(0);
-    setDiscountCode("");
-    setDiscountError("");
-    setDiscountSuccess("");
-  };
-
-  const handlePayment = () => {
-    if (isProcessing) return;
-
-    setIsProcessing(true);
-
-    // Mô phỏng xử lý thanh toán thực tế mượt mà
-    window.setTimeout(() => {
-      setIsProcessing(false);
-
-      const methodNames = {
-        vnpay: "VNPAY-QR",
-        momo: "Ví điện tử MoMo",
-        bank_transfer: "Chuyển khoản Napas247",
-        cash: "Thanh toán tại cơ sở",
-      };
-
-      setModalInfo({
-        type: "success",
-        title: "Xác nhận thanh toán thành công!",
-        message:
-          `Phương thức: ${methodNames[selectedMethod] || selectedMethod.toUpperCase()}\n` +
-          `Số tiền thanh toán: ${formatCurrency(finalTotal)}\n` +
-          `Lịch hẹn chăm sóc cho bé ${booking.petName} đã được hệ thống ghi nhận.`,
-        bookingCode: booking.bookingCode,
+    let cancelled = false;
+    Promise.all([bookingApi.detail(bookingId), paymentApi.status(bookingId)])
+      .then(([detail, status]) => {
+        if (!detail.data || !Number.isSafeInteger(status.data?.totalPrice) || status.data.totalPrice <= 0) {
+          throw new Error("Thông tin thanh toán không hợp lệ.");
+        }
+        if (!cancelled) setResult({ booking: detail.data, status: status.data, error: "" });
+      }).catch((error) => {
+        if (!cancelled) setResult({ booking: null, status: null, error: error.message || "Không thể tải thông tin thanh toán." });
       });
-    }, 900);
+    return () => { cancelled = true; };
+  }, [bookingId, attempt]);
+
+  const handlePayment = async () => {
+    if (submission.current) return;
+    submission.current = true;
+    setIsProcessing(true);
+    setPaymentError("");
+    try {
+      const data = await startVnpayPayment(bookingId);
+      if (data.paymentUrl) window.location.assign(data.paymentUrl);
+      else navigate('/payment-result?bookingId=' + encodeURIComponent(bookingId));
+    } catch (error) {
+      setPaymentError(error.message || "Không thể tạo thanh toán. Vui lòng kiểm tra trạng thái trước khi thử lại.");
+    } finally {
+      submission.current = false;
+      setIsProcessing(false);
+    }
   };
+
+  if (!result.booking) return <main className="min-h-screen bg-slate-50/70 px-4 py-6 md:px-8 md:py-10">
+    <div className="mx-auto max-w-7xl rounded-2xl border border-slate-200 bg-white p-8">
+      <p role={result.error ? "alert" : "status"}>{result.error || "Đang tải thông tin thanh toán…"}</p>
+      {result.error && <button type="button" onClick={() => { setResult({ booking: null, status: null, error: "" }); setAttempt((value) => value + 1); }} className="mt-4 mr-4 text-teal-700">Thử lại</button>}
+      <Link to="/my-bookings" className="mt-4 inline-block text-teal-700">Lịch đặt của tôi</Link>
+    </div>
+  </main>;
+
+  const detail = bookingDetailData(result.booking);
+  const booking = {
+    bookingCode: result.status.bookingCode,
+    petName: detail.pet.name, petBreed: detail.pet.breed,
+    serviceName: detail.service.name, serviceDescription: detail.service.desc,
+    facilityName: detail.facility.name, facilityAddress: detail.facility.address,
+    facilityPhone: detail.facility.phone, bookingDate: detail.date, bookingTime: detail.time,
+    paymentStatus: result.status.paymentStatus,
+  };
+  // Backend totalPrice already contains the booking's full payable amount.
+  const basePrice = result.status.totalPrice;
+  const platformFee = 0;
+  const finalTotal = basePrice;
+  const canPay = result.status.bookingStatus === "CONFIRMED" && result.status.paymentStatus === "UNPAID";
+  const handleApplyDiscount = () => setDiscountError("Mã giảm giá hiện chưa được hỗ trợ cho thanh toán VNPay.");
+  const handleRemoveDiscount = () => { setDiscountCode(""); setDiscountError(""); };
 
   const handleOpenSupport = () => {
     setModalInfo({
@@ -195,7 +138,7 @@ export default function Payment() {
 
 
         {/* 2. Interactive Stepper */}
-        <PaymentStepper isCompleted={modalInfo?.type === "success"} />
+        <PaymentStepper isCompleted={result.status.paymentStatus === "PAID"} />
 
         {/* 3. Main 2-Column Grid Layout */}
         <div className="grid items-start gap-6 lg:grid-cols-3">
@@ -207,7 +150,9 @@ export default function Payment() {
             {/* Payment Method Selector & Interactive sub-panels */}
             <PaymentMethods
               selectedMethod={selectedMethod}
-              onSelectMethod={setSelectedMethod}
+              onSelectMethod={() => {}}
+              enabledMethods={["vnpay"]}
+              disabled={isProcessing}
               bookingCode={booking.bookingCode}
               finalTotal={finalTotal}
             />
@@ -218,7 +163,9 @@ export default function Payment() {
               onDiscountCodeChange={setDiscountCode}
               onApplyDiscount={handleApplyDiscount}
               discountError={discountError}
-              discountSuccess={discountSuccess}
+              discountSuccess=""
+              disabled
+              coupons={[]}
               appliedDiscount={appliedDiscount}
               onRemoveDiscount={handleRemoveDiscount}
             />
@@ -242,10 +189,13 @@ export default function Payment() {
                 </div>
               </div>
 
+              {paymentError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{paymentError}</p>}
+              {!canPay && <p role="status" className="text-sm text-amber-700">{result.status.paymentStatus === "PAID" ? "Lịch đặt đã được thanh toán." : result.status.bookingStatus === "PENDING" ? "Vui lòng chờ cơ sở xác nhận lịch đặt trước khi thanh toán." : "Lịch đặt không còn ở trạng thái có thể thanh toán."}</p>}
+              <Link to={'/payment-result?bookingId=' + encodeURIComponent(bookingId)} className="inline-block text-sm font-semibold text-teal-700">Kiểm tra trạng thái thanh toán</Link>
               {/* Big CTA Button */}
               <button
                 type="button"
-                disabled={isProcessing}
+                disabled={isProcessing || !canPay}
                 onClick={handlePayment}
                 className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 py-4 px-6 font-extrabold text-white text-sm sm:text-base shadow-md shadow-emerald-700/20 transition-all hover:shadow-lg hover:shadow-emerald-700/30 hover:scale-[1.005] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
@@ -275,7 +225,7 @@ export default function Payment() {
                   <span>•</span>
                   <span>Hỗ trợ thẻ ATM / Visa / Mastercard</span>
                   <span>•</span>
-                  <span>Ví điện tử VNPay / MoMo</span>
+                  <span>Thanh toán qua VNPay</span>
                 </div>
 
                 <p className="text-[11px] text-slate-400">

@@ -41,6 +41,9 @@ const app = express();
 // Message
 const customerMessageRoutes = require("./routes/customer/messageRoutes");
 
+// Payment
+const customerPaymentRoutes = require("./routes/customer/paymentsRoutes");
+
 // Cho phép frontend React gọi API và gửi cookie
 app.use(
   cors({
@@ -73,6 +76,8 @@ module.exports = app;
 
 // BusinessOwner API
 app.use("/api/businessOwner", businessesRoutes);
+app.use("/api/businessOwner", require("./routes/businessOwner/messageRoutes"));
+app.use("/api/businessOwner", require("./routes/businessOwner/paymentsRoutes"));
 
 // Branches API
 app.use("/api/businessOwner", branchesRoutes);
@@ -106,3 +111,7 @@ app.use("/api", publicReviewRoutes);
 
 // API - Message
 app.use("/api/customer", customerMessageRoutes);
+
+// Payment API
+app.use("/api/customer", customerPaymentRoutes);
+app.use("/api/customer/notifications", require("./routes/customer/notificationsRoutes"));
