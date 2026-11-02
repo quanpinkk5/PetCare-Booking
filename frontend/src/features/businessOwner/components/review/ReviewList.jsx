@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Filter, Search, X } from "lucide-react";
 
-import { REVIEW_FILTERS } from "../../data/reviewData";
+import { REVIEW_FILTERS, filterOwnerReviews, matchesReviewRating } from "../../services/reviewView";
 import ReviewCard from "./ReviewCard";
 
 export default function ReviewList({
@@ -9,50 +9,24 @@ export default function ReviewList({
     onReply,
     onToggleHidden,
     onShowDetails,
+    loading = false,
+    saving = false,
+    error = '',
+    activeFilter,
+    setActiveFilter,
 }) {
-    const [activeFilter, setActiveFilter] = useState("all");
     const [search, setSearch] = useState("");
     const [sortOrder, setSortOrder] = useState("newest");
     const [showFilters, setShowFilters] = useState(false);
     const [branchFilter, setBranchFilter] = useState("all");
 
     const branches = useMemo(
-        () => [...new Set(reviews.map((review) => review.branch))],
+        () => [...new Map(reviews.map((review) => [review.branchId, { id: review.branchId, name: review.branch }])).values()],
         [reviews]
     );
 
     const filteredReviews = useMemo(() => {
-        const keyword = search.trim().toLowerCase();
-
-        const result = reviews.filter((review) => {
-            const matchesSearch =
-                !keyword ||
-                [
-                    review.customer,
-                    review.service,
-                    review.branch,
-                    review.content,
-                    review.pet.name,
-                ].some((value) => value.toLowerCase().includes(keyword));
-
-            const matchesRating =
-                activeFilter === "all" ||
-                (activeFilter === "unreplied" && !review.reply) ||
-                (activeFilter === "low" && review.rating >= 1 && review.rating <= 3) ||
-                String(review.rating) === activeFilter;
-
-            const matchesBranch =
-                branchFilter === "all" || review.branch === branchFilter;
-
-            return matchesSearch && matchesRating && matchesBranch;
-        });
-
-        return result.sort((a, b) => {
-            const dateA = new Date(a.date.split("/").reverse().join("-"));
-            const dateB = new Date(b.date.split("/").reverse().join("-"));
-
-            return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-        });
+        return filterOwnerReviews(reviews, { search, rating: activeFilter, branch: branchFilter, sort: sortOrder });
     }, [reviews, search, activeFilter, branchFilter, sortOrder]);
 
     return (
@@ -63,7 +37,7 @@ export default function ReviewList({
                         Quản lý đánh giá
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-1">
-                        Hiển thị {filteredReviews.length} đánh giá mẫu
+                        {loading ? "Đang tải đánh giá..." : `Hiển thị ${filteredReviews.length} đánh giá`}
                     </p>
                 </div>
 
@@ -133,8 +107,8 @@ export default function ReviewList({
                         >
                             <option value="all">Tất cả chi nhánh</option>
                             {branches.map((branch) => (
-                                <option key={branch} value={branch}>
-                                    {branch}
+                                <option key={branch.id} value={branch.id}>
+                                    {branch.name}
                                 </option>
                             ))}
                         </select>
@@ -170,17 +144,19 @@ export default function ReviewList({
                                     : "font-medium text-slate-600 hover:bg-slate-100 bg-white border-slate-200"
                                 }`}
                         >
-                            {filter.label} ({filter.count})
+                            {filter.label} ({reviews.filter((review) => matchesReviewRating(review, filter.value)).length})
                         </button>
                     );
                 })}
             </div>
 
             <div className="space-y-4">
-                {filteredReviews.map((review) => (
+                {!loading && filteredReviews.map((review) => (
                     <ReviewCard
                         key={review.id}
                         review={review}
+                        saving={saving}
+                        error={error}
                         onReply={onReply}
                         onToggleHidden={onToggleHidden}
                         onShowDetails={onShowDetails}
@@ -191,10 +167,10 @@ export default function ReviewList({
                     <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
                         <Search size={28} className="mx-auto text-slate-300 mb-3" />
                         <p className="font-semibold text-slate-700 text-sm">
-                            Không tìm thấy đánh giá
+                            {loading ? "Đang tải đánh giá..." : error ? "Không thể tải đánh giá" : "Không tìm thấy đánh giá"}
                         </p>
                         <p className="text-xs text-slate-400 mt-1">
-                            Thử thay đổi từ khóa hoặc điều kiện lọc.
+                            {loading ? "Vui lòng chờ trong giây lát." : "Thử thay đổi từ khóa hoặc điều kiện lọc."}
                         </p>
                     </div>
                 )}

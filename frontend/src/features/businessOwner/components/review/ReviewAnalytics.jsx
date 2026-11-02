@@ -6,15 +6,10 @@ import {
     Smile,
 } from "lucide-react";
 
-import {
-    RATING_DISTRIBUTION,
-    SENTIMENT_DISTRIBUTION,
-} from "../../data/reviewData";
-
-function RatingDistribution() {
+function RatingDistribution({ distribution, loading }) {
     return (
         <div className="md:col-span-5 space-y-2 text-xs">
-            {RATING_DISTRIBUTION.map((row) => (
+            {distribution.map((row) => (
                 <div key={row.stars} className="flex items-center gap-3">
                     <span className="w-10 text-slate-500 font-medium shrink-0">
                         {row.stars} sao
@@ -28,7 +23,7 @@ function RatingDistribution() {
                     </div>
 
                     <span className="w-[76px] text-right font-medium text-slate-500 text-[11px] shrink-0">
-                        {row.count} ({row.percent.toFixed(1)}%)
+                        {loading ? '—' : `${row.count} (${row.percent.toFixed(1)}%)`}
                     </span>
                 </div>
             ))}
@@ -36,32 +31,32 @@ function RatingDistribution() {
     );
 }
 
-function RatingSummary() {
+function RatingSummary({ summary, loading }) {
     return (
         <div className="md:col-span-4 md:pr-3 md:border-r border-slate-100 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-extrabold text-slate-900">4.8</span>
+                <span className="text-4xl font-extrabold text-slate-900">{loading || !summary.total ? '—' : summary.average.toFixed(1)}</span>
                 <span className="text-slate-400 font-semibold text-base">/ 5</span>
             </div>
 
             <div className="flex items-center gap-1 text-amber-400 my-2 text-base">
                 {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} size={16} fill="currentColor" strokeWidth={1.5} />
+                    <Star key={index} size={16} fill={!loading && index < Math.round(summary.average) ? 'currentColor' : 'none'} strokeWidth={1.5} />
                 ))}
             </div>
 
             <p className="font-bold text-slate-800 text-xs mt-1">
-                Tuyệt vời!
+                {loading ? 'Đang tải đánh giá...' : !summary.total ? 'Chưa có đánh giá công khai' : summary.average >= 4 ? 'Khách hàng hài lòng' : 'Cần lắng nghe thêm góp ý'}
             </p>
 
             <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                Khách hàng rất hài lòng với dịch vụ của bạn.
+                {loading ? 'Vui lòng chờ trong giây lát.' : `Dựa trên ${summary.total} đánh giá đang hiển thị công khai.`}
             </p>
         </div>
     );
 }
 
-function PositiveTrend() {
+function PositiveTrend({ summary, loading, onInspect }) {
     return (
         <div className="md:col-span-3 bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 flex flex-col items-center text-center">
             <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center mb-2 shadow-sm shadow-emerald-500/30">
@@ -69,15 +64,17 @@ function PositiveTrend() {
             </div>
 
             <h4 className="font-bold text-slate-800 text-xs">
-                Xu hướng tích cực
+                Xu hướng đánh giá 5 sao
             </h4>
 
             <p className="text-[10px] text-slate-500 mt-1 leading-snug">
-                Số đánh giá 5 sao tăng 12% so với tháng trước.
+                {loading ? 'Đang tải dữ liệu...' : summary.trend}
             </p>
 
             <button
                 type="button"
+                onClick={() => onInspect('5')}
+                disabled={loading}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 mt-2"
             >
                 Xem chi tiết <ArrowRight size={12} />
@@ -86,7 +83,7 @@ function PositiveTrend() {
     );
 }
 
-function RatingAnalytics() {
+function RatingAnalytics({ summary, loading, onInspect }) {
     return (
         <section className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
             <div className="flex items-center gap-1.5 mb-5">
@@ -97,22 +94,24 @@ function RatingAnalytics() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                <RatingSummary />
-                <RatingDistribution />
-                <PositiveTrend />
+                <RatingSummary summary={summary} loading={loading} />
+                <RatingDistribution distribution={summary.distribution} loading={loading} />
+                <PositiveTrend summary={summary} loading={loading} onInspect={onInspect} />
             </div>
         </section>
     );
 }
 
-function SentimentChart() {
+function SentimentChart({ summary, loading }) {
+    const positive = summary.sentiments[0].percent;
+    const neutralEnd = positive + summary.sentiments[1].percent;
     return (
         <div className="flex items-center justify-between gap-4 py-2">
             <div
                 className="relative w-24 h-24 rounded-full flex items-center justify-center shadow-inner shrink-0"
                 style={{
                     background:
-                        "conic-gradient(#10b981 0% 92%, #3b82f6 92% 98%, #ef4444 98% 100%)",
+                        loading || !summary.total ? '#e2e8f0' : `conic-gradient(#10b981 0% ${positive}%, #3b82f6 ${positive}% ${neutralEnd}%, #ef4444 ${neutralEnd}% 100%)`,
                 }}
             >
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -121,7 +120,7 @@ function SentimentChart() {
             </div>
 
             <div className="space-y-2 flex-1 text-xs">
-                {SENTIMENT_DISTRIBUTION.map((item) => (
+                {summary.sentiments.map((item) => (
                     <div
                         key={item.label}
                         className="flex items-center justify-between gap-2"
@@ -134,9 +133,9 @@ function SentimentChart() {
                         </div>
 
                         <span className="font-bold text-slate-800 whitespace-nowrap">
-                            {item.percent}%{" "}
+                            {loading ? '—' : `${item.percent}%`}{" "}
                             <span className="text-slate-400 font-normal text-[11px]">
-                                ({item.count})
+                                ({loading ? '—' : item.count})
                             </span>
                         </span>
                     </div>
@@ -146,7 +145,7 @@ function SentimentChart() {
     );
 }
 
-function SentimentAnalytics() {
+function SentimentAnalytics({ summary, loading, onInspect }) {
     return (
         <section className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between">
             <div>
@@ -154,29 +153,31 @@ function SentimentAnalytics() {
                     <h3 className="font-bold text-slate-900 text-sm">
                         Tổng quan cảm xúc
                     </h3>
-                    <Info size={13} className="text-slate-300" />
+                    <Info size={13} className="text-slate-300" aria-label="Phân loại theo số sao đánh giá" />
                 </div>
 
-                <SentimentChart />
+                <SentimentChart summary={summary} loading={loading} />
             </div>
 
             <div className="pt-3 border-t border-slate-100 text-right mt-4">
                 <button
                     type="button"
+                    onClick={() => onInspect('low')}
+                    disabled={loading}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700"
                 >
-                    Xem phân tích chi tiết <ArrowRight size={12} />
+                    Xem đánh giá cần cải thiện <ArrowRight size={12} />
                 </button>
             </div>
         </section>
     );
 }
 
-export default function ReviewAnalytics() {
+export default function ReviewAnalytics({ summary, loading = false, onInspect }) {
     return (
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <RatingAnalytics />
-            <SentimentAnalytics />
+            <RatingAnalytics summary={summary} loading={loading} onInspect={onInspect} />
+            <SentimentAnalytics summary={summary} loading={loading} onInspect={onInspect} />
         </section>
     );
 }

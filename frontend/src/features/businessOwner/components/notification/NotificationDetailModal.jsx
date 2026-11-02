@@ -70,6 +70,8 @@ export default function NotificationDetailModal({
   onClose,
   onToggleRead,
   onDelete,
+  busy = false,
+  error = '',
 }) {
   const navigate = useNavigate();
 
@@ -78,10 +80,10 @@ export default function NotificationDetailModal({
   const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
   const TypeIcon = config.icon;
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (notification.actionUrl) {
       if (!notification.isRead) {
-        onToggleRead(notification.id);
+        if (!(await onToggleRead(notification.id))) return;
       }
       onClose();
       navigate(notification.actionUrl);
@@ -139,7 +141,7 @@ export default function NotificationDetailModal({
                 <span>{notification.timeAgo}</span>
                 {notification.createdAt && (
                   <span>
-                    • {new Date(notification.createdAt).toLocaleString("vi-VN")}
+                    • {new Date(notification.createdAt).toLocaleString("vi-VN", { timeZone: 'Asia/Ho_Chi_Minh' })}
                   </span>
                 )}
               </div>
@@ -158,6 +160,7 @@ export default function NotificationDetailModal({
 
         {/* Modal Body */}
         <div className="space-y-5 p-5 sm:p-6 text-sm">
+          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
           {/* Main Content Box */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 space-y-2">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -274,6 +277,7 @@ export default function NotificationDetailModal({
                     maxCapacity: "Công suất tối đa",
                     utilizationRate: "Tỷ lệ lấp đầy",
                     recommendation: "Khuyến nghị xử lý",
+                    referenceId: "Mã tham chiếu",
                   };
 
                   return (
@@ -301,6 +305,7 @@ export default function NotificationDetailModal({
             <button
               type="button"
               onClick={() => onToggleRead(notification.id)}
+              disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
             >
               {notification.isRead ? (
@@ -319,6 +324,7 @@ export default function NotificationDetailModal({
             <button
               type="button"
               onClick={() => onDelete(notification.id)}
+              disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
             >
               <Trash2 size={14} />
@@ -331,6 +337,7 @@ export default function NotificationDetailModal({
               <button
                 type="button"
                 onClick={handleAction}
+                disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition cursor-pointer"
               >
                 <span>{notification.actionLabel}</span>

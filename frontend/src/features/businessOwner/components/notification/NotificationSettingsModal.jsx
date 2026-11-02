@@ -20,6 +20,8 @@ export default function NotificationSettingsModal({
   onClose,
   settings,
   onSaveSettings,
+  busy = false,
+  error = '',
 }) {
   const [formData, setFormData] = useState(settings || {});
   const [isSaved, setIsSaved] = useState(false);
@@ -33,13 +35,12 @@ export default function NotificationSettingsModal({
     }));
   };
 
-  const handleSave = () => {
-    onSaveSettings(formData);
-    setIsSaved(true);
-    setTimeout(() => {
-      setIsSaved(false);
+  const handleSave = async () => {
+    if (busy) return;
+    if (await onSaveSettings(formData)) {
+      setIsSaved(true);
       onClose();
-    }, 800);
+    }
   };
 
   const toggleItems = [
@@ -157,6 +158,7 @@ export default function NotificationSettingsModal({
 
         {/* Body */}
         <div className="p-5 sm:p-6 space-y-6 text-sm">
+          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
           {toggleItems.map((section, idx) => (
             <div key={idx} className="space-y-3">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -171,7 +173,7 @@ export default function NotificationSettingsModal({
                   return (
                     <div
                       key={item.key}
-                      onClick={() => toggle(item.key)}
+                      onClick={() => { if (!busy) toggle(item.key); }}
                       className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-3.5 hover:bg-slate-50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-3 pr-3">
@@ -223,7 +225,7 @@ export default function NotificationSettingsModal({
           <button
             type="button"
             onClick={handleSave}
-            disabled={isSaved}
+            disabled={isSaved || busy}
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition cursor-pointer disabled:opacity-80"
           >
             {isSaved ? (
@@ -232,7 +234,7 @@ export default function NotificationSettingsModal({
                 <span>Đã lưu thành công!</span>
               </>
             ) : (
-              <span>Lưu cấu hình</span>
+              <span>{busy ? 'Đang lưu...' : 'Lưu cấu hình'}</span>
             )}
           </button>
         </div>

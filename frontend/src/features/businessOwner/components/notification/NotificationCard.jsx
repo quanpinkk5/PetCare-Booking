@@ -12,7 +12,6 @@ import {
   Trash2,
   Building2,
   User,
-  Check,
   AlertTriangle,
   Info
 } from "lucide-react";
@@ -71,16 +70,17 @@ export default function NotificationCard({
   onMarkAsUnread,
   onDelete,
   onOpenDetail,
+  busy = false,
 }) {
   const navigate = useNavigate();
   const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
   const TypeIcon = config.icon;
 
-  const handleActionClick = (e) => {
+  const handleActionClick = async (e) => {
     e.stopPropagation();
     if (notification.actionUrl) {
       if (!notification.isRead) {
-        onMarkAsRead(notification.id);
+        if (!(await onMarkAsRead(notification.id))) return;
       }
       navigate(notification.actionUrl);
     }
@@ -254,6 +254,7 @@ export default function NotificationCard({
               <button
                 type="button"
                 onClick={handleActionClick}
+                disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
               >
                 <span>{notification.actionLabel}</span>
@@ -279,6 +280,7 @@ export default function NotificationCard({
             <button
               type="button"
               onClick={handleToggleRead}
+              disabled={busy}
               className={`rounded-xl p-1.5 transition cursor-pointer ${
                 notification.isRead
                   ? "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
@@ -292,6 +294,7 @@ export default function NotificationCard({
             <button
               type="button"
               onClick={handleDelete}
+              disabled={busy}
               className="rounded-xl p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
               title="Xóa thông báo này"
             >

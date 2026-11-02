@@ -1,318 +1,79 @@
-import { useState, useMemo, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import {
-  CheckCheck,
-  Trash2,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { CheckCheck, Trash2, CheckCircle2, ChevronLeft, ChevronRight, Settings, RotateCcw } from "lucide-react";
 import { useBusinessNotifications } from "../../../../context/BusinessNotificationContext";
-import {
-  NOTIFICATION_CATEGORIES,
-  BRANCH_FILTER_OPTIONS,
-} from "../../data/notificationData";
-
+import { filterOwnerNotifications } from "../../services/notificationView";
 import NotificationCard from "../../components/notification/NotificationCard";
 import NotificationDetailModal from "../../components/notification/NotificationDetailModal";
 import NotificationSettingsModal from "../../components/notification/NotificationSettingsModal";
 import NotificationEmptyState from "../../components/notification/NotificationEmptyState";
-
 const ITEMS_PER_PAGE = 7;
 
 export default function NotificationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const {
-    notifications,
-    unreadCount,
-    highPriorityCount,
-    settings,
-    updateSettings,
-    markAsRead,
-    markAsUnread,
-    markAllAsRead,
-    markMultipleAsRead,
-    deleteNotification,
-    deleteMultiple,
-    clearReadNotifications,
-    resetNotifications,
-  } = useBusinessNotifications();
-
-  // URL query params
-  const paramCategory = searchParams.get("category") || "all";
-  const paramFilter = searchParams.get("filter") || "all";
-  const paramPriority = searchParams.get("priority") || "all";
-  const paramBranch = searchParams.get("branch") || "Tất cả chi nhánh";
-  const paramId = searchParams.get("id");
-
-  // State
-  const [activeCategory, setActiveCategory] = useState(paramCategory);
-  const [readFilter, setReadFilter] = useState(paramFilter);
-  const [priorityFilter, setPriorityFilter] = useState(paramPriority);
-  const [branchFilter, setBranchFilter] = useState(paramBranch);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { notifications, settings, updateSettings, markAsRead, markAsUnread, markAllAsRead, markMultipleAsRead,
+    deleteNotification, deleteMultiple, clearReadNotifications, refreshNotifications, loading, error, busy, settingsLoading } = useBusinessNotifications();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [detailId, setDetailId] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
-
-  // Detail Modal item
-  const [selectedNotification, setSelectedNotification] = useState(() => {
-    if (!paramId) return null;
-    return notifications.find((n) => n.id.toLowerCase() === paramId.toLowerCase()) || null;
-  });
-
-  // Toast feedback helper
+  const toastTimer = useRef(null);
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
   const showToast = (message) => {
-    setToastMessage(message);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2800);
+    window.clearTimeout(toastTimer.current); setToastMessage(message);
+    toastTimer.current = window.setTimeout(() => setToastMessage(null), 2800);
   };
-
-  // Sync with paramId if changed
-  useEffect(() => {
-    if (paramId) {
-      const target = notifications.find((n) => n.id.toLowerCase() === paramId.toLowerCase());
-      if (target) {
-        setSelectedNotification(target);
-      }
-    }
-  }, [paramId, notifications]);
-
-  // Counts for Category Tabs
-  const categoryCounts = useMemo(() => {
-    const counts = { all: notifications.length };
-    NOTIFICATION_CATEGORIES.forEach((cat) => {
-      if (cat.id !== "all") {
-        counts[cat.id] = notifications.filter((n) => n.type === cat.id).length;
-      }
-    });
-    return counts;
-  }, [notifications]);
-
-  // Booking count for stat cards
-  const bookingCount = useMemo(() => {
-    return notifications.filter((n) => n.type === "booking").length;
-  }, [notifications]);
-
-  // Filtered Notifications
-  const filteredNotifications = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-
-    return notifications.filter((item) => {
-      // Category filter
-      if (activeCategory !== "all" && item.type !== activeCategory) {
-        return false;
-      }
-
-      // Read status filter
-      if (readFilter === "unread" && item.isRead) {
-        return false;
-      }
-      if (readFilter === "read" && !item.isRead) {
-        return false;
-      }
-
-      // Priority filter
-      if (priorityFilter !== "all" && item.priority !== priorityFilter) {
-        return false;
-      }
-
-      // Branch filter
-      if (
-        branchFilter !== "Tất cả chi nhánh" &&
-        item.branch &&
-        item.branch !== "Toàn hệ thống" &&
-        !item.branch.includes(branchFilter)
-      ) {
-        return false;
-      }
-
-      // Search keyword filter
-      if (q) {
-        const matchesTitle = item.title?.toLowerCase().includes(q);
-        const matchesMessage = item.message?.toLowerCase().includes(q);
-        const matchesDetail = item.detail?.toLowerCase().includes(q);
-        const matchesCustomer = item.customer?.toLowerCase().includes(q);
-        const matchesPhone = item.customerPhone?.toLowerCase().includes(q);
-        const matchesPet = item.petName?.toLowerCase().includes(q);
-        const matchesBookingId = item.metadata?.bookingId?.toLowerCase().includes(q);
-        const matchesTxnId = item.metadata?.transactionId?.toLowerCase().includes(q);
-        const matchesBranch = item.branch?.toLowerCase().includes(q);
-
-        if (
-          !matchesTitle &&
-          !matchesMessage &&
-          !matchesDetail &&
-          !matchesCustomer &&
-          !matchesPhone &&
-          !matchesPet &&
-          !matchesBookingId &&
-          !matchesTxnId &&
-          !matchesBranch
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [
-    notifications,
-    activeCategory,
-    readFilter,
-    priorityFilter,
-    branchFilter,
-    searchQuery,
-  ]);
-
-  // Pagination
+  const paramId = searchParams.get('id');
+  const selectedNotification = notifications.find((n) => n.id === (detailId || paramId)) || null;
+  const filters = {
+    category: searchParams.get('category') || 'all', read: searchParams.get('filter') || 'all',
+    priority: searchParams.get('priority') || 'all', branch: searchParams.get('branch') || 'Tất cả chi nhánh',
+    search: searchParams.get('search') || '',
+  };
+  const filteredNotifications = filterOwnerNotifications(notifications, filters);
   const totalItems = filteredNotifications.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
-  const visibleNotifications = useMemo(() => {
-    return filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredNotifications, startIndex]);
-
-  // Handle URL sync
-  const updateUrlParams = (cat, read, priority, branch) => {
-    const params = new URLSearchParams();
-    if (cat && cat !== "all") params.set("category", cat);
-    if (read && read !== "all") params.set("filter", read);
-    if (priority && priority !== "all") params.set("priority", priority);
-    if (branch && branch !== "Tất cả chi nhánh") params.set("branch", branch);
-    setSearchParams(params);
-  };
-
-  const handleCategoryChange = (catId) => {
-    setActiveCategory(catId);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    updateUrlParams(catId, readFilter, priorityFilter, branchFilter);
-  };
-
-  const handleReadFilterChange = (val) => {
-    setReadFilter(val);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    updateUrlParams(activeCategory, val, priorityFilter, branchFilter);
-  };
-
-  const handlePriorityFilterChange = (val) => {
-    setPriorityFilter(val);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    updateUrlParams(activeCategory, readFilter, val, branchFilter);
-  };
-
-  const handleBranchFilterChange = (val) => {
-    setBranchFilter(val);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    updateUrlParams(activeCategory, readFilter, priorityFilter, val);
-  };
-
-  const handleSearchChange = (val) => {
-    setSearchQuery(val);
-    setCurrentPage(1);
-    setSelectedIds([]);
-  };
-
-  const handleResetFilters = () => {
-    setActiveCategory("all");
-    setReadFilter("all");
-    setPriorityFilter("all");
-    setBranchFilter("Tất cả chi nhánh");
-    setSearchQuery("");
-    setCurrentPage(1);
-    setSelectedIds([]);
-    setSearchParams({});
-    showToast("Đã xóa tất cả bộ lọc");
-  };
-
-  // Bulk Selection Handlers
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const isAllVisibleSelected =
-    visibleNotifications.length > 0 &&
-    visibleNotifications.every((n) => selectedIds.includes(n.id));
-
+  const visibleNotifications = filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const validSelectedIds = selectedIds.filter((id) => notifications.some((n) => n.id === id));
+  const isAllVisibleSelected = visibleNotifications.length > 0 && visibleNotifications.every((n) => validSelectedIds.includes(n.id));
+  const handleToggleSelect = (id) => setSelectedIds((old) => old.includes(id) ? old.filter((item) => item !== id) : [...old, id]);
   const handleSelectAllVisible = () => {
-    if (isAllVisibleSelected) {
-      const visibleIdSet = new Set(visibleNotifications.map((n) => n.id));
-      setSelectedIds((prev) => prev.filter((id) => !visibleIdSet.has(id)));
-    } else {
-      const newIds = new Set([
-        ...selectedIds,
-        ...visibleNotifications.map((n) => n.id),
-      ]);
-      setSelectedIds(Array.from(newIds));
-    }
+    const visible = new Set(visibleNotifications.map((n) => n.id));
+    setSelectedIds((old) => isAllVisibleSelected ? old.filter((id) => !visible.has(id)) : [...new Set([...old, ...visible])]);
   };
-
-  const handleBulkMarkRead = () => {
-    if (selectedIds.length === 0) return;
-    markMultipleAsRead(selectedIds);
-    showToast(`Đã đánh dấu đã đọc ${selectedIds.length} thông báo`);
-    setSelectedIds([]);
+  const handleBulkMarkRead = async () => {
+    if (!validSelectedIds.length) return;
+    const result = await markMultipleAsRead(validSelectedIds);
+    if (result) { showToast('Đã cập nhật trạng thái đọc của các thông báo đã chọn'); setSelectedIds([]); }
   };
-
-  const handleBulkDelete = () => {
-    if (selectedIds.length === 0) return;
-    if (window.confirm(`Bạn có chắc muốn xóa ${selectedIds.length} thông báo đã chọn?`)) {
-      deleteMultiple(selectedIds);
-      showToast(`Đã xóa ${selectedIds.length} thông báo`);
-      setSelectedIds([]);
-    }
+  const handleBulkDelete = async () => {
+    if (!validSelectedIds.length || !window.confirm('Xóa các thông báo đã chọn?')) return;
+    if (await deleteMultiple(validSelectedIds)) { showToast('Đã xóa thông báo đã chọn'); setSelectedIds([]); }
   };
-
-  const handleMarkAll = () => {
-    markAllAsRead();
-    showToast("Đã đánh dấu tất cả thông báo là đã đọc");
+  const handleMarkAll = async () => { if (await markAllAsRead()) showToast('Đã đánh dấu tất cả là đã đọc'); };
+  const handleClearRead = async () => {
+    if (!notifications.some((n) => n.isRead) || !window.confirm('Xóa tất cả thông báo đã đọc?')) return;
+    if (await clearReadNotifications()) { setSelectedIds([]); showToast('Đã xóa thông báo đã đọc'); }
   };
-
-  const handleClearRead = () => {
-    const readCount = notifications.filter((n) => n.isRead).length;
-    if (readCount === 0) {
-      showToast("Không có thông báo đã đọc nào để xóa");
-      return;
-    }
-    if (window.confirm(`Bạn có chắc muốn xóa ${readCount} thông báo đã đọc?`)) {
-      clearReadNotifications();
-      setSelectedIds([]);
-      showToast(`Đã dọn dẹp ${readCount} thông báo đã đọc`);
-    }
+  const handleDelete = async (id) => {
+    const result = await deleteNotification(id);
+    if (result) { showToast('Đã xóa thông báo'); if (selectedNotification?.id === id) closeDetail(); }
+    return result;
   };
-
-  const handleResetDemoData = () => {
-    if (window.confirm("Khôi phục danh sách thông báo mẫu ban đầu?")) {
-      resetNotifications();
-      setSelectedIds([]);
-      showToast("Đã khôi phục dữ liệu thông báo mẫu");
-    }
+  const handleOpenDetail = (notification) => {
+    setDetailId(notification.id);
+    if (!notification.isRead && !busy) markAsRead(notification.id);
   };
-
-  const handleOpenDetail = (notif) => {
-    setSelectedNotification(notif);
-    if (!notif.isRead) {
-      markAsRead(notif.id);
-    }
+  const closeDetail = () => {
+    setDetailId(null);
+    if (paramId) setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete('id'); return next; });
   };
-
-  const isFiltered =
-    activeCategory !== "all" ||
-    readFilter !== "all" ||
-    priorityFilter !== "all" ||
-    branchFilter !== "Tất cả chi nhánh" ||
-    searchQuery.trim() !== "";
+  const handleResetFilters = () => { setSearchParams({}); setSelectedIds([]); setCurrentPage(1); };
+  const isFiltered = filters.category !== 'all' || filters.read !== 'all' || filters.priority !== 'all'
+    || filters.branch !== 'Tất cả chi nhánh' || Boolean(filters.search.trim());
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -323,6 +84,9 @@ export default function NotificationsPage() {
           <span>{toastMessage}</span>
         </div>
       )}
+      {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+        <span>{error}</span><button type="button" disabled={busy || loading} onClick={refreshNotifications}>Thử lại</button>
+      </div>}
       {/* Multi-Selection Action Toolbar */}
       {visibleNotifications.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-2xs text-xs">
@@ -341,17 +105,18 @@ export default function NotificationsPage() {
               </span>
             </label>
 
-            {selectedIds.length > 0 && (
+            {validSelectedIds.length > 0 && (
               <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                Đã chọn {selectedIds.length}
+                Đã chọn {validSelectedIds.length}
               </span>
             )}
           </div>
 
-          {selectedIds.length > 0 ? (
+          {validSelectedIds.length > 0 ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                disabled={busy}
                 onClick={handleBulkMarkRead}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
               >
@@ -361,6 +126,7 @@ export default function NotificationsPage() {
 
               <button
                 type="button"
+                disabled={busy}
                 onClick={handleBulkDelete}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
               >
@@ -377,8 +143,12 @@ export default function NotificationsPage() {
               </button>
             </div>
           ) : (
-            <div className="text-slate-400 font-medium">
-              Hiển thị {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} trên tổng số {totalItems} thông báo
+            <div className="flex flex-wrap items-center text-slate-400 font-medium">
+              <span>Hiển thị {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} trên tổng số {totalItems} thông báo</span>
+              <button type="button" disabled={busy || loading} onClick={refreshNotifications} className="ml-3 p-1" title="Tải lại"><RotateCcw size={14} /></button>
+              <button type="button" disabled={busy || settingsLoading} onClick={() => setIsSettingsOpen(true)} className="ml-2 p-1" title="Cài đặt thông báo"><Settings size={14} /></button>
+              <button type="button" disabled={busy} onClick={handleMarkAll} className="ml-2 p-1" title="Đọc tất cả"><CheckCheck size={14} /></button>
+              <button type="button" disabled={busy} onClick={handleClearRead} className="ml-2 p-1" title="Xóa đã đọc"><Trash2 size={14} /></button>
             </div>
           )}
         </div>
@@ -393,12 +163,10 @@ export default function NotificationsPage() {
               notification={notification}
               isSelected={selectedIds.includes(notification.id)}
               onToggleSelect={handleToggleSelect}
+              busy={busy}
               onMarkAsRead={markAsRead}
               onMarkAsUnread={markAsUnread}
-              onDelete={(id) => {
-                deleteNotification(id);
-                showToast("Đã xóa thông báo");
-              }}
+              onDelete={handleDelete}
               onOpenDetail={handleOpenDetail}
             />
           ))}
@@ -452,7 +220,9 @@ export default function NotificationsPage() {
         <NotificationEmptyState
           isFiltered={isFiltered}
           onResetFilters={handleResetFilters}
-          onResetDemo={handleResetDemoData}
+          onRefresh={refreshNotifications}
+          loading={loading}
+          onOpenSettings={!settingsLoading && !busy ? () => setIsSettingsOpen(true) : undefined}
         />
       )}
 
@@ -460,42 +230,26 @@ export default function NotificationsPage() {
       <NotificationDetailModal
         notification={selectedNotification}
         isOpen={Boolean(selectedNotification)}
-        onClose={() => {
-          setSelectedNotification(null);
-          if (paramId) {
-            setSearchParams((prev) => {
-              const next = new URLSearchParams(prev);
-              next.delete("id");
-              return next;
-            });
-          }
-        }}
-        onToggleRead={(id) => {
-          if (selectedNotification?.isRead) {
-            markAsUnread(id);
-            setSelectedNotification((prev) => (prev ? { ...prev, isRead: false } : null));
-          } else {
-            markAsRead(id);
-            setSelectedNotification((prev) => (prev ? { ...prev, isRead: true } : null));
-          }
-        }}
-        onDelete={(id) => {
-          deleteNotification(id);
-          setSelectedNotification(null);
-          showToast("Đã xóa thông báo");
-        }}
+        busy={busy}
+        error={error}
+        onClose={closeDetail}
+        onToggleRead={(id) => selectedNotification?.isRead ? markAsUnread(id) : markAsRead(id)}
+        onDelete={handleDelete}
       />
 
       {/* Notification Settings Modal */}
-      <NotificationSettingsModal
+      {isSettingsOpen && <NotificationSettingsModal
+        busy={busy}
+        error={error}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
-        onSaveSettings={(newSettings) => {
-          updateSettings(newSettings);
-          showToast("Đã cập nhật cài đặt thông báo cơ sở");
+        onSaveSettings={async (newSettings) => {
+          const result = await updateSettings(newSettings);
+          if (result) showToast("Đã lưu cài đặt thông báo");
+          return result;
         }}
-      />
+      />}
     </div>
   );
 }

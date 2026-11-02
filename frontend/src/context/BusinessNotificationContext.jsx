@@ -1,182 +1,131 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
-import {
-  INITIAL_BUSINESS_NOTIFICATIONS,
-  DEFAULT_NOTIFICATION_SETTINGS,
-} from "../features/businessOwner/data/notificationData";
-
-const STORAGE_KEY = "petcare_business_notifications_v2";
-const SETTINGS_KEY = "petcare_biz_notification_settings_v1";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from './AuthContext';
+import { DEFAULT_NOTIFICATION_SETTINGS } from '../features/businessOwner/data/notificationData';
+import { ownerNotificationApi, loadOwnerNotifications } from '../features/businessOwner/services/notificationApi';
+import { ownerNotificationData } from '../features/businessOwner/services/notificationView';
+import { io } from 'socket.io-client';
+import { authApi } from '../features/auth/services/authApi';
 
 const BusinessNotificationContext = createContext(null);
-
-export const BusinessNotificationProvider = ({ children }) => {
-  // Notifications state
-  const [notifications, setNotifications] = useState(() => {
+export function BusinessNotificationProvider({ children }) {
+  const { user, isAuthLoading } = useAuth();
+  const ownerId = !isAuthLoading && user?.role === 'BUSINESS_OWNER' ? String(user._id || user.id) : '';
+  return <OwnerNotificationProvider key={ownerId} ownerId={ownerId}>{children}</OwnerNotificationProvider>;
+}
+function OwnerNotificationProvider({ ownerId, children }) {
+  const [records, setRecords] = useState([]);
+  const [settings, setSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
+  const [settingsLoading, setSettingsLoading] = useState(Boolean(ownerId));
+  const [loading, setLoading] = useState(Boolean(ownerId));
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const alive = useRef(false);
+  const pending = useRef(false);
+  const version = useRef(0);
+  const controller = useRef(null);
+  const refreshQueued = useRef(false);
+  const refreshNotifications = useCallback(async () => {
+    if (!ownerId) return false;
+    if (pending.current) { refreshQueued.current = true; return false; }
+    const requestVersion = ++version.current;
+    controller.current?.abort();
+    const requestController = new AbortController();
+    controller.current = requestController;
+    setLoading(true);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error("Failed to load business notifications from localStorage", e);
+      const data = await loadOwnerNotifications({ signal: requestController.signal });
+      if (!alive.current || version.current !== requestVersion) return false;
+      setRecords(data); setError('');
+      return true;
+    } catch (err) {
+      if (alive.current && version.current === requestVersion && !requestController.signal.aborted) setError(err.message);
+      return false;
+    } finally {
+      if (alive.current && version.current === requestVersion) setLoading(false);
     }
-    return INITIAL_BUSINESS_NOTIFICATIONS;
-  });
-
-  // Settings state
-  const [settings, setSettings] = useState(() => {
-    try {
-      const stored = localStorage.getItem(SETTINGS_KEY);
-      if (stored) {
-        return { ...DEFAULT_NOTIFICATION_SETTINGS, ...JSON.parse(stored) };
-      }
-    } catch (e) {
-      console.error("Failed to load business notification settings", e);
-    }
-    return DEFAULT_NOTIFICATION_SETTINGS;
-  });
-
-  // Sync notifications to localStorage
+  }, [ownerId]);
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-    } catch (e) {
-      console.error("Failed to save business notifications to localStorage", e);
-    }
-  }, [notifications]);
-
-  // Sync settings to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch (e) {
-      console.error("Failed to save business notification settings", e);
-    }
-  }, [settings]);
-
-  // Unread count
-  const unreadCount = useMemo(() => {
-    return notifications.filter((item) => !item.isRead).length;
-  }, [notifications]);
-
-  // High priority count
-  const highPriorityCount = useMemo(() => {
-    return notifications.filter((item) => !item.isRead && item.priority === "high").length;
-  }, [notifications]);
-
-  // Mark single as read
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isRead: true } : item))
-    );
-  };
-
-  // Mark single as unread
-  const markAsUnread = (id) => {
-    setNotifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isRead: false } : item))
-    );
-  };
-
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((item) => ({ ...item, isRead: true }))
-    );
-  };
-
-  // Mark multiple as read
-  const markMultipleAsRead = (ids) => {
-    if (!ids || ids.length === 0) return;
-    const idSet = new Set(ids);
-    setNotifications((prev) =>
-      prev.map((item) => (idSet.has(item.id) ? { ...item, isRead: true } : item))
-    );
-  };
-
-  // Delete notification
-  const deleteNotification = (id) => {
-    setNotifications((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  // Delete multiple notifications
-  const deleteMultiple = (ids) => {
-    if (!ids || ids.length === 0) return;
-    const idSet = new Set(ids);
-    setNotifications((prev) => prev.filter((item) => !idSet.has(item.id)));
-  };
-
-  // Clear all notifications
-  const clearAllNotifications = () => {
-    setNotifications([]);
-  };
-
-  // Clear only read notifications
-  const clearReadNotifications = () => {
-    setNotifications((prev) => prev.filter((item) => !item.isRead));
-  };
-
-  // Reset back to initial demo data
-  const resetNotifications = () => {
-    setNotifications(INITIAL_BUSINESS_NOTIFICATIONS);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BUSINESS_NOTIFICATIONS));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // Add new notification
-  const addNotification = (newItem) => {
-    const itemWithDefaults = {
-      id: `BIZ-NOTIF-${Date.now()}`,
-      timeAgo: "Vừa xong",
-      createdAt: new Date().toISOString(),
-      isRead: false,
-      priority: "normal",
-      branch: "Chi nhánh Cầu Giấy",
-      ...newItem,
+    alive.current = true;
+    const socket = ownerId ? io('http://localhost:5000', {
+      auth: (callback) => callback({ token: authApi.getAccessToken() }),
+    }) : null;
+    socket?.on('notification:new', refreshNotifications);
+    socket?.on('connect', refreshNotifications);
+    socket?.on('connect_error', async () => {
+      const token = authApi.getAccessToken();
+      await refreshNotifications();
+      if (alive.current && token !== authApi.getAccessToken()) socket.connect();
+    });
+    const initialLoad = window.setTimeout(refreshNotifications, 0);
+    const refresh = () => { if (document.visibilityState === 'visible') refreshNotifications(); };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      alive.current = false; version.current += 1; controller.current?.abort();
+      socket?.disconnect();
+      window.clearTimeout(initialLoad); window.clearInterval(timer);
+      window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);
     };
-    setNotifications((prev) => [itemWithDefaults, ...prev]);
-  };
+  }, [ownerId, refreshNotifications]);
+  useEffect(() => {
+    if (!ownerId) return;
+    const request = new AbortController();
+    ownerNotificationApi.settings({ signal: request.signal }).then((response) => {
+      if (!request.signal.aborted) setSettings(response.data);
+    }).catch((err) => { if (!request.signal.aborted) setError(err.message); })
+      .finally(() => { if (!request.signal.aborted) setSettingsLoading(false); });
+    return () => request.abort();
+  }, [ownerId]);
 
-  // Update settings
-  const updateSettings = (partial) => {
-    setSettings((prev) => ({ ...prev, ...partial }));
+  // Cancel stale reads so they cannot restore deleted items or old read flags.
+  const mutate = async (request, apply) => {
+    if (!ownerId || pending.current) return false;
+    pending.current = true; version.current += 1; controller.current?.abort();
+    setLoading(false); setBusy(true);
+    try {
+      const response = await request();
+      if (!alive.current) return false;
+      apply(response); setError('');
+      return response;
+    } catch (err) {
+      if (alive.current) setError(err.message || 'Không thể cập nhật thông báo.');
+      return false;
+    } finally {
+      pending.current = false;
+      if (alive.current) {
+        setBusy(false);
+        if (refreshQueued.current) { refreshQueued.current = false; refreshNotifications(); }
+      }
+    }
   };
-
+  const setRead = (id, isRead) => mutate(() => ownerNotificationApi.setRead(id, isRead),
+    (response) => setRecords((previous) => previous.map((item) => item._id === id ? response.data : item)));
+  const notifications = records.map(ownerNotificationData);
+  const markMultipleAsRead = (ids) => mutate(() => ownerNotificationApi.markMultipleRead(ids), (response) => {
+    const selected = new Set(ids);
+    setRecords((previous) => previous.map((item) => selected.has(item._id) ? { ...item, isRead: true, readAt: response.readAt } : item));
+  });
+  const deleteMultiple = (ids) => mutate(() => ownerNotificationApi.removeMultiple(ids), () => {
+    const selected = new Set(ids); setRecords((previous) => previous.filter((item) => !selected.has(item._id)));
+  });
   const value = {
-    notifications,
-    unreadCount,
-    highPriorityCount,
-    settings,
-    updateSettings,
-    markAsRead,
-    markAsUnread,
-    markAllAsRead,
-    markMultipleAsRead,
-    deleteNotification,
-    deleteMultiple,
-    clearAllNotifications,
-    clearReadNotifications,
-    resetNotifications,
-    addNotification,
+    notifications, unreadCount: notifications.filter((item) => !item.isRead).length,
+    highPriorityCount: notifications.filter((item) => !item.isRead && item.priority === 'high').length,
+    loading, error, busy, settings, settingsLoading, refreshNotifications,
+    updateSettings: (data) => mutate(() => ownerNotificationApi.saveSettings(data), (response) => setSettings(response.data)),
+    markAsRead: (id) => setRead(id, true), markAsUnread: (id) => setRead(id, false),
+    markAllAsRead: () => mutate(ownerNotificationApi.markAllRead, () => setRecords((previous) => previous.map((item) => ({ ...item, isRead: true })))),
+    markMultipleAsRead, deleteMultiple,
+    deleteNotification: (id) => mutate(() => ownerNotificationApi.remove(id), () => setRecords((previous) => previous.filter((item) => item._id !== id))),
+    clearReadNotifications: () => mutate(ownerNotificationApi.clearRead, () => setRecords((previous) => previous.filter((item) => !item.isRead))),
   };
-
-  return (
-    <BusinessNotificationContext.Provider value={value}>
-      {children}
-    </BusinessNotificationContext.Provider>
-  );
-};
-
+  return <BusinessNotificationContext.Provider value={value}>{children}</BusinessNotificationContext.Provider>;
+}
 export { BusinessNotificationContext };
-
 export const useBusinessNotifications = () => {
   const context = useContext(BusinessNotificationContext);
-  if (!context) {
-    throw new Error("useBusinessNotifications must be used within a BusinessNotificationProvider");
-  }
+  if (!context) throw new Error('useBusinessNotifications must be used within a BusinessNotificationProvider');
   return context;
 };

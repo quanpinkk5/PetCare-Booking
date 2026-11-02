@@ -4,7 +4,6 @@ import {
     MessagesSquare,
     Smile,
 } from "lucide-react";
-import { REVIEW_METRICS } from "../../data/reviewData";
 
 const ICONS = {
     star: Star,
@@ -72,10 +71,10 @@ function ReviewMetricCard({ metric }) {
                     </div>
                 )}
 
-                {!metric.growth && (
+                {!metric.growth && metric.growthDescription && (
                     <div className="pt-4 flex items-center gap-1.5 text-[11px] text-slate-500">
                         <span>{metric.growthDescription}</span>
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                        {metric.attention && <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                     </div>
                 )}
             </div>
@@ -87,11 +86,11 @@ function ReviewMetricCard({ metric }) {
     );
 }
 
-export default function ReviewMetricCards() {
+export default function ReviewMetricCards({ metrics, unavailable = false }) {
     return (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {REVIEW_METRICS.map((metric) => (
-                <ReviewMetricCard key={metric.title} metric={metric} />
+            {metrics.map((metric) => (
+                <ReviewMetricCard key={metric.title} metric={unavailable ? { ...metric, value: '—', description: 'Chưa có dữ liệu đánh giá' } : metric} />
             ))}
         </section>
     );

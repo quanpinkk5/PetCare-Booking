@@ -32,7 +32,7 @@ function RatingStars({ rating }) {
     );
 }
 
-function ReviewHeader({ review }) {
+function ReviewHeader({ review, onShowDetails }) {
     const ServiceIcon = review.serviceType === "Boarding" ? House : Scissors;
 
     return (
@@ -56,6 +56,7 @@ function ReviewHeader({ review }) {
                                 Đã mua dịch vụ
                             </span>
                         )}
+                        {review.status === 'HIDDEN' && <span className="text-[11px] text-slate-500">Đã bị ẩn khỏi trang công khai</span>}
                     </div>
 
                     <div className="flex items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 mt-1 flex-wrap">
@@ -99,6 +100,7 @@ function ReviewHeader({ review }) {
                     className="text-slate-400 hover:text-slate-600 p-1"
                     aria-label="Tác vụ đánh giá"
                     title="Tác vụ đánh giá"
+                    onClick={() => onShowDetails?.(review)}
                 >
                     <MoreVertical size={17} />
                 </button>
@@ -156,19 +158,17 @@ function BusinessReply({ reply }) {
     );
 }
 
-function ReviewReplyForm({ review, onReply }) {
+function ReviewReplyForm({ review, onReply, saving, error }) {
     const [open, setOpen] = useState(false);
-    const [content, setContent] = useState("");
+    const [content, setContent] = useState(review.reply?.content || "");
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
 
         const message = content.trim();
-        if (!message) return;
+        if (!message || saving) return;
 
-        onReply(review.id, message);
-        setContent("");
-        setOpen(false);
+        if (await onReply(review.id, message)) setOpen(false);
     }
 
     return (
@@ -176,15 +176,17 @@ function ReviewReplyForm({ review, onReply }) {
             <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-28">
                 <button
                     type="button"
-                    onClick={() => setOpen(true)}
+                    onClick={() => { setContent(review.reply?.content || ""); setOpen(true); }}
+                    disabled={saving || review.status !== 'VISIBLE'}
                     className="w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs shadow-sm transition-colors"
                 >
-                    {review.reply ? "Phản hồi thêm" : "Phản hồi"}
+                    {review.reply ? "Sửa phản hồi" : "Phản hồi"}
                 </button>
 
                 <button
                     type="button"
                     onClick={() => onReply(review.id, null, "toggle-hidden")}
+                    disabled={saving}
                     className="w-full py-1.5 px-3 bg-white hover:bg-slate-50 text-slate-600 font-semibold rounded-lg text-xs border border-slate-200 transition-colors"
                 >
                     Ẩn đánh giá
@@ -226,6 +228,8 @@ function ReviewReplyForm({ review, onReply }) {
                         </div>
 
                         <textarea
+                            maxLength={3000}
+                            disabled={saving}
                             value={content}
                             onChange={(event) => setContent(event.target.value)}
                             rows={4}
@@ -233,6 +237,7 @@ function ReviewReplyForm({ review, onReply }) {
                             className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                             autoFocus
                         />
+                        {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
 
                         <div className="flex justify-end gap-2 mt-4">
                             <button
@@ -245,10 +250,11 @@ function ReviewReplyForm({ review, onReply }) {
 
                             <button
                                 type="submit"
+                                disabled={saving || !content.trim()}
                                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold inline-flex items-center gap-2"
                             >
                                 <Send size={14} />
-                                Gửi phản hồi
+                                {saving ? "Đang lưu..." : "Gửi phản hồi"}
                             </button>
                         </div>
                     </form>
@@ -263,14 +269,14 @@ export default function ReviewCard({
     onReply,
     onToggleHidden,
     onShowDetails,
+    saving = false,
+    error = '',
 }) {
-    const [hidden, setHidden] = useState(false);
+    const hidden = review.hidden;
 
     function handleAction(id, content, action) {
         if (action === "toggle-hidden") {
-            setHidden((previous) => !previous);
-            onToggleHidden?.(id, !hidden);
-            return;
+            return onToggleHidden?.(id, !hidden);
         }
 
         if (action === "details") {
@@ -278,7 +284,7 @@ export default function ReviewCard({
             return;
         }
 
-        onReply?.(id, content);
+        return onReply?.(id, content);
     }
 
     if (hidden) {
@@ -291,7 +297,8 @@ export default function ReviewCard({
 
                 <button
                     type="button"
-                    onClick={() => setHidden(false)}
+                    onClick={() => onToggleHidden?.(review.id, false)}
+                    disabled={saving}
                     className="text-emerald-600 text-xs font-semibold inline-flex items-center gap-1"
                 >
                     <Eye size={14} />
@@ -303,7 +310,7 @@ export default function ReviewCard({
 
     return (
         <article className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] space-y-4">
-            <ReviewHeader review={review} />
+            <ReviewHeader review={review} onShowDetails={onShowDetails} />
 
             <div className="flex flex-col md:flex-row gap-4 items-start justify-between">
                 <div className="space-y-3 flex-1 min-w-0">
@@ -314,7 +321,7 @@ export default function ReviewCard({
                     <ReviewImages images={review.images} />
                 </div>
 
-                <ReviewReplyForm review={review} onReply={handleAction} />
+                <ReviewReplyForm review={review} onReply={handleAction} saving={saving} error={error} />
             </div>
 
             <BusinessReply reply={review.reply} />

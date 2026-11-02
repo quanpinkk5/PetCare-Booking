@@ -1,9 +1,11 @@
-import { BellOff, SearchX, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { BellOff, SearchX, RotateCcw, SlidersHorizontal, Settings } from "lucide-react";
 
 export default function NotificationEmptyState({
   isFiltered,
   onResetFilters,
-  onResetDemo,
+  onRefresh,
+  loading = false,
+  onOpenSettings,
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-8 sm:p-14 text-center">
@@ -12,15 +14,15 @@ export default function NotificationEmptyState({
       </div>
 
       <h3 className="text-base font-bold text-slate-800">
-        {isFiltered
+        {loading ? 'Đang tải thông báo...' : isFiltered
           ? "Không tìm thấy thông báo nào phù hợp"
           : "Hộp thư thông báo của cơ sở đang trống"}
       </h3>
 
       <p className="mt-1.5 max-w-md text-xs sm:text-sm text-slate-500 leading-relaxed">
-        {isFiltered
+        {loading ? 'Vui lòng chờ trong giây lát.' : isFiltered
           ? "Hãy thử thay đổi từ khóa tìm kiếm, kiểm tra lại bộ lọc danh mục, chi nhánh hoặc mức độ ưu tiên."
-          : "Hiện tại không có thông báo hoặc cảnh báo mới nào. Tất cả hoạt động của cơ sở đang diễn ra êm đẹp!"}
+          : "Hiện tại chưa có thông báo nào dành cho tài khoản của bạn."}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -36,13 +38,17 @@ export default function NotificationEmptyState({
         ) : (
           <button
             type="button"
-            onClick={onResetDemo}
+            onClick={onRefresh}
+            disabled={loading}
             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
           >
             <RotateCcw size={14} />
-            <span>Tải dữ liệu thông báo mẫu</span>
+            <span>Tải lại thông báo</span>
           </button>
         )}
+        {onOpenSettings && <button type="button" onClick={onOpenSettings} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600">
+          <Settings size={14} /> Cài đặt thông báo
+        </button>}
       </div>
     </div>
   );
